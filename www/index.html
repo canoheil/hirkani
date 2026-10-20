@@ -107,6 +107,9 @@
     .data-card { min-height: 100px; text-align: right; padding: 10px; border-radius: 13px; color: #ebeadc; background: rgba(255,255,255,.045); border: 1px solid rgba(239,229,198,.13); display: flex; flex-direction: column; justify-content: space-between; gap: 5px; }
     .data-card.selected { border-color: rgba(232,188,101,.72); background: rgba(173,126,58,.14); }
     .data-card:disabled { opacity: .55; cursor: default; }
+    .craft-tabs { display: flex; gap: 7px; margin: 0 0 11px; }
+    .craft-tab { flex: 1; min-height: 34px; border: 1px solid rgba(232,220,189,.18); border-radius: 10px; color: #e8e3d4; background: rgba(255,255,255,.04); font-size: 11px; font-weight: 800; }
+    .craft-tab.active { color: #292113; border-color: rgba(245,210,137,.72); background: linear-gradient(145deg,#c3985a,#e2bd76); }
     .data-title { font-size: 11px; font-weight: 900; color: #f0d49b; }
     .data-desc { color: #bcc4b5; font-size: 9px; line-height: 1.55; }
     .data-meta { display: flex; align-items: center; justify-content: space-between; gap: 5px; color: #e5d7b7; font-size: 9px; }
@@ -191,6 +194,7 @@
     <div class="controls" id="controls" style="display:none">
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
+        <button class="soft-button" id="craftButton" aria-label="بازکردن کارگاه ساخت"><span>⚒</span>ساخت</button>
         <button class="soft-button" id="eatButton"><span>◉</span>خوراک</button>
         <button class="soft-button" id="fireButton" aria-label="روشن‌کردن آتش"><span>♨</span>آتش</button>
         <button class="soft-button" id="trapButton" aria-label="گذاشتن تله"><span>⌁</span>تله</button>
@@ -202,6 +206,7 @@
         <button class="tool-button" id="roomButton"><b>▣</b>اتاق</button>
         <button class="tool-button" id="basesButton"><b>⌂</b>پناهگاه</button>
         <button class="tool-button" id="repairButton"><b>✚</b>تعمیر</button>
+        <button class="tool-button" id="bunkerCraftButton"><b>⚒</b>ساخت</button>
         <button class="tool-button" id="exitButton"><b>↗</b>بیرون</button>
       </div>
     </div>
@@ -226,6 +231,7 @@
     <div class="modal-card">
       <div class="modal-head"><h2 id="modalTitle">ساخت‌وساز</h2><button class="close-btn" id="closeModal" aria-label="بستن">×</button></div>
       <p class="modal-note" id="modalNote"></p>
+      <div class="craft-tabs" id="craftTabs" style="display:none" role="tablist" aria-label="دسته‌های ساخت"></div>
       <div class="card-grid" id="modalCards"></div>
     </div>
   </div>
@@ -267,6 +273,15 @@
     workshop:{ name:'کارگاه', short:'کارگاه', cost:{wood:5,stone:3}, upgrade:{wood:3,stone:2}, desc:'سنگ روزانه و برداشت بهتر', effect:{gatherBonus:.08,production:{stone:1},defense:1}, color:'#88918a' },
     trap:{ name:'اتاق تله', short:'تله', cost:{wood:2,stone:2}, upgrade:{wood:2,stone:2}, desc:'کاهش آسیب یورش شبانه', effect:{raidDamage:.1,defense:5}, color:'#778e58' }
   };
+  const CRAFTING_CATEGORIES=[{id:'tools',name:'ابزار'},{id:'survival',name:'بقا'},{id:'defense',name:'دفاع'}];
+  const CRAFTING_RECIPES=[
+    {id:'hatchet',category:'tools',name:'تبر سنگی',description:'برداشت از درختان چوب بیشتری می‌دهد.',cost:{wood:3,stone:2},output:{hatchets:1},unique:'hatchets'},
+    {id:'torch',category:'tools',name:'مشعل',description:'در شب همراهت روشن می‌شود؛ نورش آرامش را نگه می‌دارد.',cost:{wood:2,herbs:1},output:{torches:1}},
+    {id:'poultice',category:'survival',name:'ضماد گیاهی',description:'هنگام ساخت مصرف می‌شود: سلامت را بازمی‌گرداند و خون‌ریزی را بند می‌آورد.',cost:{herbs:2,food:1},consume:{health:30,sanity:5,clearBleed:true}},
+    {id:'ration',category:'survival',name:'جیرهٔ جنگلی',description:'هنگام ساخت خورده می‌شود و گرسنگی و کمی گرما را برمی‌گرداند.',cost:{food:2,herbs:1},consume:{hunger:34,warmth:5}},
+    {id:'snareBundle',category:'defense',name:'بستهٔ تله',description:'دو بار تله بگذار؛ شکارچیان از تلهٔ گیاهی آسیب می‌بینند.',cost:{wood:3,herbs:2},output:{snares:2}},
+    {id:'fireKit',category:'defense',name:'کیت آتش',description:'یک آتش روشن کن بی‌آنکه چوب خام مصرف شود.',cost:{wood:4,stone:1},output:{fireKits:1}}
+  ];
 
   const $ = id => document.getElementById(id);
   const canvas = $('world');
@@ -285,7 +300,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
-  let joystick={x:0,y:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,audioCtx=null,muted=false,modalType='';
+  let joystick={x:0,y:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools';
   let gameTime=0;
 
   function seeded(seed) {
@@ -410,8 +425,8 @@
   function freshGame() {
     return {
       worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0,
-      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
-      stats:{health:100,hunger:82,warmth:76,stamina:100,sanity:100}, resources:{wood:12,stone:8,food:4,herbs:2},
+      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,torchLit:false,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
+      stats:{health:100,hunger:82,warmth:76,stamina:100,sanity:100}, resources:{wood:12,stone:8,food:4,herbs:2}, inventory:{hatchets:0,torches:0,snares:0,fireKits:0},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
       dug:{'5,2':true,'4,3':true,'5,3':true,'6,3':true},
       rooms:{'5,3':{type:'bed',level:1,hp:48,maxHp:48},'6,3':{type:'storage',level:1,hp:48,maxHp:48}},
@@ -477,7 +492,7 @@
   function loadSaved() {
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
     game=freshGame();Object.assign(game,data);muted=!!data.muted;
-    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
+    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.inventory={hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
     const oldWorldVersion=data.worldVersion||1;
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
     game.player.x=clamp(game.player.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.y=clamp(game.player.y,WORLD_EDGE,MAP.h-WORLD_EDGE);
@@ -504,9 +519,32 @@
     startNew();
   }
 
+  function renderCraftingTabs() {
+    const tabs=$('craftTabs');tabs.innerHTML='';
+    for(const category of CRAFTING_CATEGORIES){const button=document.createElement('button');button.type='button';button.className='craft-tab'+(craftCategory===category.id?' active':'');button.setAttribute('role','tab');button.setAttribute('aria-selected',craftCategory===category.id?'true':'false');button.textContent=category.name;button.addEventListener('click',()=>{craftCategory=category.id;renderCraftingTabs();renderCraftingCards();});tabs.appendChild(button);}
+  }
+  function renderCraftingCards() {
+    const cards=$('modalCards');cards.innerHTML='';
+    for(const recipe of CRAFTING_RECIPES.filter(item=>item.category===craftCategory)){
+      const owned=recipe.unique&&(game.inventory[recipe.unique]||0)>0,ready=canPay(recipe.cost),quantity=recipe.output?Object.entries(recipe.output).map(([key])=>`${fa(game.inventory[key]||0)} در کیسه`).join(' · '):'مصرف هنگام ساخت',button=document.createElement('button');
+      button.type='button';button.className='data-card'+(owned?' selected':'');button.disabled=!!owned||!ready;
+      const action=owned?'ساخته‌شده':ready?(recipe.output?quantity:'بساز و مصرف کن'):'منابع ناکافی';
+      button.innerHTML=`<span class="data-title">${recipe.name}</span><span class="data-desc">${recipe.description}</span><span class="data-meta"><span class="cost">${costText(recipe.cost)}</span><span>${action}</span></span>`;
+      button.addEventListener('click',()=>craftRecipe(recipe.id));cards.appendChild(button);
+    }
+  }
+  function craftRecipe(id) {
+    const recipe=CRAFTING_RECIPES.find(item=>item.id===id);if(!recipe||!active||game.gameOver)return;
+    if(recipe.unique&&(game.inventory[recipe.unique]||0)>0){showToast('این ابزار را از پیش ساخته‌ای.',1400);return;}
+    if(!pay(recipe.cost)){showToast(`برای ساخت ${recipe.name} نیاز داری: ${costText(recipe.cost)}.`,1900);renderCraftingCards();return;}
+    for(const [key,amount] of Object.entries(recipe.output||{}))game.inventory[key]=(game.inventory[key]||0)+amount;
+    if(recipe.consume){const effect=recipe.consume;for(const stat of ['health','hunger','warmth','sanity'])if(effect[stat])game.stats[stat]=clamp(game.stats[stat]+effect[stat],0,100);if(effect.clearBleed){game.player.bleedTimer=0;game.player.bleedTickTimer=0;}}
+    if(recipe.id==='torch'&&game.phase==='night'&&game.mode==='forest'&&!game.player.torchLit){game.inventory.torches=Math.max(0,game.inventory.torches-1);game.player.torchLit=true;}
+    beep('build');showToast(recipe.consume?`${recipe.name} را ساختی و مصرف کردی.`:`${recipe.name} ساخته شد.`,1700);updateUI(true);renderCraftingCards();saveGame();
+  }
   function showModal(type) {
     if(!active && type!=='help') return;
-    modalType=type; const cards=$('modalCards'), title=$('modalTitle'), note=$('modalNote'); cards.innerHTML='';
+    modalType=type; const cards=$('modalCards'), title=$('modalTitle'), note=$('modalNote'); cards.innerHTML='';$('craftTabs').style.display=type==='crafting'?'flex':'none';
     if(type==='bunkers') {
       title.textContent='پناهگاه‌ها';
       const base=BUNKERS.find(b=>b.id===game.bunkerId);
@@ -525,9 +563,11 @@
         btn.innerHTML=`<span class="data-title">${r.name}</span><span class="data-desc">${r.desc}${r.effect.defense?` · دفاع +${r.effect.defense}`:''}</span><span class="data-meta"><span class="cost">${costText(r.cost)}</span><span>انتخاب</span></span>`;
         btn.addEventListener('click',()=>{game.selectedRoom=id; closeModal(); showToast(`${r.name} انتخاب شد؛ خانهٔ خالی را نشانه بگیر.`,2100); updateUI(true);}); cards.appendChild(btn);
       }
+    } else if(type==='crafting') {
+      title.textContent='کارگاه ساخت';note.textContent='مواد را از جنگل بردار و دستورهای ساخت را در سه دسته ببین؛ خوراک‌ها هنگام ساخت مصرف می‌شوند.';craftCategory='tools';renderCraftingTabs();renderCraftingCards();
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ برای دویدن دکمهٔ «دویدن» را نگه دار (Shift روی رایانه). نوار توان بالای صفحه را زیر نظر بگیر: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ برای دویدن دکمهٔ «دویدن» را نگه دار (Shift روی رایانه). نوار توان بالای صفحه را زیر نظر بگیر: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -689,6 +729,7 @@
     else if(backVisible){ctx.fillStyle='#4f4034';ctx.beginPath();ctx.ellipse(4,-31,6,4,0,Math.PI,Math.PI*2);ctx.fill();}
     else {ctx.fillStyle='#332c23';ctx.beginPath();ctx.arc(9,-29,1,0,Math.PI*2);ctx.fill();}
     ctx.fillStyle='#dbbd78';ctx.beginPath();ctx.arc(faceVisible?4:10,-18,2,0,Math.PI*2);ctx.fill();
+    if(p.torchLit){ctx.strokeStyle='#513923';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(8+reach,-12);ctx.lineTo(14+reach,-25);ctx.stroke();ctx.fillStyle='#d87538';ctx.beginPath();ctx.moveTo(14+reach,-24);ctx.quadraticCurveTo(7+reach,-31,15+reach,-37);ctx.quadraticCurveTo(22+reach,-31,14+reach,-24);ctx.fill();ctx.fillStyle='#f3c26b';ctx.beginPath();ctx.ellipse(15+reach,-30,2.1,4,0,0,Math.PI*2);ctx.fill();}
     if(p.invuln>0){ctx.strokeStyle='rgba(255,220,143,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-15,17,0,Math.PI*2);ctx.stroke();}
     ctx.restore();
   }
@@ -777,7 +818,7 @@
     };
     light(MAP.cx-34,MAP.cy-2,245,.9);
     for(const fire of world.fires||[])light(fire.x,fire.y,Math.max(170,(fire.radius||150)*1.35),1);
-    if(game.player.torchLit||game.phase==='night'&&(game.inventory?.torches||0)>0)light(game.player.x,game.player.y-10,225,1.05);
+    if(game.player.torchLit)light(game.player.x,game.player.y-10,225,1.05);
     ctx.restore();
   }
   function drawMorningFog() {
@@ -939,7 +980,7 @@
     }
   }
   function carryWeight() {
-    const r=game.resources;return (r.wood||0)+(r.stone||0)*1.6+(r.food||0)*.75+(r.herbs||0)*.7;
+    const r=game.resources,i=game.inventory||{};return (r.wood||0)+(r.stone||0)*1.6+(r.food||0)*.75+(r.herbs||0)*.7+(i.torches||0)*1.4+(i.hatchets||0)*2.5+(i.snares||0)*.5+(i.fireKits||0);
   }
   function carrySpeedFactor() { return 1-clamp((carryWeight()-26)/210,0,.35); }
   function updateMovement(dt) {
@@ -1100,18 +1141,18 @@
   }
   function updateControlsUI() {
     if(!game||!active)return;
-    const label=$('actionLabel'),eatButton=$('eatButton'),fireButton=$('fireButton'),trapButton=$('trapButton'),sprintButton=$('sprintButton');
+    const label=$('actionLabel'),eatButton=$('eatButton'),fireButton=$('fireButton'),trapButton=$('trapButton'),sprintButton=$('sprintButton'),craftButton=$('craftButton');
     $('forestControls').style.display='flex';
     if(game.mode==='forest') {
-      eatButton.style.display='flex';fireButton.style.display='flex';trapButton.style.display='flex';sprintButton.style.display='flex';sprintButton.classList.toggle('active',sprintHeld||!!keys.Shift);$('bunkerTools').style.display='none';
-      fireButton.disabled=game.resources.wood<2;trapButton.disabled=game.resources.wood<2||game.resources.herbs<1;
+      eatButton.style.display='flex';fireButton.style.display='flex';trapButton.style.display='flex';sprintButton.style.display='flex';craftButton.style.display='flex';sprintButton.classList.toggle('active',sprintHeld||!!keys.Shift);$('bunkerTools').style.display='none';
+      fireButton.disabled=(game.inventory.fireKits||0)<1&&game.resources.wood<2;trapButton.disabled=(game.inventory.snares||0)<1&&(game.resources.wood<2||game.resources.herbs<1);
       const n=nearestNode(86),a=nearestAnimal(58);
       if(atBunkerEntrance())label.textContent='ورود';
       else if(a)label.textContent=a.predator?'دفاع':'شکار';
       else if(n)label.textContent=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';
       else label.textContent='عمل';
     } else {
-      eatButton.style.display='none';fireButton.style.display='none';trapButton.style.display='none';sprintButton.style.display='none';sprintButton.classList.remove('active');$('bunkerTools').style.display='flex';
+      eatButton.style.display='none';fireButton.style.display='none';trapButton.style.display='none';sprintButton.style.display='none';craftButton.style.display='none';sprintButton.classList.remove('active');$('bunkerTools').style.display='flex';
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k];
       label.textContent=room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':'عمل';
     }
@@ -1131,7 +1172,7 @@
     const result=nearestNode(80);
     if(!result){showToast('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;}
     const n=result.node;
-    if(n.type==='tree'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('wood',gain);showToast(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
+    if(n.type==='tree'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2)+(game.inventory.hatchets>0?1:0));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('wood',gain);showToast(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
     else if(n.type==='rock'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('stone',gain);showToast(`سنگ رودخانه‌ای برداشتی: +${fa(gain)} سنگ.`,1500);}
     else {n.remaining--;if(n.herb){addResource('herbs',1);showToast('گیاه دارویی هیرکانی پیدا کردی: +۱ گیاه.',1600);}else{addResource('food',1);showToast('میوهٔ جنگلی چیدی: +۱ خوراک.',1500);}}
     beep('gather');
@@ -1142,14 +1183,14 @@
   }
   function lightFire() {
     if(!active||game.mode!=='forest')return;
-    if(game.resources.wood<2){showToast('برای روشن‌کردن آتش، ۲ چوب لازم است.',1600);return;}
-    game.resources.wood-=2;world.fires.push({x:game.player.x,y:game.player.y,timer:24,radius:156});if(world.fires.length>2)world.fires.shift();
-    animatePlayerAction('gather',.45);game.player.noiseBurst=1.1;beep('build');showToast('آتش روشن شد؛ شکارچیان از شعله فاصله می‌گیرند.',1900);updateUI(true);
+    const kit=(game.inventory.fireKits||0)>0;if(!kit&&game.resources.wood<2){showToast('برای روشن‌کردن آتش، ۲ چوب یا یک کیت آتش لازم است.',1600);return;}
+    if(kit)game.inventory.fireKits--;else game.resources.wood-=2;world.fires.push({x:game.player.x,y:game.player.y,timer:24,radius:156});if(world.fires.length>2)world.fires.shift();
+    animatePlayerAction('gather',.45);game.player.noiseBurst=1.1;beep('build');showToast(kit?'کیت آتش را روشن کردی؛ شکارچیان از شعله فاصله می‌گیرند.':'آتش روشن شد؛ شکارچیان از شعله فاصله می‌گیرند.',1900);updateUI(true);
   }
   function placeSnare() {
     if(!active||game.mode!=='forest')return;
-    if(game.resources.wood<2||game.resources.herbs<1){showToast('برای تله ۲ چوب و ۱ گیاه لازم است.',1700);return;}
-    game.resources.wood-=2;game.resources.herbs-=1;world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});
+    const kit=(game.inventory.snares||0)>0;if(!kit&&(game.resources.wood<2||game.resources.herbs<1)){showToast('برای تله ۲ چوب و ۱ گیاه یا یک بستهٔ تله لازم است.',1700);return;}
+    if(kit)game.inventory.snares--;else{game.resources.wood-=2;game.resources.herbs-=1;}world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});
     if(world.traps.length>4)world.traps.shift();animatePlayerAction('gather',.58);game.player.noiseBurst=1.25;beep('build');showToast('تلهٔ گیاهی کار گذاشتی؛ جانور نزدیک را به سمتش بکشان.',2000);updateUI(true);
   }
   function updateHazards(dt) {
@@ -1220,9 +1261,10 @@
   function baseDefense() { return (BUNKERS.find(b=>b.id===game.bunkerId)?.defense||0)+roomDefense(); }
   function beginNight() {
     game.phase='night';game.phaseTime=0;game.player.target=null;game.player.stepTimer=0;game.raidTimer=3;
+    if(game.mode==='forest'&&!game.player.torchLit&&game.inventory.torches>0){game.inventory.torches--;game.player.torchLit=true;}
     if(game.mode==='bunker')game.selectedCell=null;
     beep('raid');
-    showToast(game.mode==='forest'?'شب فرارسید؛ بیرون ماندی! سرما آسیب می‌زند؛ با پیکان ورودی را پیدا کن.':'شب فرارسید؛ گرگ‌ها و پلنگ‌ها به ورودی پناهگاه یورش می‌آورند.',3500);
+    showToast(`${game.mode==='forest'?'شب فرارسید؛ بیرون ماندی! سرما آسیب می‌زند؛ با پیکان ورودی را پیدا کن.':'شب فرارسید؛ گرگ‌ها و پلنگ‌ها به ورودی پناهگاه یورش می‌آورند.'}${game.player.torchLit?' مشعل تا سپیده‌دم روشن می‌ماند.':''}`,3500);
   }
   function nightRaid() {
     const base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100}),effects=combinedEffects();
@@ -1281,7 +1323,7 @@
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
     else {
       game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0){nightRaid();game.raidTimer=7.1+Math.random()*2.6;}
-      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;if(game.mode==='bunker'){game.mode='forest';game.player.x=BUNKER_ENTRANCE.x+42;game.player.y=BUNKER_ENTRANCE.y+5;game.player.target=null;}game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();showToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن. ${produced}`,3000);beep('gather');}
+      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;game.player.torchLit=false;if(game.mode==='bunker'){game.mode='forest';game.player.x=BUNKER_ENTRANCE.x+42;game.player.y=BUNKER_ENTRANCE.y+5;game.player.target=null;}game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();showToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن. ${produced}`,3000);beep('gather');}
     }
     if(game.tutorial?.active){game.tutorial.time+=dt;if(game.tutorial.time>=60){game.tutorial.active=false;showToast('آموزش کامل شد؛ از هیرکانی مراقبت کن.',2200);}}
     if(game.stats.health<=0){game.stats.health=0;game.gameOver=true;active=false;try{localStorage.removeItem(SAVE_KEY);}catch(e){}$('gameOverReason').textContent='سرما و خطرهای جنگل توانت را گرفتند.';setScreen('gameover');return;}
@@ -1290,7 +1332,7 @@
   const tutorialSteps=[
     [0,'با دستهٔ چپ راه برو؛ «دویدن» را نگه دار. نوار توان با دویدن خالی و با راه‌رفتن پر می‌شود.'],
     [9,'کنار منبع بایست؛ دکمهٔ طلایی را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
-    [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن سروصدا می‌کند. آتش و تله شکارچی را عقب می‌رانند.'],
+    [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن سروصدا می‌کند. در کارگاه «ساخت» ابزار و کیت بساز؛ آتش و تله شکارچی را عقب می‌رانند.'],
     [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
     [40,'در زیرزمین خانهٔ سنگی را لمس کن، «کندن» را انتخاب کن و دکمهٔ عمل را بزن؛ فضای اتاق باز می‌شود.'],
     [50,'«اتاق» را انتخاب کن، خانهٔ خالی را لمس کن و دکمهٔ طلایی را بزن. «تعمیر» آسیب‌های شبانه را برمی‌گرداند.']
@@ -1343,6 +1385,7 @@
   function endSprint(e){if(sprintPointer===e.pointerId){sprintPointer=null;sprintHeld=false;sprintButton.classList.remove('active');}}
   sprintButton.addEventListener('pointerup',endSprint);sprintButton.addEventListener('pointercancel',endSprint);sprintButton.addEventListener('lostpointercapture',endSprint);
   $('actionButton').addEventListener('click',doAction);$('eatButton').addEventListener('click',eat);
+  $('craftButton').addEventListener('click',()=>showModal('crafting'));$('bunkerCraftButton').addEventListener('click',()=>showModal('crafting'));
   $('fireButton').addEventListener('click',lightFire);$('trapButton').addEventListener('click',placeSnare);
   $('digButton').addEventListener('click',()=>{game.selectedRoom=null;showToast('حفر: خانهٔ سنگی کناری را انتخاب کن.',1300);});
   $('roomButton').addEventListener('click',()=>showModal('rooms'));
