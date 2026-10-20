@@ -237,12 +237,13 @@
     #resourcePanel .resource .ui-icon { width:17px; height:17px; }
     #resourcePanel .resource b { color:#f7efd9; font-size:12px; }
     .controls { z-index:6; }
-    #joystickZone { position:absolute; left:0; top:34%; width:57%; height:66%; pointer-events:none; touch-action:none; z-index:1; }
+    #joystickZone { position:absolute; left:0; top:28%; width:45%; height:72%; pointer-events:none; touch-action:none; z-index:1; }
     #joystick { position:absolute; left:18%; top:72%; bottom:auto; width:132px; height:132px; transform:translate(-50%,-50%); opacity:0; pointer-events:none; transition:opacity .12s ease; background:radial-gradient(circle at 43% 38%,rgba(150,178,137,.2),rgba(14,23,18,.67)); border:1px solid rgba(231,239,216,.28); }
     #joystick.active { opacity:.96; pointer-events:auto; }
     #joyKnob { transition:transform .055s ease-out; }
     .right-controls { right:max(14px,env(safe-area-inset-right,0px)); bottom:calc(14px + var(--safe-bottom)); display:flex; align-items:center; gap:9px; z-index:6; }
-    #actionButton { order:-1; width:72px; height:72px; min-width:64px; min-height:64px; border-radius:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5px; background:linear-gradient(150deg,#f0d18d,#c98d41); border:1px solid rgba(255,240,199,.72); box-shadow:0 7px 22px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.5); }
+    #actionButton { order:-1; width:72px; height:72px; min-width:64px; min-height:64px; border-radius:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5px; background:linear-gradient(150deg,#f0d18d,#c98d41); border:1px solid rgba(255,240,199,.72); box-shadow:0 7px 22px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.5); touch-action:none; }
+    #actionButton.pressed { transform:scale(.95); filter:brightness(1.04); }
     .action-glyph { display:grid; place-items:center; width:25px; height:25px; margin:0; font-size:20px; }
     .action-glyph .ui-icon { width:23px; height:23px; stroke:#302716; stroke-width:2; }
     #actionLabel { max-width:100%; overflow:hidden; color:#2b2417; font-size:11px; line-height:1.2; white-space:nowrap; text-overflow:ellipsis; }
@@ -286,7 +287,7 @@
       .hud-tools { gap:4px; }
       .status-panel { top:calc(59px + var(--safe-top)); }
       #minimapWrap { display:none !important; }
-      #joystickZone { top:29%; width:59%; height:71%; }
+      #joystickZone { top:28%; width:45%; height:72%; }
       #joystick { width:120px; height:120px; }
       .right-controls { right:max(10px,env(safe-area-inset-right,0px)); bottom:calc(10px + var(--safe-bottom)); gap:7px; }
       #actionButton { width:68px; height:68px; }
@@ -316,7 +317,7 @@
     @media (max-height:420px) and (orientation:landscape) {
       .top-context,.hud-tools { min-height:42px; }
       .status-panel { top:calc(53px + var(--safe-top)); }
-      #joystickZone { top:23%; height:77%; }
+      #joystickZone { top:28%; width:45%; height:72%; }
       .right-controls { bottom:calc(7px + var(--safe-bottom)); }
       .action-sheet { bottom:calc(70px + var(--safe-bottom)); max-height:54vh; }
     }
@@ -508,7 +509,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
-  let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',hapticsEnabled=true;
+  let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,actionPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',hapticsEnabled=true;
   try { hapticsEnabled=localStorage.getItem('hirkani-haptics')!=='off'; } catch(e) {}
   let gameTime=0,mapDiscovered=new Set(),mapOpen=false,mapDirty=true,minimapDirty=true,mapViewport=null,mapMarkerSequence=0,lastMinimapX=null,lastMinimapY=null;
   const UI_GLYPHS={
@@ -1508,7 +1509,7 @@
   function carrySpeedFactor() { return 1-clamp((carryWeight()-26)/210,0,.35); }
   function updateMovement(dt) {
     const joystickEase=1-Math.exp(-dt*24);joystick.x+=(joystick.targetX-joystick.x)*joystickEase;joystick.y+=(joystick.targetY-joystick.y)*joystickEase;
-    const v=inputVector(),p=game.player,magnitude=Math.hypot(v.x,v.y),inputMoving=magnitude>.08;
+    const v=inputVector(),p=game.player,magnitude=Math.hypot(v.x,v.y),inputMoving=magnitude>.035;
     p.actionTimer=Math.max(0,(p.actionTimer||0)-dt);if(!p.actionTimer)p.actionKind='';
     if(game.mode==='forest') {
       let dx=0,dy=0,moving=false;
@@ -2072,14 +2073,22 @@
   // Input: a floating left-half joystick, eased radial response, and one contextual primary action.
   const pad=$('joystick'),knob=$('joyKnob'),joyZone=$('joystickZone'),controls=$('controls');
   function placeFloatingJoystick(e) {
-    const area=joyZone.getBoundingClientRect(),controlRect=controls.getBoundingClientRect(),size=pad.offsetWidth||120,half=size*.5;
-    const left=Math.max(area.left+half,12+half),right=Math.min(area.right-half,innerWidth*.59-half),top=Math.max(area.top+half,12+half),bottom=Math.min(area.bottom-half,innerHeight-12-half);
-    const cx=clamp(e.clientX,left,right),cy=clamp(e.clientY,top,bottom);pad.style.left=`${cx-controlRect.left}px`;pad.style.top=`${cy-controlRect.top}px`;
+    const area=joyZone.getBoundingClientRect(),controlRect=controls.getBoundingClientRect(),padRect=pad.getBoundingClientRect(),width=pad.offsetWidth||padRect.width||120,height=pad.offsetHeight||padRect.height||width,halfW=width*.5,halfH=height*.5,viewportW=window.innerWidth||innerWidth,viewportH=window.innerHeight||innerHeight,edge=6;
+    const minX=Math.max(area.left+halfW+edge,halfW+edge),maxX=Math.min(area.right,viewportW*.45)-halfW-edge,minY=Math.max(area.top+halfH+edge,viewportH*.28+halfH+edge),maxY=Math.min(area.bottom,viewportH)-halfH-edge;
+    const bound=(value,min,max)=>clamp(value,Math.min(min,max),Math.max(min,max));
+    let cx=bound(e.clientX,minX,maxX),cy=bound(e.clientY,minY,maxY);
+    const mapRect=$('minimapWrap').getBoundingClientRect(),mapVisible=mapRect.width>0&&mapRect.height>0,gap=8;
+    const overlapsMap=(x,y)=>mapVisible&&x+halfW>mapRect.left-gap&&x-halfW<mapRect.right+gap&&y+halfH>mapRect.top-gap&&y-halfH<mapRect.bottom+gap;
+    if(overlapsMap(cx,cy)){
+      const candidates=[[cx,mapRect.bottom+halfH+gap],[cx,mapRect.top-halfH-gap],[mapRect.left-halfW-gap,cy],[mapRect.right+halfW+gap,cy]].map(([x,y])=>[bound(x,minX,maxX),bound(y,minY,maxY)]).filter(([x,y])=>!overlapsMap(x,y));
+      if(candidates.length){candidates.sort((a,b)=>Math.hypot(a[0]-e.clientX,a[1]-e.clientY)-Math.hypot(b[0]-e.clientX,b[1]-e.clientY));[cx,cy]=candidates[0];}
+    }
+    pad.style.left=`${cx-controlRect.left}px`;pad.style.top=`${cy-controlRect.top}px`;
   }
   function setJoy(e) {
     const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,limit=Math.max(20,Math.min(r.width,r.height)*.34);
     let dx=e.clientX-cx,dy=e.clientY-cy,m=Math.hypot(dx,dy);if(m>limit){dx=dx/m*limit;dy=dy/m*limit;m=limit;}
-    const raw=clamp(m/limit,0,1),deadzone=.16,linear=raw<=deadzone?0:(raw-deadzone)/(1-deadzone),response=linear*linear*(3-2*linear);
+    const raw=clamp(m/limit,0,1),deadzone=.09,linear=raw<=deadzone?0:(raw-deadzone)/(1-deadzone),response=linear*linear*(3-2*linear);
     joystick.targetX=m?dx/m*response:0;joystick.targetY=m?dy/m*response:0;knob.style.transform=`translate(${dx}px,${dy}px)`;
   }
   function beginJoy(e) {
@@ -2094,7 +2103,12 @@
   sprintButton.addEventListener('pointerdown',e=>{e.preventDefault();sprintPointer=e.pointerId;sprintHeld=true;sprintButton.classList.add('active');sprintButton.setPointerCapture(e.pointerId);haptic(8);});
   function endSprint(e){if(sprintPointer===e.pointerId){sprintPointer=null;sprintHeld=false;sprintButton.classList.remove('active');}}
   sprintButton.addEventListener('pointerup',endSprint);sprintButton.addEventListener('pointercancel',endSprint);sprintButton.addEventListener('lostpointercapture',endSprint);
-  $('actionButton').addEventListener('click',()=>{haptic(12);doAction();});$('moreButton').addEventListener('click',()=>{haptic(8);setActionSheet(!actionSheetOpen);});$('closeActionSheet').addEventListener('click',()=>setActionSheet(false));
+  const actionButton=$('actionButton');
+  function beginActionPress(e){if(actionPointer!==null){e.preventDefault();return;}e.preventDefault();actionPointer=e.pointerId;actionButton.classList.add('pressed');if(actionButton.setPointerCapture)actionButton.setPointerCapture(e.pointerId);}
+  function endActionPress(e){if(actionPointer!==e.pointerId)return;actionPointer=null;actionButton.classList.remove('pressed');if(e.type==='pointerup'){haptic(12);doAction();}}
+  actionButton.addEventListener('pointerdown',beginActionPress);actionButton.addEventListener('pointerup',endActionPress);actionButton.addEventListener('pointercancel',endActionPress);actionButton.addEventListener('lostpointercapture',endActionPress);
+  actionButton.addEventListener('click',e=>{if(e.detail===0){haptic(12);doAction();}});
+  $('moreButton').addEventListener('click',()=>{haptic(8);setActionSheet(!actionSheetOpen);});$('closeActionSheet').addEventListener('click',()=>setActionSheet(false));
   $('statusButton').addEventListener('click',()=>{haptic(8);setStatusPanel(!statusPanelOpen);});$('statusClose').addEventListener('click',()=>setStatusPanel(false));
   $('hapticsButton').addEventListener('click',()=>{hapticsEnabled=!hapticsEnabled;try{localStorage.setItem('hirkani-haptics',hapticsEnabled?'on':'off');}catch(e){}updateControlsUI();if(hapticsEnabled)haptic(8);});
   $('eatButton').addEventListener('click',()=>{eat();setActionSheet(false);});$('craftButton').addEventListener('click',()=>showModal('crafting'));$('bunkerCraftButton').addEventListener('click',()=>showModal('crafting'));
@@ -2126,7 +2140,7 @@
     if(k===' '||k==='e'||k==='E'){if(!e.repeat)doAction();return;}keys[k]=true;
   });
   window.addEventListener('keyup',e=>{keys[e.key]=false;});
-  window.addEventListener('blur',()=>{keys={};joystick.x=joystick.y=joystick.targetX=joystick.targetY=0;joystick.pointer=null;pad.classList.remove('active');knob.style.transform='translate(0,0)';sprintHeld=false;sprintPointer=null;sprintButton.classList.remove('active');setActionSheet(false);setStatusPanel(false);});
+  window.addEventListener('blur',()=>{keys={};joystick.x=joystick.y=joystick.targetX=joystick.targetY=0;joystick.pointer=null;pad.classList.remove('active');knob.style.transform='translate(0,0)';sprintHeld=false;sprintPointer=null;sprintButton.classList.remove('active');actionPointer=null;actionButton.classList.remove('pressed');setActionSheet(false);setStatusPanel(false);});
 
   $('startButton').addEventListener('click',()=>beginGame(false));
   $('continueButton').addEventListener('click',()=>beginGame(true));
