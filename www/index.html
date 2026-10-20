@@ -325,6 +325,8 @@
     @media (orientation: portrait) {
       #rotateHint { display: flex; }
     }
+    /* Round 6 item 4: pin the day/time context to the safe-area right edge. */
+    .hud-topbar { left:auto; right:max(12px,env(safe-area-inset-right,0px)); transform:none; width:max-content; max-width:calc(100% - 24px); justify-content:flex-end; }
     /* Round 6: fixed top-left cluster, readable vitality bars, and aligned icon targets. */
     .top-left-cluster { position:absolute; top:max(12px,env(safe-area-inset-top,0px)); left:max(12px,env(safe-area-inset-left,0px)); display:flex; flex-flow:row nowrap; direction:ltr; align-items:flex-start; gap:10px; z-index:9; pointer-events:none; }
     #minimapWrap { position:static; left:auto; top:auto; bottom:auto; width:180px; height:120px; flex:0 0 180px; pointer-events:none; z-index:auto; }
