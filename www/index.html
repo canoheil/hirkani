@@ -289,6 +289,17 @@
   const MAP = { w:6400, h:4300, cx:3200, cy:2150 };
   const CHUNK_SIZE=512,CHUNK_COLS=Math.ceil(MAP.w/CHUNK_SIZE),CHUNK_ROWS=Math.ceil(MAP.h/CHUNK_SIZE),GROUND_TILE=64,WORLD_EDGE=160;
   const BIOME_NAMES={forest:'جنگل انبوه',clearing:'دشت باز',hill:'تپهٔ سنگی',swamp:'باتلاق',river:'رودخانه'};
+  const ANIMAL_TRAITS={
+    leopard:{role:'predator',den:'rock-cave',routine:'crepuscular',speed:{wander:24,stalk:29,chase:238,flee:196},senses:{daySight:125,nightSight:245,smell:205,hearing:390},territory:430,stamina:78,chaseDrain:24,animation:'prowl',size:24},
+    wolf:{role:'packPredator',den:'pack-lair',routine:'dusk-night',speed:{wander:38,stalk:44,chase:184,flee:166},senses:{daySight:205,nightSight:360,smell:320,hearing:470},territory:420,stamina:106,chaseDrain:12,animation:'trot',size:23},
+    bear:{role:'defensiveOmnivore',den:'day-bed',routine:'day-dusk',speed:{forage:24,flee:108,charge:172},senses:{daySight:165,nightSight:205,smell:520,hearing:300},territory:520,stamina:100,chaseDrain:28,animation:'heavy',size:30},
+    boar:{role:'herbivore',den:'root-wallow',routine:'dusk-night',speed:{forage:27,flee:142,charge:198},senses:{daySight:185,nightSight:220,smell:360,hearing:390},territory:250,stamina:82,chaseDrain:25,animation:'charge',size:25},
+    deer:{role:'prey',den:'forest-resting-cover',routine:'dawn-dusk',speed:{forage:29,flee:178},senses:{daySight:245,nightSight:190,smell:380,hearing:300},territory:250,stamina:90,chaseDrain:22,animation:'bound',size:25},
+    rabbit:{role:'prey',den:'burrow',routine:'dawn-dusk-night',speed:{forage:37,flee:158},senses:{daySight:175,nightSight:210,smell:240,hearing:350},territory:145,stamina:72,chaseDrain:24,animation:'hop',size:17},
+    jackal:{role:'scavenger',den:'brush-shelter',routine:'night-dusk',speed:{forage:30,follow:42,flee:126},senses:{daySight:180,nightSight:245,smell:640,hearing:420},territory:390,stamina:86,chaseDrain:17,animation:'trot',size:22},
+    bird:{role:'wildlife',den:'canopy-roost',routine:'day',speed:{forage:48,flee:75},senses:{daySight:170,nightSight:80,smell:60,hearing:220},territory:280,stamina:38,chaseDrain:14,animation:'flit',size:7},
+    butterfly:{role:'wildlife',den:'under-leaf',routine:'day',speed:{forage:15,flee:35},senses:{daySight:90,nightSight:0,smell:70,hearing:20},territory:280,stamina:24,chaseDrain:8,animation:'flutter',size:6}
+  };
   const BUNKER_ENTRANCE = { x:MAP.cx+34, y:MAP.cy };
   const GRID = { cols:12, rows:4 };
   const DAY_LENGTH = 86;
@@ -312,12 +323,13 @@
     return dy<0?'back':'front';
   }
   function makePredator(id,kind,x,y,territory,packId='',rand=Math.random) {
-    const angle=rand()*Math.PI*2;
-    return {id,kind,predator:true,x,y,vx:0,vy:0,hp:kind==='leopard'?72:58,maxHp:kind==='leopard'?72:58,facing:facing4(Math.cos(angle),Math.sin(angle)),state:'idle',stateTimer:2+rand()*4,attackCooldown:rand()*1.3,attackTimer:0,lostTimer:0,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryId:territory.id,territoryX:territory.x,territoryY:territory.y,territoryRadius:territory.radius,packId,ambush:kind==='leopard',respawnTimer:0,hitFlash:0};
+    const angle=rand()*Math.PI*2,traits=ANIMAL_TRAITS[kind];
+    return {id,kind,predator:true,x,y,vx:0,vy:0,hp:kind==='leopard'?72:58,maxHp:kind==='leopard'?72:58,facing:facing4(Math.cos(angle),Math.sin(angle)),state:kind==='leopard'?'ambush':'idle',stateTimer:2+rand()*4,attackCooldown:rand()*1.3,attackTimer:0,lostTimer:0,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryId:territory.id,territoryX:territory.x,territoryY:territory.y,territoryRadius:territory.radius||traits.territory,denId:territory.id,denX:territory.x,denY:territory.y,denType:traits.den,packId,ambush:kind==='leopard',stamina:traits.stamina,maxStamina:traits.stamina,speeds:traits.speed,senses:traits.senses,dailyRoutine:traits.routine,animation:traits.animation,animSize:traits.size,chaseDrain:traits.chaseDrain,respawnTimer:0,hitFlash:0};
   }
   function makeWildlife(id,kind,x,y,rand=Math.random) {
-    const prey=kind==='deer'||kind==='rabbit',angle=rand()*Math.PI*2;
-    return {id,kind,predator:false,x,y,vx:0,vy:0,hp:kind==='deer'?54:kind==='rabbit'?24:0,maxHp:kind==='deer'?54:kind==='rabbit'?24:0,facing:facing4(Math.cos(angle),Math.sin(angle)),state:kind==='deer'?'graze':'wander',stateTimer:1+rand()*5,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryX:x,territoryY:y,territoryRadius:kind==='deer'?230:kind==='rabbit'?130:280,fleeTimer:0,respawnTimer:0,prey};
+    const traits=ANIMAL_TRAITS[kind]||ANIMAL_TRAITS.bird,prey=kind==='deer'||kind==='rabbit',predator=kind==='bear',angle=rand()*Math.PI*2,hp=kind==='deer'?54:kind==='rabbit'?24:kind==='boar'?62:kind==='bear'?112:kind==='jackal'?38:0;
+    const initialState=kind==='deer'||kind==='rabbit'?'graze':kind==='bear'||kind==='boar'?'forage':kind==='jackal'?'scavenge':'wander';
+    return {id,kind,predator,x,y,vx:0,vy:0,hp,maxHp:hp,facing:facing4(Math.cos(angle),Math.sin(angle)),state:initialState,stateTimer:1+rand()*5,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryX:x,territoryY:y,territoryRadius:traits.territory,denId:id,denX:x,denY:y,denType:traits.den,fleeTimer:0,respawnTimer:0,prey,stamina:traits.stamina,maxStamina:traits.stamina,speeds:traits.speed,senses:traits.senses,dailyRoutine:traits.routine,animation:traits.animation,animSize:traits.size,chaseDrain:traits.chaseDrain,forageTimer:rand()*4,attackCooldown:rand(),threatenedTimer:0,withCubs:false,defendingKill:false,ambush:kind==='leopard'};
   }
   function riverX(y) { return MAP.cx+880+Math.sin(y*.00155)*980+Math.sin(y*.0037)*145; }
   function latticeNoise(x,y) {
@@ -409,7 +421,24 @@
       {id:'southern-leopard',kind:'leopard',packId:'',x:2450,y:3480,radius:420,count:1}
     ];
     let predatorId=0;
-    for(const t of territories){t.biome=biomeAt(t.x,t.y);for(let i=0;i<t.count;i++){const angle=(i/t.count)*Math.PI*2+r()*.45,rad=40+r()*95,x=clamp(t.x+Math.cos(angle)*rad,WORLD_EDGE+30,MAP.w-WORLD_EDGE-30),y=clamp(t.y+Math.sin(angle)*rad,WORLD_EDGE+30,MAP.h-WORLD_EDGE-30);animals.push(makePredator(`pred-${predatorId++}`,t.kind,x,y,t,t.packId,r));}}
+    for(const t of territories){t.biome=biomeAt(t.x,t.y);const packLeaderId=t.kind==='wolf'?`pred-${predatorId}`:'';for(let i=0;i<t.count;i++){const angle=(i/t.count)*Math.PI*2+r()*.45,rad=40+r()*95,x=clamp(t.x+Math.cos(angle)*rad,WORLD_EDGE+30,MAP.w-WORLD_EDGE-30),y=clamp(t.y+Math.sin(angle)*rad,WORLD_EDGE+30,MAP.h-WORLD_EDGE-30),animal=makePredator(`pred-${predatorId++}`,t.kind,x,y,t,t.packId,r);animal.packIndex=i;animal.isPackLeader=t.kind==='wolf'&&i===0;animal.packLeaderId=packLeaderId;animal.packSize=t.count;animals.push(animal);}}
+    const dens=territories.map(t=>({...t,denType:ANIMAL_TRAITS[t.kind]?.den||'territory'})).concat([
+      {id:'bear-den-northwest',kind:'bear',x:1460,y:840,radius:470,withCubs:true,defendingKill:false},
+      {id:'bear-kill-site-southeast',kind:'bear',x:4740,y:3270,radius:510,withCubs:false,defendingKill:true},
+      {id:'boar-herd-west',kind:'boar',x:1900,y:3000,radius:290,count:3},
+      {id:'boar-herd-east',kind:'boar',x:4620,y:1770,radius:300,count:3},
+      {id:'jackal-range-river',kind:'jackal',x:3960,y:2290,radius:430,count:1},
+      {id:'jackal-range-south',kind:'jackal',x:2870,y:3620,radius:430,count:1}
+    ]),residents=[];let residentId=0;
+    for(const den of dens){den.biome=biomeAt(den.x,den.y);if(!territories.some(t=>t.id===den.id))territories.push(den);if(!['bear','boar','jackal'].includes(den.kind))continue;
+      if(den.kind==='bear'){
+        const bear=makeWildlife(`resident-${residentId++}`,'bear',den.x,den.y,r);Object.assign(bear,{territoryId:den.id,territoryX:den.x,territoryY:den.y,territoryRadius:den.radius,withCubs:!!den.withCubs,defendingKill:!!den.defendingKill,killSite:{x:den.x+36,y:den.y+18},denId:den.id,denX:den.x,denY:den.y,denType:den.denType});residents.push(bear);
+      } else if(den.kind==='boar'){
+        for(let i=0;i<den.count;i++){const angle=i/den.count*Math.PI*2,animal=makeWildlife(`resident-${residentId++}`,'boar',den.x+Math.cos(angle)*38,den.y+Math.sin(angle)*32,r);Object.assign(animal,{territoryId:den.id,territoryX:den.x,territoryY:den.y,territoryRadius:den.radius,herdId:den.id,herdIndex:i,herdLeader:i===0,denId:den.id,denX:den.x,denY:den.y,denType:den.denType});residents.push(animal);}
+      } else {
+        const jackal=makeWildlife(`resident-${residentId++}`,'jackal',den.x,den.y,r);Object.assign(jackal,{territoryId:den.id,territoryX:den.x,territoryY:den.y,territoryRadius:den.radius,denId:den.id,denX:den.x,denY:den.y,denType:den.denType});residents.push(jackal);
+      }
+    }
     const edgeRand=seeded(492701),edgeTrees=[],edgeCliffs=[];
     for(let x=18;x<MAP.w;x+=54){
       const nx=clamp(x+(edgeRand()-.5)*28,12,MAP.w-12),top=25+edgeRand()*55,bottom=25+edgeRand()*55;
@@ -420,7 +449,7 @@
       const offset=20+edgeRand()*92,x=side==='west'?offset:MAP.w-offset,ry=clamp(y+(edgeRand()-.5)*24,10,MAP.h-10);
       edgeCliffs.push({id:`cliff-${side}-${y}-${i}`,type:'rock',x,y:ry,remaining:1,radius:20,variant:edgeRand()});
     }
-    return {seed:73129,chunks:new Map(),animals,territories,edgeTrees,edgeCliffs,rand:r,effects:[],fires:[],traps:[],hallucinations:[]};
+    return {seed:73129,chunks:new Map(),animals,residents,dens,territories,edgeTrees,edgeCliffs,rand:r,effects:[],fires:[],traps:[],foodDrops:dens.filter(den=>den.kind==='bear'&&den.defendingKill).map(den=>({id:`kill-${den.id}`,x:den.x+36,y:den.y+18,amount:1,timer:DAY_LENGTH+NIGHT_LENGTH,source:'carcass'})),hallucinations:[]};
   }
   function freshGame() {
     return {
@@ -481,7 +510,7 @@
     try {
       const chunkState=[];
       for(const chunk of world.chunks.values())if(chunk.nodes.some(n=>n.remaining!==n.maxRemaining))chunkState.push({cx:chunk.cx,cy:chunk.cy,remaining:chunk.nodes.map(n=>n.remaining)});
-      const data={...game,muted,chunkState};delete data.nodes;
+      const data={...game,muted,chunkState,foodDrops:(world.foodDrops||[]).map(drop=>({id:drop.id,x:drop.x,y:drop.y,amount:drop.amount,timer:drop.timer,source:drop.source}))};delete data.nodes;
       localStorage.setItem(SAVE_KEY,JSON.stringify(data));
       game.lastSave=Date.now();
     } catch(e) { /* storage can be disabled */ }
@@ -497,8 +526,9 @@
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
     game.player.x=clamp(game.player.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.y=clamp(game.player.y,WORLD_EDGE,MAP.h-WORLD_EDGE);
     if(game.player.target){game.player.target.x=clamp(game.player.target.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.target.y=clamp(game.player.target.y,WORLD_EDGE,MAP.h-WORLD_EDGE);}
-    game.worldVersion=2;delete game.nodes;delete game.chunkState;
+    game.worldVersion=2;delete game.nodes;delete game.chunkState;delete game.foodDrops;
     world=makeWorld();
+    if(Array.isArray(data.foodDrops))world.foodDrops=data.foodDrops.filter(drop=>drop&&Number.isFinite(Number(drop.x))&&Number.isFinite(Number(drop.y))&&Number(drop.amount)>0&&Number(drop.timer)>0).slice(0,24).map((drop,index)=>({id:String(drop.id||`saved-meat-${index}`),x:clamp(Number(drop.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(drop.y),WORLD_EDGE,MAP.h-WORLD_EDGE),amount:clamp(Math.floor(Number(drop.amount)),1,12),timer:clamp(Number(drop.timer),0,DAY_LENGTH+NIGHT_LENGTH),source:String(drop.source||'carcass')}));
     if(Array.isArray(data.chunkState))for(const state of data.chunkState){const chunk=getChunk(state.cx,state.cy);if(chunk&&Array.isArray(state.remaining))state.remaining.forEach((amount,i)=>{if(chunk.nodes[i])chunk.nodes[i].remaining=clamp(amount,0,chunk.nodes[i].maxRemaining);});}
     if(game.mode==='bunker'&&game.phase==='day') game.mode='bunker';
     ensureChunksAround(game.player.x,game.player.y,1);
@@ -633,9 +663,12 @@
     if(n.remaining>0){ctx.fillStyle=n.herb?'#d8b867':'#b94e48';for(let i=0;i<4;i++){const a=i*2.4+n.variant*6;ctx.beginPath();ctx.arc(x+Math.cos(a)*9,y-5+Math.sin(a)*6,2.1,0,Math.PI*2);ctx.fill();}}
     else {ctx.globalAlpha=.4;ctx.fillStyle='#5b6547';ctx.fillRect(x-8,y-1,16,5);ctx.globalAlpha=1;}
   }
+  function drawFoodDrop(drop) {
+    drawSoftShadow(drop.x,drop.y+3,9,4,.22);ctx.save();ctx.translate(drop.x,drop.y);ctx.fillStyle='#9a563e';ctx.strokeStyle='#482f26';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,-3,7,4,-.22,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#d2b88a';ctx.fillRect(-2,-4,2,2);ctx.restore();
+  }
   function drawAnimal(a) {
-    const x=a.x,y=a.y,phase=a.animTime||0,moving=Math.hypot(a.vx||0,a.vy||0)>7,facing=a.facing||'right';
-    drawSoftShadow(x,y+5,a.kind==='deer'?25:a.kind==='rabbit'?17:a.kind==='bird'?7:20,7,.22);
+    const x=a.x,y=a.y,phase=a.animTime||0,moving=Math.hypot(a.vx||0,a.vy||0)>7,facing=a.facing||'right',animation=a.animation||ANIMAL_TRAITS[a.kind]?.animation;
+    drawSoftShadow(x,y+5,(ANIMAL_TRAITS[a.kind]?.size||20),7,.22);
     ctx.save();ctx.translate(x,y);
     if(facing==='left')ctx.scale(-1,1);else if(facing==='front')ctx.rotate(Math.PI/2);else if(facing==='back')ctx.rotate(-Math.PI/2);
     if(a.kind==='bird'||a.kind==='butterfly'){
@@ -645,7 +678,7 @@
       else {ctx.strokeStyle='#d5d1bb';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-1,-5);ctx.quadraticCurveTo(-7,-8-Math.abs(flap)*5,-12,-5);ctx.moveTo(1,-5);ctx.quadraticCurveTo(7,-8-Math.abs(flap)*5,12,-5);ctx.stroke();ctx.fillStyle='#ddd6c1';ctx.beginPath();ctx.ellipse(13,-5,3,1.2,0,0,Math.PI*2);ctx.fill();}
       ctx.restore();return;
     }
-    const step=moving?Math.sin(phase)*(a.state==='chase'||a.state==='retreat'?5:3):Math.sin(phase*.5)*.45;
+    const gait=animation==='heavy'?3:animation==='charge'?6.5:animation==='hop'?6.2:animation==='bound'?5.6:4.4,step=moving?Math.sin(phase)*gait:Math.sin(phase*.5)*.45;
     const drawLeg=(hx,hy,offset,color,width=3)=>{const swing=Math.sin(phase+offset)*(moving?step:0);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx+swing*.7,hy+6);ctx.lineTo(hx+swing,hy+12);ctx.stroke();ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(hx+swing-2,hy+12);ctx.lineTo(hx+swing+2,hy+12);ctx.stroke();};
     if(a.kind==='deer'){
       const coat='#a98255',dark='#654d38';ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(-2,-10,19,8,0,0,Math.PI*2);ctx.fill();
@@ -658,9 +691,27 @@
       const fur='#a99b83',leg='#655747';drawLeg(-5,-6,Math.PI,leg,2.8);drawLeg(5,-6,0,leg,2.6);
       ctx.fillStyle=fur;ctx.beginPath();ctx.ellipse(-2,-8,11,7,.15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#3f382f';ctx.lineWidth=1.4;ctx.stroke();ctx.beginPath();ctx.arc(8,-13,5,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#e5d6bf';ctx.beginPath();ctx.arc(-12,-8,3.1,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='#8d7666';ctx.beginPath();ctx.ellipse(7,-22,2.5,8,-.16,0,Math.PI*2);ctx.ellipse(12,-21,2.2,7,.22,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d5a4a0';ctx.beginPath();ctx.ellipse(7,-22,1,5,-.16,0,Math.PI*2);ctx.ellipse(12,-21,1,4,.22,0,Math.PI*2);ctx.fill();ctx.fillStyle='#25231e';ctx.beginPath();ctx.arc(10,-14,1,0,Math.PI*2);ctx.fill();
+    } else if(a.kind==='bear') {
+      const dark='#3e3027',coat=a.hitFlash>0?'#c47862':a.withCubs?'#72543c':'#806044',step=moving?Math.sin(phase)*(a.state==='charge'?6:3):0;
+      drawLeg(-13,-9,0,dark,4.4);drawLeg(-4,-8,Math.PI,dark,4.2);drawLeg(8,-9,Math.PI*.7,dark,4.3);drawLeg(15,-8,Math.PI*1.7,dark,4.2);
+      ctx.fillStyle=coat;ctx.beginPath();ctx.ellipse(-1,-15,23,13,-.04,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#342820';ctx.lineWidth=1.8;ctx.stroke();ctx.beginPath();ctx.ellipse(4,-20,13,9,-.1,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle=coat;ctx.beginPath();ctx.arc(20,-19,8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#4e382a';ctx.beginPath();ctx.arc(16,-26,3.2,0,Math.PI*2);ctx.arc(24,-26,3.2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#b89b77';ctx.beginPath();ctx.ellipse(26,-16,6,4,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#241e19';ctx.beginPath();ctx.arc(23,-20,1.1,0,Math.PI*2);ctx.arc(30,-16,1.3,0,Math.PI*2);ctx.fill();
+      if(a.withCubs){ctx.fillStyle='#95724d';ctx.strokeStyle='#403126';ctx.lineWidth=1;for(const side of [-1,1]){ctx.beginPath();ctx.ellipse(-8+side*4,-3,5,4,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(-8+side*4,-7,3,0,Math.PI*2);ctx.fill();ctx.stroke();}}
+      if(a.state==='charge'){ctx.strokeStyle='#d0b47b';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(26,-13);ctx.lineTo(32,-10);ctx.moveTo(25,-12);ctx.lineTo(29,-8);ctx.stroke();}
+    } else if(a.kind==='boar') {
+      const bristle='#493324',coat=a.hitFlash>0?'#d4775d':'#775139',charge=a.state==='charge';
+      drawLeg(-13,-8,0,bristle,4);drawLeg(-2,-7,Math.PI,bristle,3.7);drawLeg(9,-8,Math.PI*.7,bristle,3.8);drawLeg(16,-7,Math.PI*1.7,bristle,3.6);
+      ctx.fillStyle=coat;ctx.beginPath();ctx.ellipse(-1,-14,23,11,-.1,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#37271e';ctx.lineWidth=1.7;ctx.stroke();ctx.fillStyle='#60402d';ctx.beginPath();ctx.moveTo(-14,-21);ctx.lineTo(-8,-31);ctx.lineTo(-4,-20);ctx.lineTo(4,-31);ctx.lineTo(9,-19);ctx.closePath();ctx.fill();
+      ctx.fillStyle=coat;ctx.beginPath();ctx.ellipse(19,-17,10,7,-.12,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#37271e';ctx.stroke();ctx.fillStyle='#9d8060';ctx.beginPath();ctx.ellipse(27,-14,5,3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#eee1c4';ctx.beginPath();ctx.moveTo(16,-12);ctx.quadraticCurveTo(20,-5,22,-12);ctx.moveTo(22,-12);ctx.quadraticCurveTo(27,-4,28,-13);ctx.fill();ctx.fillStyle='#211b16';ctx.beginPath();ctx.arc(22,-19,1,0,Math.PI*2);ctx.fill();
+      if(charge){ctx.strokeStyle='rgba(229,198,139,.65)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(3,-12,31,-.45,.32);ctx.stroke();}
+    } else if(a.kind==='jackal') {
+      const coat=a.hitFlash>0?'#d17b61':'#ad8459',dark='#534438',run= a.state==='follow'||a.state==='scavenge';
+      drawLeg(-13,-8,0,dark,2.8);drawLeg(-4,-7,Math.PI,dark,2.6);drawLeg(8,-8,Math.PI*.7,dark,2.8);drawLeg(14,-7,Math.PI*1.7,dark,2.6);
+      ctx.strokeStyle=dark;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-17,-15);ctx.quadraticCurveTo(-29,-20,-34,-12+Math.sin(phase)*1.4);ctx.stroke();ctx.fillStyle=coat;ctx.beginPath();ctx.ellipse(-1,-14,19,8,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#49382b';ctx.lineWidth=1.4;ctx.stroke();
+      ctx.fillStyle='#b89366';ctx.beginPath();ctx.arc(16,-21,6,0,Math.PI*2);ctx.fill();ctx.moveTo(12,-25);ctx.lineTo(11,-34);ctx.lineTo(17,-27);ctx.moveTo(18,-26);ctx.lineTo(22,-34);ctx.lineTo(22,-22);ctx.fill();ctx.stroke();ctx.fillStyle=coat;ctx.beginPath();ctx.moveTo(19,-20);ctx.lineTo(31,-18);ctx.lineTo(23,-14);ctx.closePath();ctx.fill();ctx.strokeStyle='#49382b';ctx.stroke();ctx.fillStyle='#221d18';ctx.beginPath();ctx.arc(17,-22,1,0,Math.PI*2);ctx.arc(29,-18,1,0,Math.PI*2);ctx.fill();
     } else {
       const leopard=a.kind==='leopard',stalking=a.state==='stalk';
-      if(leopard&&a.ambush&&(a.state==='idle'||stalking))ctx.globalAlpha=.7;
+      if(leopard&&a.ambush&&(a.state==='ambush'||a.state==='idle'||stalking))ctx.globalAlpha=a.inCover ? .52 : .7;
       const fur=a.hitFlash>0?'#d17b61':leopard?'#bd9652':'#737b77',dark=leopard?'#705438':'#454e4b',belly=leopard?'#e1c98d':'#d0d0c3';
       if(leopard){ctx.strokeStyle=dark;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-19,-11);ctx.bezierCurveTo(-33,-13,-40,-22,-43,-17);ctx.quadraticCurveTo(-47,-8,-39,-7);ctx.stroke();}
       else {ctx.strokeStyle=dark;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-19,-11);ctx.quadraticCurveTo(-29,-17,-36,-12+Math.sin(phase)*2);ctx.lineTo(-40,-8);ctx.stroke();}
@@ -675,7 +726,7 @@
       ctx.fillStyle=leopard?'#ddc98e':'#d8d4c4';ctx.beginPath();ctx.ellipse(25,-26,5,3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#211e19';ctx.beginPath();ctx.arc(22,-29,1.2,0,Math.PI*2);ctx.fill();ctx.arc(29,-26,1,0,Math.PI*2);ctx.fill();
       if(a.state==='attack'){ctx.fillStyle='#f0d3b2';ctx.beginPath();ctx.moveTo(26,-24);ctx.lineTo(30,-21);ctx.lineTo(25,-22);ctx.closePath();ctx.fill();}
     }
-    if(a.predator&&(a.state==='alert'||a.state==='chase'||a.state==='attack')){ctx.fillStyle=a.state==='attack'?'#f17455':'#f0d18a';ctx.font='bold 11px Tahoma';ctx.textAlign='center';ctx.fillText(a.state==='attack'?'!':'·',0,-45);}
+    if(a.predator&&(a.state==='alert'||a.state==='chase'||a.state==='attack')||a.state==='charge'){ctx.fillStyle=a.state==='attack'||a.state==='charge'?'#f17455':'#f0d18a';ctx.font='bold 11px Tahoma';ctx.textAlign='center';ctx.fillText(a.state==='attack'||a.state==='charge'?'!':'·',0,-45);}
     ctx.restore();
     if(a.predator&&a.hp<a.maxHp){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-18,y-47,36,3);ctx.fillStyle='#d87966';ctx.fillRect(x-18,y-47,36*clamp(a.hp/a.maxHp,0,1),3);}
   }
@@ -800,9 +851,11 @@
     for(const wall of world.edgeTrees)if(insideWorld(wall.x,wall.y)&&wall.x>cam.x-90&&wall.x<cam.x+W+90&&wall.y>cam.y-90&&wall.y<cam.y+H+90)drawables.push({y:wall.y,o:wall,type:'tree'});
     for(const rock of world.edgeCliffs)if(insideWorld(rock.x,rock.y)&&rock.x>cam.x-45&&rock.x<cam.x+W+45&&rock.y>cam.y-45&&rock.y<cam.y+H+45)drawables.push({y:rock.y,o:rock,type:'rock'});
     for(const a of world.animals)if(insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
+    for(const a of world.residents||[])if(insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-110&&a.x<cam.x+W+110&&a.y>cam.y-110&&a.y<cam.y+H+110)drawables.push({y:a.y+8,o:a,type:'animal'});
+    for(const drop of world.foodDrops||[])if(drop.amount>0&&insideWorld(drop.x,drop.y)&&drop.x>cam.x-35&&drop.x<cam.x+W+35&&drop.y>cam.y-35&&drop.y<cam.y+H+35)drawables.push({y:drop.y+3,o:drop,type:'foodDrop'});
     for(const shadow of world.hallucinations||[])if(insideWorld(shadow.x,shadow.y)&&shadow.x>cam.x-45&&shadow.x<cam.x+W+45&&shadow.y>cam.y-45&&shadow.y<cam.y+H+45)drawables.push({y:shadow.y+8,o:shadow,type:'shadow'});
     const px=game.player.x,py=game.player.y;drawables.push({y:py+7,o:game.player,type:'player'});drawables.sort((a,b)=>a.y-b.y);
-    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else if(it.type==='shadow')drawShadowCreature(it.o);else if(it.type==='camp')drawCamp(it.o.x,it.o.y);else if(it.type==='fire')drawCampfire(it.o);else if(it.type==='trap')drawSnare(it.o);else drawPlayerForest(px,py);}
+    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else if(it.type==='shadow')drawShadowCreature(it.o);else if(it.type==='foodDrop')drawFoodDrop(it.o);else if(it.type==='camp')drawCamp(it.o.x,it.o.y);else if(it.type==='fire')drawCampfire(it.o);else if(it.type==='trap')drawSnare(it.o);else drawPlayerForest(px,py);}
     for(let i=0;i<4;i++){const fx=MAP.cx+((i*443+gameTime*3)%1100)-550,fy=MAP.cy+((i*257)%730)-365;if(fx>cam.x-150&&fx<cam.x+W+150&&fy>cam.y-70&&fy<cam.y+H+70){const g=ctx.createRadialGradient(fx,fy,8,fx,fy,180);g.addColorStop(0,'rgba(218,225,193,.09)');g.addColorStop(1,'rgba(218,225,193,0)');ctx.fillStyle=g;ctx.fillRect(fx-180,fy-75,360,150);}}
     ctx.restore();drawNightLighting();drawMorningFog();
     if(game.player.bleedTimer>0){const blood=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.28,W/2,H/2,Math.max(W,H)*.78);blood.addColorStop(0,'rgba(90,8,12,0)');blood.addColorStop(1,`rgba(135,18,21,${.18*clamp(game.player.bleedTimer/8,0,1)})`);ctx.fillStyle=blood;ctx.fillRect(0,0,W,H);}
@@ -1030,6 +1083,7 @@
   function changeAnimalState(a,state,timer=0) {
     if(a.state===state){if(timer>0)a.stateTimer=Math.max(a.stateTimer||0,timer);return;}
     a.state=state;a.stateTimer=timer;a.vx=0;a.vy=0;
+    if(state==='chase')a.chaseTime=0;
     if(state==='attack'){a.attackTimer=.28;a.didBite=false;}
   }
   function respawnCreature(a,dt) {
@@ -1040,81 +1094,199 @@
     for(let tries=0;tries<24;tries++){
       const angle=rand()*Math.PI*2,radius=rand()*(a.territoryRadius||220),x=clamp((a.territoryX??a.x)+Math.cos(angle)*radius,WORLD_EDGE+18,MAP.w-WORLD_EDGE-18),y=clamp((a.territoryY??a.y)+Math.sin(angle)*radius,WORLD_EDGE+18,MAP.h-WORLD_EDGE-18);
       if(outsidePlayerView(x,y,120)&&Math.hypot(x-game.player.x,y-game.player.y)>Math.hypot(W/2,H/2)+120){
-        a.x=x;a.y=y;a.hp=a.maxHp;a.respawnTimer=0;a.state=a.predator?'idle':a.kind==='deer'?'graze':'wander';a.stateTimer=2+rand()*4;a.roamAngle=rand()*Math.PI*2;a.facing=facing4(Math.cos(a.roamAngle),Math.sin(a.roamAngle),a.facing);a.ambush=a.kind==='leopard';return false;
+        a.x=x;a.y=y;a.hp=a.maxHp;a.respawnTimer=0;a.stamina=a.maxStamina;a.state=a.kind==='leopard'?'ambush':a.predator?'idle':a.kind==='deer'||a.kind==='rabbit'?'graze':a.kind==='bear'||a.kind==='boar'?'forage':a.kind==='jackal'?'scavenge':'wander';a.stateTimer=2+rand()*4;a.roamAngle=rand()*Math.PI*2;a.facing=facing4(Math.cos(a.roamAngle),Math.sin(a.roamAngle),a.facing);a.ambush=a.kind==='leopard';a.threatenedTimer=0;a.defenseTimer=0;return false;
       }
     }
     a.respawnTimer=12;return true;
   }
+  function nearestFoodDrop(actor,radius=70) {
+    let found=null,best=radius;for(const drop of world.foodDrops||[]){if(drop.amount<=0||drop.timer<=0)continue;const d=Math.hypot(drop.x-actor.x,drop.y-actor.y);if(d<best){best=d;found=drop;}}return found;
+  }
+  function createFoodDrop(x,y,amount=1,source='carcass') {
+    if(amount<=0)return null;const drop={id:`meat-${Math.floor(gameTime*10)}-${world.foodDrops.length}`,x,y,amount:Math.floor(amount),timer:75,source};world.foodDrops.push(drop);if(world.foodDrops.length>24)world.foodDrops.shift();return drop;
+  }
+  function stealFoodDrop(drop,animal) {
+    if(!drop||drop.amount<=0)return;drop.amount--;animal.lastStolenAt=gameTime;if(drop.amount<=0)world.foodDrops=world.foodDrops.filter(item=>item!==drop);
+    if(Math.hypot(game.player.x-animal.x,game.player.y-animal.y)<520)showToast('شغالِ زرنگ، گوشت افتاده را ربود!',1700);
+  }
+  function allThreatAnimals() { return [...(world.animals||[]),...(world.residents||[])].filter(a=>a.hp>0&&a.predator); }
+  function updateAnimalStamina(a,dt,effort=0) {
+    const maximum=a.maxStamina||ANIMAL_TRAITS[a.kind]?.stamina||100;a.maxStamina=maximum;a.stamina=clamp(a.stamina??maximum,0,maximum);
+    if(effort>0)a.stamina=Math.max(0,a.stamina-dt*(a.chaseDrain||20)*effort);else a.stamina=Math.min(maximum,a.stamina+dt*maximum*.22);
+    return maximum? a.stamina/maximum:1;
+  }
+  function huntWindow(kind) {
+    if(game.phase==='night')return true;
+    const t=game.phaseTime||0,dusk=t>DAY_LENGTH*.73,dawn=t<15;
+    if(kind==='wolf')return dusk;
+    if(kind==='leopard'||kind==='jackal'||kind==='boar')return dusk||dawn;
+    return true;
+  }
+  function playerNoiseLevel(p=game.player) { return (p.noiseBurst||0)>0?1.5:p.running?1.15:p.actionTimer>0?.82:p.moving?.34:0; }
+  function sensesPlayer(a,d,night=game.phase==='night') {
+    const sense=a.senses||ANIMAL_TRAITS[a.kind]?.senses||{},p=game.player,sight=night?(sense.nightSight||150):(sense.daySight||100),noise=playerNoiseLevel(p),smellFactor=.32+(game.resources.food||0)*.035+(p.bleedTimer>0?.38:0)+(p.running?.12:0);
+    return d<sight||noise>.2&&d<(sense.hearing||150)*noise||d<(sense.smell||120)*smellFactor;
+  }
   function updatePrey(a,dt) {
-    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y),isHerd=a.kind==='deer'||a.kind==='rabbit';
+    const p=game.player,traits=ANIMAL_TRAITS[a.kind]||{},d=Math.hypot(p.x-a.x,p.y-a.y),isHerd=a.kind==='deer'||a.kind==='rabbit';
     if(!isHerd&&a.kind!=='bird'&&a.kind!=='butterfly')return;
-    let dangerX=p.x,dangerY=p.y,dangerD=d,threat=d<(p.running?250:90)||(p.noiseBurst||0)>0&&d<310;
-    if(isHerd){for(const predator of world.animals){if(!predator.predator||predator.hp<=0)continue;const pd=Math.hypot(predator.x-a.x,predator.y-a.y);if(pd<170){threat=true;if(pd<dangerD){dangerX=predator.x;dangerY=predator.y;dangerD=pd;}}}}
-    a.stateTimer-=dt;
-    if(threat&&isHerd){a.state='retreat';a.fleeTimer=2.1;}
-    if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-dangerX,dy=a.y-dangerY,m=Math.hypot(dx,dy)||1,speed=a.kind==='deer'?176:a.kind==='rabbit'?140:95;moveCreature(a,a.x+dx/m*220,a.y+dy/m*220,speed,dt);return;}
-    if(a.stateTimer<=0){a.state=a.kind==='deer'?'graze':'wander';a.stateTimer=2+world.rand()*5;a.roamAngle+=(world.rand()-.5)*2.4;}
-    if(a.state==='graze'&&a.kind==='deer'){a.vx=0;a.vy=0;a.animTime=(a.animTime||0)+dt*2.2;return;}
-    const wanderSpeed=a.kind==='deer'?28:a.kind==='rabbit'?38:a.kind==='bird'?48:15;
-    const radius=a.territoryRadius||140,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.42,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.42;
+    let dangerX=p.x,dangerY=p.y,dangerD=d,threat=d<(a.senses?.daySight||traits.senses?.daySight||140)*.78||playerNoiseLevel(p)>.4&&d<(a.senses?.hearing||220)*playerNoiseLevel(p),
+      predators=allThreatAnimals();
+    if(isHerd){for(const predator of predators){const pd=Math.hypot(predator.x-a.x,predator.y-a.y),aware=predator.kind==='wolf'?huntWindow('wolf')||pd<130:predator.kind==='leopard'?huntWindow('leopard')||pd<105:true,range=(a.senses?.daySight||traits.senses?.daySight||180)*.82;if(aware&&pd<range){threat=true;if(pd<dangerD){dangerX=predator.x;dangerY=predator.y;dangerD=pd;}}}}
+    if(threat&&isHerd){a.state='retreat';a.fleeTimer=Math.max(a.fleeTimer||0,2.1);}
+    if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-dangerX,dy=a.y-dangerY,m=Math.hypot(dx,dy)||1,fatigue=updateAnimalStamina(a,dt,.62),speed=(a.speeds?.flee||traits.speed?.flee||140)*(.52+.48*fatigue);moveCreature(a,a.x+dx/m*220,a.y+dy/m*220,speed,dt);return;}
+    const time=game.phaseTime||0,activeHours=a.kind==='deer'?game.phase==='day'&&(time<18||time>DAY_LENGTH*.72):a.kind==='rabbit'?game.phase==='night'||time<19||time>DAY_LENGTH*.72:game.phase==='day';
+    if(!activeHours){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);a.animTime=(a.animTime||0)+dt*.45;return;}
+    const staminaRatio=updateAnimalStamina(a,dt,0);a.stateTimer-=dt;
+    if(a.stateTimer<=0){a.state=a.kind==='deer'||a.kind==='rabbit'?'graze':'wander';a.stateTimer=2+world.rand()*5;a.roamAngle+=(world.rand()-.5)*2.4;}
+    if(a.state==='graze'&&(a.kind==='deer'||a.kind==='rabbit')){a.vx=0;a.vy=0;a.animTime=(a.animTime||0)+dt*(a.kind==='deer'?2.1:3.8);return;}
+    const radius=a.territoryRadius||traits.territory||140,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.42,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.42,wanderSpeed=(a.speeds?.forage||traits.speed?.forage||20)*(.7+.3*staminaRatio);
     if(Math.hypot(tx-a.x,ty-a.y)<12){a.roamAngle+=(world.rand()-.5)*2.6;a.stateTimer=0;}
     else moveCreature(a,tx,ty,wanderSpeed,dt);
     if(a.kind==='bird')a.y+=Math.sin(gameTime*2+a.animTime)*dt*4;
   }
   function hurtPlayerFromBite(a) {
     const p=game.player;if(p.hitGrace>0)return;
-    const leopard=a.kind==='leopard',damage=leopard?20:13;
-    game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.72;p.invuln=.42;p.bleedTimer=Math.max(p.bleedTimer||0,leopard?8:6);p.bleedTickTimer=.9;p.bleedSeverity=leopard?1.15:.72;
-    beep('hit');showToast(leopard?'پلنگ گاز گرفت؛ خون‌ریزی داری! بدو یا از آتش و بانکر کمک بگیر.':'گرگ گاز گرفت؛ خون‌ریزی داری! فرار کن یا تله و آتش به کار ببر.',2200);
+    const damage={leopard:20,wolf:13,bear:25}[a.kind]||13;
+    game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.78;p.invuln=.46;p.bleedTimer=Math.max(p.bleedTimer||0,a.kind==='leopard'?8:a.kind==='bear'?7:6);p.bleedTickTimer=.9;p.bleedSeverity=a.kind==='leopard'?1.15:a.kind==='bear'?1.05:.72;
+    beep('hit');showToast(a.kind==='leopard'?'پلنگ گاز گرفت؛ خون‌ریزی داری! بدو یا از آتش و بانکر کمک بگیر.':a.kind==='bear'?'خرس با پنجه حمله کرد؛ خون‌ریزی داری! از محدودهٔ بچه‌ها یا لاشه دور شو.':'گرگ گاز گرفت؛ خون‌ریزی داری! فرار کن یا تله و آتش به کار ببر.',2300);
+  }
+  function hurtPlayerFromCharge(a) {
+    const p=game.player;if(p.hitGrace>0)return;
+    const damage=a.kind==='boar'?17:20;game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.9;p.invuln=.5;
+    const dx=p.x-a.x,dy=p.y-a.y,m=Math.hypot(dx,dy)||1;p.x=clamp(p.x+dx/m*34,WORLD_EDGE,MAP.w-WORLD_EDGE);p.y=clamp(p.y+dy/m*34,WORLD_EDGE,MAP.h-WORLD_EDGE);p.target=null;
+    if(a.kind==='boar'){p.bleedTimer=Math.max(p.bleedTimer||0,3.2);p.bleedSeverity=.5;showToast('گراز وحشی به تو زد؛ از گله فاصله بگیر.',1900);}else showToast('خرس با پنجه زد؛ از محدودهٔ دفاعی عقب‌نشینی کن.',1900);
+    beep('hit');
+  }
+  function animalTrapOrFire(a,dt) {
+    const trap=(world.traps||[]).find(t=>!t.triggered&&Math.hypot(a.x-t.x,a.y-t.y)<t.radius);
+    if(trap){trap.triggered=true;a.hp-=a.kind==='leopard'?48:a.kind==='wolf'?58:Math.round((a.maxHp||60)*.46);a.retreatReason='snare';changeAnimalState(a,'retreat',4.5);showToast('تله بسته شد؛ جانور آسیب دید و عقب نشست.',1800);if(a.hp<=0){a.hp=0;a.respawnTimer=160;}return true;}
+    const fires=world.fires||[],fire=fires.find(f=>Math.hypot(a.x-f.x,a.y-f.y)<f.radius*1.42),campDistance=Math.hypot(a.x-(MAP.cx-34),a.y-(MAP.cy-2)),torchDistance=game.player.torchLit?Math.hypot(a.x-game.player.x,a.y-game.player.y):Infinity;
+    const afraid=['wolf','leopard','bear'].includes(a.kind),campFire=afraid&&campDistance<90,torchFear=afraid&&torchDistance<125;
+    if(fire||campFire||torchFear){const source=fire||{x:campFire?MAP.cx-34:game.player.x,y:campFire?MAP.cy-2:game.player.y};a.retreatReason='fire';changeAnimalState(a,'retreat',3.4);const dx=a.x-source.x,dy=a.y-source.y,m=Math.hypot(dx,dy)||1;updateAnimalStamina(a,dt,.15);moveCreature(a,a.x+dx/m*230,a.y+dy/m*230,a.speeds?.flee||185,dt);return true;}
+    return false;
+  }
+  function updateAnimalRetreat(a,dt,d,defaultSpeed) {
+    a.stateTimer-=dt;const p=game.player,dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1,ratio=updateAnimalStamina(a,dt,.16);
+    moveCreature(a,a.x+dx/m*230,a.y+dy/m*230,(a.speeds?.flee||defaultSpeed)*(.68+.32*ratio),dt);
+    if(a.stateTimer<=0){const reason=a.retreatReason;a.retreatReason='';if(reason==='fire'||reason==='snare'||reason==='leader'||reason==='wounded'||reason==='winded'||reason==='daylight'){changeAnimalState(a,a.kind==='leopard'?'ambush':'wander',3+world.rand()*3);}else if(d<145&&p.hitGrace<=0&&huntWindow(a.kind))changeAnimalState(a,'chase');else changeAnimalState(a,a.kind==='leopard'?'ambush':'wander',3+world.rand()*3);}
+  }
+  function updateAnimalAttack(a,dt,d) {
+    a.attackTimer-=dt;
+    if(!a.didBite&&a.attackTimer<=.11){a.didBite=true;if(d<54)hurtPlayerFromBite(a);}
+    if(a.attackTimer<=0){a.retreatReason='bite';changeAnimalState(a,'retreat',1.25);}
+  }
+  function wolfLeaderLost(a) {
+    if(!a.packId||a.isPackLeader)return false;
+    const leader=world.animals.find(member=>member.id===a.packLeaderId);return !leader||leader.hp<=0;
+  }
+  function wolfFlankTarget(a,p,chase=false) {
+    const fx=p.faceX||1,fy=p.faceY||0,side=(a.packIndex%2===0?1:-1)*(chase?11:82),back=chase?24:72;
+    return {x:p.x-fx*back-fy*side,y:p.y-fy*back+fx*side};
+  }
+  function nearestCoverAt(x,y,radius=150) {
+    let found=null,best=radius;for(const node of nodesNear(x,y,radius)){if(node.remaining<=0||node.type!=='tree'&&node.type!=='bush')continue;const d=Math.hypot(node.x-x,node.y-y);if(d<best){best=d;found=node;}}return found;
+  }
+  function animalInCover(a) {
+    const weights=biomeWeightsAt(a.x,a.y);return weights.forest>.34||weights.swamp>.34||!!nearestCoverAt(a.x,a.y,64);
+  }
+  function updateWolf(a,dt,d) {
+    const p=game.player,night=game.phase==='night',hunting=huntWindow('wolf'),leaderLost=wolfLeaderLost(a),noticed=sensesPlayer(a,d,night),closeThreat=d<92||playerNoiseLevel(p)>1&&d<250;
+    if(leaderLost&&!(a.state==='retreat'&&a.retreatReason==='leader')){a.retreatReason='leader';changeAnimalState(a,'retreat',4.5);}
+    if(a.hp<a.maxHp*.43&&a.state!=='retreat'){a.retreatReason='wounded';changeAnimalState(a,'retreat',4);}
+    if(!hunting&&!closeThreat&&['alert','stalk','chase','attack'].includes(a.state)){a.retreatReason='daylight';changeAnimalState(a,'retreat',3);}
+    if((a.state==='idle'||a.state==='wander')&&(hunting&&noticed||closeThreat)){a.lastX=p.x;a.lastY=p.y;a.lostTimer=0;changeAnimalState(a,'alert',.58);}
+    if(a.state==='alert'){a.stateTimer-=dt;a.facing=facing4(p.x-a.x,p.y-a.y,a.facing);updateAnimalStamina(a,dt,.12);if(a.stateTimer<=0){if(hunting||closeThreat)changeAnimalState(a,'stalk',.4);else changeAnimalState(a,'wander',2);}}
+    else if(a.state==='idle'||a.state==='wander'){
+      updateAnimalStamina(a,dt,0);a.stateTimer-=dt;
+      const radius=a.territoryRadius||ANIMAL_TRAITS.wolf.territory,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.42,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.42;
+      if(a.stateTimer<=0){if(a.state==='idle'){a.roamAngle=(world.rand()-.5)*Math.PI*2;changeAnimalState(a,'wander',2+world.rand()*4);}else changeAnimalState(a,'idle',2+world.rand()*4);}
+      else if(a.state==='wander')moveCreature(a,tx,ty,a.speeds.wander,dt);
+    } else if(a.state==='stalk'){
+      if(!hunting&&!closeThreat){a.retreatReason='daylight';changeAnimalState(a,'retreat',2.5);return;}
+      a.lostTimer=d>820?(a.lostTimer||0)+dt:0;if(a.lostTimer>3.8){changeAnimalState(a,'wander',4);return;}
+      a.lastX=p.x;a.lastY=p.y;updateAnimalStamina(a,dt,.22);
+      if(d<150||p.running&&(game.stats.stamina??100)<22&&d<270||playerNoiseLevel(p)>1&&d<330){changeAnimalState(a,'chase');return;}
+      const flank=wolfFlankTarget(a,p);moveCreature(a,flank.x,flank.y,a.speeds.stalk,dt);
+    } else if(a.state==='chase'){
+      if(!hunting&&!closeThreat){a.retreatReason='daylight';changeAnimalState(a,'retreat',2.8);return;}
+      a.chaseTime=(a.chaseTime||0)+dt;a.lastX=p.x;a.lastY=p.y;a.lostTimer=d>920?(a.lostTimer||0)+dt:0;const stamina=updateAnimalStamina(a,dt,1);
+      if(stamina<.08||a.chaseTime>9||a.lostTimer>4.3){a.retreatReason=stamina<.08?'winded':'lost';changeAnimalState(a,'retreat',3);return;}
+      const target=wolfFlankTarget(a,p,true),tired=(p.exhausted||(game.stats.stamina??100)<16)?1.13:1;
+      moveCreature(a,target.x,target.y,a.speeds.chase*tired,dt);
+      const nd=Math.hypot(p.x-a.x,p.y-a.y);if(nd<36&&a.attackCooldown<=0){changeAnimalState(a,'attack');a.attackCooldown=2.15;}
+    } else if(a.state==='attack')updateAnimalAttack(a,dt,d);
+    else if(a.state==='retreat'){if(a.retreatReason==='leader'&&wolfLeaderLost(a)){a.stateTimer=Math.max(a.stateTimer||0,3); }updateAnimalRetreat(a,dt,d,a.speeds.flee);}
+  }
+  function updateLeopard(a,dt,d) {
+    const p=game.player,night=game.phase==='night',activeHours=huntWindow('leopard'),noticed=sensesPlayer(a,d,night),closeThreat=d<76||playerNoiseLevel(p)>1&&d<200;
+    if(a.hp<a.maxHp*.43&&a.state!=='retreat'){a.retreatReason='wounded';changeAnimalState(a,'retreat',3.2);}
+    if(!activeHours&&!closeThreat&&['alert','stalk','chase','attack'].includes(a.state)){a.retreatReason='daylight';changeAnimalState(a,'retreat',2.4);}
+    if((a.state==='ambush'||a.state==='idle'||a.state==='wander')&&(activeHours&&noticed||closeThreat)){a.lastX=p.x;a.lastY=p.y;a.lostTimer=0;changeAnimalState(a,'alert',.36);}
+    if(a.state==='ambush'&&!noticed){a.ambush=true;updateAnimalStamina(a,dt,0);a.vx=0;a.vy=0;return;}
+    if(a.state==='alert'){a.facing=facing4(p.x-a.x,p.y-a.y,a.facing);a.stateTimer-=dt;updateAnimalStamina(a,dt,.08);if(a.stateTimer<=0)changeAnimalState(a,'stalk',.5);}
+    else if(a.state==='idle'||a.state==='wander'){
+      updateAnimalStamina(a,dt,0);a.stateTimer-=dt;const radius=a.territoryRadius||ANIMAL_TRAITS.leopard.territory,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.34,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.34;
+      if(a.stateTimer<=0)changeAnimalState(a,'ambush',3+world.rand()*5);else if(a.state==='wander')moveCreature(a,tx,ty,a.speeds.wander,dt);
+    } else if(a.state==='stalk'){
+      a.ambush=true;a.inCover=animalInCover(a);a.lostTimer=d>720?(a.lostTimer||0)+dt:0;if(a.lostTimer>2.7){a.retreatReason='lost';changeAnimalState(a,'retreat',2.3);return;}
+      a.lastX=p.x;a.lastY=p.y;updateAnimalStamina(a,dt,.36);
+      if(d<145||p.running&&d<250||playerNoiseLevel(p)>1&&d<285){changeAnimalState(a,'chase');return;}
+      const nearbyCover=nearestCoverAt(a.x,a.y,190);if(!a.inCover&&nearbyCover&&d>165){moveCreature(a,nearbyCover.x,nearbyCover.y,a.speeds.stalk*.88,dt);return;}
+      const offset=32+Math.sin(gameTime*1.4+a.animTime)*24,tx=p.x-(p.faceX||1)*92+(p.faceY||0)*offset,ty=p.y-(p.faceY||0)*92-(p.faceX||1)*offset;moveCreature(a,tx,ty,a.speeds.stalk,dt);
+    } else if(a.state==='chase'){
+      a.ambush=false;a.chaseTime=(a.chaseTime||0)+dt;a.lastX=p.x;a.lastY=p.y;a.lostTimer=d>660?(a.lostTimer||0)+dt:0;const stamina=updateAnimalStamina(a,dt,1);
+      if(stamina<.09||a.chaseTime>4.6||a.lostTimer>2.8){a.retreatReason=stamina<.09?'winded':'lost';changeAnimalState(a,'retreat',2.6);return;}
+      const tired=(p.exhausted||(game.stats.stamina??100)<15)?1.12:1;moveCreature(a,p.x,p.y,a.speeds.chase*tired,dt);const nd=Math.hypot(p.x-a.x,p.y-a.y);if(nd<36&&a.attackCooldown<=0){changeAnimalState(a,'attack');a.attackCooldown=2.35;}
+    } else if(a.state==='attack')updateAnimalAttack(a,dt,d);
+    else if(a.state==='retreat'){if(a.retreatReason==='winded')a.ambush=false;updateAnimalRetreat(a,dt,d,a.speeds.flee);if(a.state==='ambush')a.ambush=true;}
   }
   function updatePredator(a,dt) {
-    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y),night=game.phase==='night';
-    a.attackCooldown=Math.max(0,(a.attackCooldown||0)-dt);a.hitFlash=Math.max(0,(a.hitFlash||0)-dt);
-    const trap=(world.traps||[]).find(t=>!t.triggered&&Math.hypot(a.x-t.x,a.y-t.y)<t.radius);
-    if(trap){trap.triggered=true;a.hp-=a.kind==='leopard'?48:58;a.retreatReason='snare';changeAnimalState(a,'retreat',5);showToast('تله بسته شد؛ شکارچی آسیب دید و عقب نشست.',1800);if(a.hp<=0){a.hp=0;a.respawnTimer=160;}return;}
-    const fire=(world.fires||[]).find(f=>Math.hypot(a.x-f.x,a.y-f.y)<f.radius);
-    if(fire){if(a.state!=='retreat'||a.retreatReason!=='fire'){a.retreatReason='fire';changeAnimalState(a,'retreat',3.2);}const dx=a.x-fire.x,dy=a.y-fire.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*230,a.y+dy/m*230,a.kind==='leopard'?205:190,dt);return;}
-    a.retreatReason=a.retreatReason==='fire'||a.retreatReason==='snare'?'':a.retreatReason;
-    if(game.mode!=='forest'){a.vx=0;a.vy=0;return;}
-    const noise=(p.noiseBurst||0)>0 ? 1.4 : p.running ? 1.1 : p.actionTimer>0 ? .75 : p.moving ? .42 : 0;
-    const sight=a.kind==='leopard'?(night?245:135):(night?360:210),hearing=(p.noiseBurst||0)>0?560:p.running?440:p.actionTimer>0?310:p.moving?190:0;
-    const packMateHunting=night&&a.packId&&world.animals.some(m=>m!==a&&m.predator&&m.packId===a.packId&&m.hp>0&&['alert','stalk','chase','attack'].includes(m.state)&&Math.hypot(m.x-a.x,m.y-a.y)<520);
-    const notices=d<sight||noise>0&&d<hearing||packMateHunting&&d<720;
-    if((a.state==='idle'||a.state==='wander')&&notices){a.lastX=p.x;a.lastY=p.y;a.lostTimer=0;changeAnimalState(a,'alert',a.kind==='leopard' ? .38 : .62);}
-    if(a.state==='alert'){a.facing=facing4(p.x-a.x,p.y-a.y,a.facing);a.stateTimer-=dt;if(a.stateTimer<=0)changeAnimalState(a,a.kind==='leopard'||d>150?'stalk':'chase');}
-    else if(a.state==='idle'){
-      a.stateTimer-=dt;a.animTime=(a.animTime||0)+dt*1.8;
-      if(a.stateTimer<=0){a.roamAngle=(world.rand?.()||Math.random())*Math.PI*2;changeAnimalState(a,'wander',2+world.rand()*4);}
-    } else if(a.state==='wander'){
-      a.stateTimer-=dt;const radius=a.territoryRadius||250,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.5,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.5;
-      if(a.stateTimer<=0||Math.hypot(tx-a.x,ty-a.y)<18){changeAnimalState(a,'idle',2+world.rand()*5);a.vx=0;a.vy=0;}
-      else moveCreature(a,tx,ty,a.kind==='leopard'?29:38,dt);
-    } else if(a.state==='stalk'){
-      a.lostTimer=d>800?(a.lostTimer||0)+dt:0;
-      if(a.lostTimer>3.5){changeAnimalState(a,'wander',3);return;}
-      a.lastX=p.x;a.lastY=p.y;
-      const pounceRange=a.kind==='leopard'?172:night?265:150;
-      if(d<pounceRange||p.running&&d<360||(p.noiseBurst||0)>0&&d<500){changeAnimalState(a,'chase');a.pounceTimer=a.kind==='leopard'?1.5:0;}
-      else moveCreature(a,p.x,p.y,a.kind==='leopard'?24:night?47:38,dt);
-    } else if(a.state==='chase'){
-      a.lostTimer=d>900?(a.lostTimer||0)+dt:0;
-      if(a.lostTimer>4.2){changeAnimalState(a,'wander',4);return;}
-      a.lastX=p.x;a.lastY=p.y;a.pounceTimer=Math.max(0,(a.pounceTimer||0)-dt);
-      const speed=a.kind==='leopard'?(a.pounceTimer>0?252:204):(night?202:184);
-      moveCreature(a,p.x,p.y,speed,dt);
-      const nd=Math.hypot(p.x-a.x,p.y-a.y);
-      if(nd<34&&a.attackCooldown<=0){changeAnimalState(a,'attack');a.attackCooldown=a.kind==='leopard'?2.35:2.05;}
-    } else if(a.state==='attack'){
-      a.attackTimer-=dt;
-      if(!a.didBite&&a.attackTimer<=.11){a.didBite=true;if(Math.hypot(p.x-a.x,p.y-a.y)<48)hurtPlayerFromBite(a);}
-      if(a.attackTimer<=0){a.retreatReason='bite';changeAnimalState(a,'retreat',.8);}
-    } else if(a.state==='retreat'){
-      a.stateTimer-=dt;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*230,a.y+dy/m*230,a.kind==='leopard'?182:night?166:146,dt);
-      if(a.stateTimer<=0){a.retreatReason='';if(d<190&&p.hitGrace<=0)changeAnimalState(a,'chase');else changeAnimalState(a,'wander',3+world.rand()*3);}
-    }
+    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y);a.attackCooldown=Math.max(0,(a.attackCooldown||0)-dt);a.hitFlash=Math.max(0,(a.hitFlash||0)-dt);
+    if(game.mode!=='forest'){a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
+    if(animalTrapOrFire(a,dt))return;
+    if(a.kind==='leopard')updateLeopard(a,dt,d);else updateWolf(a,dt,d);
+  }
+  function updateBear(a,dt) {
+    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y);a.attackCooldown=Math.max(0,(a.attackCooldown||0)-dt);a.hitFlash=Math.max(0,(a.hitFlash||0)-dt);a.threatenedTimer=Math.max(0,(a.threatenedTimer||0)-dt);
+    if(game.mode!=='forest'){a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
+    if(animalTrapOrFire(a,dt))return;
+    if(a.hp<a.maxHp*.48&&a.state!=='retreat'){a.retreatReason='wounded';changeAnimalState(a,'retreat',3.6);}
+    if(a.state==='retreat'&&a.stateTimer>0){a.stateTimer-=dt;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1,ratio=updateAnimalStamina(a,dt,.35);moveCreature(a,a.x+dx/m*180,a.y+dy/m*180,a.speeds.flee*(.65+.35*ratio),dt);if(a.stateTimer<=0){a.retreatReason='';changeAnimalState(a,'forage',2);}return;}
+    const atKill=a.defendingKill&&a.killSite&&Math.hypot(p.x-a.killSite.x,p.y-a.killSite.y)<190,cubs=a.withCubs&&d<235,nearEdge=a.x<WORLD_EDGE+75||a.x>MAP.w-WORLD_EDGE-75||a.y<WORLD_EDGE+75||a.y>MAP.h-WORLD_EDGE-75,cornered=d<78&&(nearEdge||a.stamina<20||a.threatenedTimer>0),attack=cubs||atKill||cornered||a.threatenedTimer>0&&d<130;
+    if(attack){a.state='charge';a.defenseTimer=(a.defenseTimer||0)+dt;const stamina=updateAnimalStamina(a,dt,1);if(stamina<.08||a.defenseTimer>6){a.retreatReason='winded';changeAnimalState(a,'retreat',3);a.defenseTimer=0;return;}moveCreature(a,p.x,p.y,a.speeds.charge*(p.exhausted?1.1:1),dt);if(d<48&&a.attackCooldown<=0){hurtPlayerFromBite(a);a.attackCooldown=2.7;}return;}
+    a.defenseTimer=0;
+    if(d<310){a.state='flee';const ratio=updateAnimalStamina(a,dt,.45),dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*220,a.y+dy/m*220,a.speeds.flee*(.65+.35*ratio),dt);return;}
+    const food=nearestFoodDrop(a,a.senses?.smell||520);if(game.phase==='night'&&game.phaseTime>10&&!food&&!a.defendingKill){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);a.animTime+=dt*.4;return;}
+    const stamina=updateAnimalStamina(a,dt,0);a.state='forage';a.forageTimer-=dt;
+    if(food&&Math.hypot(food.x-a.x,food.y-a.y)>16){moveCreature(a,food.x,food.y,a.speeds.forage,dt);return;}
+    if(a.forageTimer<=0){a.roamAngle+=(world.rand()-.5)*2.4;a.forageTimer=2+world.rand()*3;}
+    const tx=a.territoryX+Math.cos(a.roamAngle)*(a.territoryRadius||520)*.34,ty=a.territoryY+Math.sin(a.roamAngle)*(a.territoryRadius||520)*.34;if(Math.hypot(tx-a.x,ty-a.y)>18)moveCreature(a,tx,ty,a.speeds.forage*(.8+.2*stamina),dt);else{a.vx=0;a.vy=0;a.animTime+=dt*1.4;}
+  }
+  function updateBoar(a,dt) {
+    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y);a.attackCooldown=Math.max(0,(a.attackCooldown||0)-dt);a.hitFlash=Math.max(0,(a.hitFlash||0)-dt);a.threatenedTimer=Math.max(0,(a.threatenedTimer||0)-dt);
+    if(game.mode!=='forest'){a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
+    const noise=playerNoiseLevel(p),threat=d<(a.senses?.daySight||185)*.82||noise>.5&&d<(a.senses?.hearing||390)*noise||a.threatenedTimer>0,herd=(world.residents||[]).filter(m=>m.kind==='boar'&&m.herdId===a.herdId&&m.hp>0),herdAlert=herd.some(m=>m.state==='charge');
+    if(threat||herdAlert){for(const mate of herd)if(mate.state!=='charge'&&Math.hypot(mate.x-p.x,mate.y-p.y)<300)changeAnimalState(mate,'charge');a.state='charge';const ratio=updateAnimalStamina(a,dt,1);if(ratio<.07){a.state='retreat';a.fleeTimer=2.3;return;}moveCreature(a,p.x,p.y,a.speeds.charge*(p.exhausted?1.13:1),dt);if(d<42&&a.attackCooldown<=0){hurtPlayerFromCharge(a);a.attackCooldown=2.2;a.threatenedTimer=0;}return;}
+    if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;updateAnimalStamina(a,dt,.12);moveCreature(a,a.x+dx/m*180,a.y+dy/m*180,a.speeds.flee,dt);return;}
+    if(!huntWindow('boar')){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);a.animTime+=dt*.55;return;}
+    const ratio=updateAnimalStamina(a,dt,0);a.state='forage';a.forageTimer-=dt;if(a.forageTimer<=0){a.roamAngle+=(world.rand()-.5)*2.1;a.forageTimer=1.5+world.rand()*3;}
+    const radius=a.territoryRadius||250,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.36,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.36;if(Math.hypot(tx-a.x,ty-a.y)>18)moveCreature(a,tx,ty,a.speeds.forage*(.75+.25*ratio),dt);else{a.vx=0;a.vy=0;a.animTime+=dt*1.8;}
+  }
+  function updateJackal(a,dt) {
+    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y);a.hitFlash=Math.max(0,(a.hitFlash||0)-dt);if(game.mode!=='forest'){a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
+    const drop=nearestFoodDrop(a,a.senses?.smell||640);
+    if(drop){a.state='scavenge';if(Math.hypot(drop.x-a.x,drop.y-a.y)<20){stealFoodDrop(drop,a);a.state='retreat';a.fleeTimer=2.5;return;}const ratio=updateAnimalStamina(a,dt,.3);moveCreature(a,drop.x,drop.y,a.speeds.follow*(.7+.3*ratio),dt);return;}
+    if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;updateAnimalStamina(a,dt,.12);moveCreature(a,a.x+dx/m*200,a.y+dy/m*200,a.speeds.flee,dt);return;}
+    const activeWindow=game.phase==='night'||game.phaseTime<16||game.phaseTime>DAY_LENGTH*.72;if(!activeWindow){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
+    updateAnimalStamina(a,dt,0);const noise=playerNoiseLevel(p),follows=(game.resources.food||0)>0||noise>.35;
+    if(follows&&d>370){a.state='follow';const fx=p.faceX||1,fy=p.faceY||0,side=a.territoryId?.includes('south')?-1:1;moveCreature(a,p.x-fx*270-fy*side*90,p.y-fy*270+fx*side*90,a.speeds.follow,dt);}
+    else if(d<190){a.state='retreat';a.fleeTimer=2;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*180,a.y+dy/m*180,a.speeds.flee,dt);}
+    else {a.state='scavenge';a.stateTimer-=dt;if(a.stateTimer<=0){a.roamAngle+=(world.rand()-.5)*2.5;a.stateTimer=2+world.rand()*4;}const tx=a.territoryX+Math.cos(a.roamAngle)*a.territoryRadius*.36,ty=a.territoryY+Math.sin(a.roamAngle)*a.territoryRadius*.36;moveCreature(a,tx,ty,a.speeds.forage,dt);}
   }
   function updateAnimals(dt) {
     for(const a of world.animals){if(a.hp<=0){respawnCreature(a,dt);continue;}updatePredator(a,dt);}
+    for(const a of world.residents||[]){if(a.hp<=0){respawnCreature(a,dt);continue;}if(a.kind==='bear')updateBear(a,dt);else if(a.kind==='boar')updateBoar(a,dt);else if(a.kind==='jackal')updateJackal(a,dt);}
     for(const chunk of chunksAround(game.player.x,game.player.y,1))for(const a of chunk.fauna){
       if(a.prey&&a.hp<=0){respawnCreature(a,dt);continue;}updatePrey(a,dt);
     }
@@ -1131,9 +1303,9 @@
     return found?{node:found,d:best}:null;
   }
   function nearestAnimal(max=55) {
-    let found=null,best=max;const candidates=[...world.animals];
+    let found=null,best=max;const candidates=[...world.animals,...(world.residents||[])];
     for(const chunk of chunksInRect(game.player.x-max,game.player.y-max,max*2,max*2))candidates.push(...chunk.fauna);
-    for(const a of candidates){if(a.hp<=0||(!a.predator&&a.kind!=='deer'&&a.kind!=='rabbit'))continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
+    for(const a of candidates){if(a.hp<=0||(!a.predator&&a.kind!=='deer'&&a.kind!=='rabbit'&&a.kind!=='boar'))continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
     return found;
   }
   function atBunkerEntrance(range=66) {
@@ -1146,9 +1318,10 @@
     if(game.mode==='forest') {
       eatButton.style.display='flex';fireButton.style.display='flex';trapButton.style.display='flex';sprintButton.style.display='flex';craftButton.style.display='flex';sprintButton.classList.toggle('active',sprintHeld||!!keys.Shift);$('bunkerTools').style.display='none';
       fireButton.disabled=(game.inventory.fireKits||0)<1&&game.resources.wood<2;trapButton.disabled=(game.inventory.snares||0)<1&&(game.resources.wood<2||game.resources.herbs<1);
-      const n=nearestNode(86),a=nearestAnimal(58);
+      const n=nearestNode(86),a=nearestAnimal(58),drop=nearestFoodDrop(game.player,58);
       if(atBunkerEntrance())label.textContent='ورود';
       else if(a)label.textContent=a.predator?'دفاع':'شکار';
+      else if(drop)label.textContent='گوشت';
       else if(n)label.textContent=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';
       else label.textContent='عمل';
     } else {
@@ -1162,12 +1335,13 @@
     if(atBunkerEntrance()){animatePlayerAction('interact',.35);enterBunker();return;}
     const animal=nearestAnimal(61);
     if(animal) {
-      animatePlayerAction('swing',.52);game.player.noiseBurst=.8;animal.hp-=animal.predator?22:animal.kind==='deer'?28:24;animal.hitFlash=.28;beep('hit');
-      if(animal.hp<=0){animal.hp=0;animal.respawnTimer=animal.predator?160:animal.kind==='deer'?65:42;const meat=animal.kind==='deer'?2:1;addResource('food',meat);if(animal.kind==='leopard')addResource('herbs',1);showToast(animal.predator?'جانور را از پا درآوردی؛ شکارچی پس از مدتی برمی‌گردد.':`شکار موفق؛ +${fa(meat)} خوراک.`,2000);}
-      else if(animal.predator){if(animal.hp<animal.maxHp*.42){animal.retreatReason='wounded';changeAnimalState(animal,'retreat',1.9);}showToast('با چوبدستی ضربه زدی؛ گاز بعدی می‌تواند خطرناک باشد.',1800);}
-      else {animal.state='retreat';animal.fleeTimer=2.2;showToast('شکار زخمی شد و می‌گریزد؛ برای رسیدن باید بدوی.',1600);}
+      animatePlayerAction('swing',.52);game.player.noiseBurst=.8;animal.hp-=animal.predator?22:animal.kind==='deer'?28:24;animal.hitFlash=.28;animal.threatenedTimer=animal.kind==='bear'||animal.kind==='boar'?5:animal.threatenedTimer||0;beep('hit');
+      if(animal.hp<=0){animal.hp=0;animal.respawnTimer=animal.predator?160:animal.kind==='deer'?65:42;const meat=animal.kind==='deer'?2:animal.kind==='bear'||animal.kind==='boar'?3:1,carried=addResource('food',meat),dropped=meat-carried;if(dropped>0)createFoodDrop(animal.x,animal.y,dropped,'carcass');if(animal.kind==='leopard')addResource('herbs',1);showToast(`شکار موفق؛ +${fa(carried)} خوراک.${dropped?` ${fa(dropped)} تکه روی زمین ماند؛ شغال‌ها بویش را می‌گیرند.`:''}`,2200);}
+      else if(animal.predator){if(animal.hp<animal.maxHp*.43){animal.retreatReason='wounded';changeAnimalState(animal,'retreat',2.5);}showToast('با چوبدستی ضربه زدی؛ جانور خطرناک می‌تواند واکنش نشان دهد.',1800);}
+      else {animal.state='retreat';animal.fleeTimer=2.2;showToast(animal.kind==='boar'?'گراز وحشی را تحریک کردی؛ حالا ممکن است گله یورش بیاورد.':'شکار زخمی شد و می‌گریزد؛ برای رسیدن باید بدوی.',1900);}
       return;
     }
+    const drop=nearestFoodDrop(game.player,55);if(drop){const carried=drop.amount;addResource('food',carried);world.foodDrops=world.foodDrops.filter(item=>item!==drop);animatePlayerAction('gather',.32);beep('gather');showToast(`گوشت را برداشتی: +${fa(carried)} خوراک.`,1500);return;}
     animatePlayerAction('gather',.58);
     const result=nearestNode(80);
     if(!result){showToast('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;}
@@ -1198,6 +1372,7 @@
     world.fires=(world.fires||[]).filter(f=>f.timer>0);
     for(const t of world.traps||[])t.timer-=dt;
     world.traps=(world.traps||[]).filter(t=>t.timer>0&&!t.triggered);
+    for(const drop of world.foodDrops||[])drop.timer-=dt;world.foodDrops=(world.foodDrops||[]).filter(drop=>drop.timer>0&&drop.amount>0);
   }
   function enterBunker() { game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.stepTimer=0;game.selectedCell=null;showToast('به پناهگاه رسیدی. برای حفر یا ساخت، خانه‌ای را لمس کن.',2200);beep('build'); }
   function exitBunker() {
@@ -1285,7 +1460,7 @@
   function updateSanity(dt) {
     const p=game.player,night=game.phase==='night'&&game.mode==='forest';let drain=night?1.25:0,recovery=game.mode==='bunker'?8.2:.12,stress=0;
     if(game.mode==='forest'){
-      for(const predator of world.animals){if(!predator.predator||predator.hp<=0)continue;const d=Math.hypot(predator.x-p.x,predator.y-p.y);if(d<620){const activeThreat=['alert','stalk','chase','attack'].includes(predator.state),pressure=(1-d/620)*(activeThreat?1.35:.65);stress=Math.max(stress,pressure);}}
+      for(const predator of allThreatAnimals()){const d=Math.hypot(predator.x-p.x,predator.y-p.y);if(d<620){const activeThreat=['alert','stalk','chase','attack','charge'].includes(predator.state),pressure=(1-d/620)*(activeThreat?1.35:.65);stress=Math.max(stress,pressure);}}
       drain+=stress*4.1;
       const campDistance=Math.hypot(p.x-(MAP.cx-34),p.y-MAP.cy);if(campDistance<250)recovery=Math.max(recovery,5.6*(1-campDistance/430));
       for(const fire of world.fires||[]){const d=Math.hypot(fire.x-p.x,fire.y-p.y);if(d<(fire.radius||150)*1.35)recovery=Math.max(recovery,6.2*(1-d/((fire.radius||150)*1.7)));}
