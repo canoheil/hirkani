@@ -5,13 +5,17 @@
   "description": "A procedural 2D survival game set in Iran's Hyrcanian forests",
   "scripts": {
     "cap:add:android": "cap add android",
-    "cap:sync": "cap sync android"
+    "cap:sync": "cap sync android",
+    "postinstall": "node scripts/patch-capacitor-cli.cjs"
   },
   "dependencies": {
-    "@capacitor/android": "6.2.1",
-    "@capacitor/core": "6.2.1"
+    "@capacitor/android": "6.2.2",
+    "@capacitor/core": "6.2.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "6.2.1"
+    "@capacitor/cli": "6.2.2"
+  },
+  "overrides": {
+    "tar": "7.5.22"
   }
 }

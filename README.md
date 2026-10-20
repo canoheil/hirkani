@@ -6,7 +6,7 @@ A mobile-first, procedural 2D survival game set in the Hyrcanian forests of nort
 
 Open `www/index.html` in a modern browser, or serve the repository root with any static web server. On a phone, rotate to landscape. Use the left virtual joystick to move, the gold action button to gather or interact, and the food button to eat. At night, survive the animal raid in the bunker; underground, tap a tile to select it, dig outward, place rooms, upgrade them, and repair damage.
 
-Progress is autosaved to local storage. The first 60 seconds include a skippable tutorial.
+Progress is autosaved to local storage. The first 60 seconds include a skippable tutorial. The underground grid supports expandable, upgradeable rooms and 12 data-defined bunker archetypes, from a wooden hut and ancient-root home to an infirmary and low-detection hideout.
 
 ## Android debug APK
 

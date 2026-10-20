@@ -61,6 +61,7 @@
     .tool-button b { font-size: 15px; }
     .tool-button.active { background: linear-gradient(145deg,#b88544,#e1b365); color: #2a2113; border-color: rgba(255,230,170,.55); }
     #hint { position: absolute; bottom: calc(145px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); max-width: min(47vw, 390px); text-align: center; color: #f1e9d3; font-size: 10px; padding: 7px 12px; border-radius: 14px; background: rgba(15,24,19,.72); border: 1px solid rgba(239,229,198,.16); text-shadow: 0 2px 5px #000; }
+    #hint.bunker-hint { top: calc(62px + var(--safe-top)); bottom: auto; left: max(9px, env(safe-area-inset-left, 0px)); transform: none; max-width: clamp(94px, 18vw, 160px); padding: 5px 8px; text-align: right; font-size: 8px; line-height: 1.55; }
     #tutorialBox { display: none; position: absolute; top: calc(67px + var(--safe-top)); left: 50%; transform: translateX(-50%); width: min(420px, 53vw); padding: 10px 13px; border-radius: 15px; border: 1px solid rgba(228,190,113,.35); background: rgba(25,35,27,.86); box-shadow: 0 8px 20px rgba(0,0,0,.22); pointer-events: auto; text-align: center; }
     #tutorialText { font-size: 11px; line-height: 1.7; color: #f0e7d0; }
     #tutorialFooter { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; color: #d7bf8e; font-size: 9px; }
@@ -132,7 +133,7 @@
       .resource-label { display: none; }
       #bunkerTools { max-width: calc(100vw - 246px); overflow-x: auto; justify-content: flex-start; }
       .tool-button { min-width: 48px; }
-      #hint { display: none; }
+      #hint:not(.bunker-hint) { display: none; }
       #tutorialBox { width: min(330px, 65vw); }
       .card-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .modal-card { max-height: 78vh; padding: 12px; }
@@ -161,6 +162,7 @@
         <div class="resource" title="چوب"><i>♧</i><b id="woodValue">۰</b><span class="resource-label">چوب</span></div>
         <div class="resource" title="سنگ"><i>◆</i><b id="stoneValue">۰</b><span class="resource-label">سنگ</span></div>
         <div class="resource" title="خوراک"><i>●</i><b id="foodValue">۰</b><span class="resource-label">خوراک</span></div>
+        <div class="resource" title="گیاه دارویی"><i>✿</i><b id="herbsValue">۰</b><span class="resource-label">گیاه</span></div>
         <button class="icon-button" id="soundButton" aria-label="صدا">♫</button>
       </div>
     </div>
@@ -222,14 +224,25 @@
 
   // --- Data: shelter types are intentionally data-driven. ---
   const BUNKERS = [
-    { id:'hut', name:'کلبهٔ چوبی', cost:{wood:0,stone:0}, size:[4,3], effect:'گرمای پناه', defense:10, tint:'#9b7041', note:'پناهی کوچک از چوب‌های جنگل؛ آغاز راه.' },
-    { id:'cave', name:'غار سنگی', cost:{wood:5,stone:8}, size:[5,3], effect:'دفاع سنگی', defense:18, tint:'#718079', note:'دیوارهای سنگی، در برابر یورش مقاوم‌ترند.' },
-    { id:'root', name:'خانهٔ ریشه‌ای', cost:{wood:8,stone:5}, size:[5,4], effect:'پنهان در ریشه', defense:15, tint:'#6f7850', note:'پناهگاهی زیر درخت کهنسال هیرکانی.' }
+    { id:'hut', nameFa:'کلبهٔ چوبی', cost:{wood:0,stone:0}, size:[4,3], effect:{label:'گرم و ساده',warmth:.035,stealth:.035,production:{}}, defense:10, tint:'#9b7041', style:'hut', note:'پناهی کوچک از چوب‌های جنگل؛ آغاز راه.' },
+    { id:'cave', nameFa:'غار سنگی', cost:{wood:5,stone:8}, size:[5,3], effect:{label:'پوستهٔ سنگی',warmth:.015,stealth:.09,production:{}}, defense:19, tint:'#718079', style:'cave', note:'دیوارهای سنگی، در برابر یورش مقاوم‌ترند.' },
+    { id:'root', nameFa:'خانهٔ ریشه‌ای', cost:{wood:8,stone:5,herbs:2}, size:[5,4], effect:{label:'ریشه‌های پنهان',warmth:.075,stealth:.19,production:{herbs:1}}, defense:15, tint:'#6f7850', style:'root', note:'پناهگاهی زیر درخت کهنسال هیرکانی.' },
+    { id:'fortress', nameFa:'دژ سنگی', cost:{wood:12,stone:18}, size:[6,4], effect:{label:'دیوارهای ستبر',warmth:0,stealth:.025,production:{}}, defense:29, tint:'#85877b', style:'fortress', note:'استحکام بسیار بالا؛ ساخت آن سنگ زیادی می‌خواهد.' },
+    { id:'trap-house', nameFa:'خانهٔ تله‌ای', cost:{wood:8,stone:8,food:2}, size:[5,4], effect:{label:'تله‌های دفاعی',warmth:.015,stealth:.08,raidDamage:.17,production:{}}, defense:18, tint:'#806347', style:'trap', note:'سازوکار تله‌ها از شدت یورش شبانه می‌کاهد.' },
+    { id:'watchtower', nameFa:'برج دیده‌بانی', cost:{wood:12,stone:6}, size:[4,5], effect:{label:'هشدار زودهنگام',warmth:0,stealth:.07,raidDamage:.16,production:{}}, defense:17, tint:'#ad8751', style:'tower', note:'از بلندی، نزدیک‌شدن جانوران زودتر دیده می‌شود.' },
+    { id:'swamp', nameFa:'پناهگاه تالابی', cost:{wood:6,stone:10,food:3}, size:[5,4], effect:{label:'مه و نی‌زار',warmth:-.035,stealth:.29,production:{food:1}}, defense:18, tint:'#647a57', style:'swamp', note:'در مهِ تالاب پنهان می‌ماند و خوراک می‌رویاند.' },
+    { id:'trade', nameFa:'پناهگاه بازرگانی', cost:{wood:10,stone:7,food:3}, size:[6,3], effect:{label:'دادوستد روزانه',warmth:.025,stealth:.07,production:{wood:1}}, defense:16, tint:'#a27d4d', style:'trade', note:'راه‌های امنِ مبادله، هر سپیده‌دم چوب فراهم می‌کند.' },
+    { id:'farm', nameFa:'پناهگاه مزرعه', cost:{wood:9,stone:9,herbs:3}, size:[6,4], effect:{label:'کشت زیرزمینی',warmth:.02,stealth:.06,production:{food:2}}, defense:15, tint:'#71854e', style:'farm', note:'سبزی و خوراک در باغچه‌های کم‌نور پرورش می‌یابد.' },
+    { id:'forge', nameFa:'کورهٔ آهنگری', cost:{wood:14,stone:14,herbs:2}, size:[5,4], effect:{label:'سنگ و گرمای کوره',warmth:.09,stealth:.015,production:{stone:2}}, defense:22, tint:'#8a6046', style:'forge', note:'کوره پناهگاه را گرم می‌کند و سنگ می‌پردازد.' },
+    { id:'infirmary', nameFa:'درمانگاه زیرزمینی', cost:{wood:12,stone:10,herbs:8}, size:[5,4], effect:{label:'مراقبت و درمان',warmth:.04,stealth:.11,healing:.17,production:{}}, defense:17, tint:'#809477', style:'infirmary', note:'گیاهان دارویی و استراحت، جان را آرام‌آرام بازمی‌گردانند.' },
+    { id:'hidden', nameFa:'پناهگاه پنهان', cost:{wood:18,stone:15,herbs:5,food:4}, size:[5,4], effect:{label:'ردپای بسیار کم',warmth:.025,stealth:.62,production:{}}, defense:16, tint:'#53634f', style:'hidden', note:'ورودی پوشیده و هوای مرداب، رد پناهگاه را محو می‌کند.' }
   ];
   const ROOMS = {
-    storage:{ name:'انبار', cost:{wood:3,stone:1}, effect:'جای امن برای آذوقه', defense:1, color:'#bd9957' },
-    bed:{ name:'بستر', cost:{wood:3,stone:0}, effect:'بازیابی گرما', defense:0, color:'#bd806c' },
-    trap:{ name:'اتاق تله', cost:{wood:2,stone:2}, effect:'دفاع شبانه', defense:5, color:'#778e58' }
+    storage:{ name:'انبار', cost:{wood:3,stone:1}, upgrade:{wood:2,stone:1}, desc:'ظرفیت ذخیره‌سازی بیشتر', effect:{capacity:8,defense:1}, color:'#bd9957' },
+    kitchen:{ name:'آشپزخانه', cost:{wood:4,stone:1}, upgrade:{wood:3,stone:1}, desc:'خوراک روزانه و گرمای اجاق', effect:{warmth:.025,production:{food:1},defense:1}, color:'#d8894c' },
+    bed:{ name:'اتاق خواب', cost:{wood:3,stone:0}, upgrade:{wood:3,stone:1}, desc:'بازیابی گرما و سلامت', effect:{warmth:.085,healing:.07}, color:'#bd806c' },
+    workshop:{ name:'کارگاه', cost:{wood:5,stone:3}, upgrade:{wood:3,stone:2}, desc:'سنگ روزانه و برداشت بهتر', effect:{gatherBonus:.08,production:{stone:1},defense:1}, color:'#88918a' },
+    trap:{ name:'اتاق تله', cost:{wood:2,stone:2}, upgrade:{wood:2,stone:2}, desc:'کاهش آسیب یورش شبانه', effect:{raidDamage:.1,defense:5}, color:'#778e58' }
   };
 
   const $ = id => document.getElementById(id);
@@ -354,11 +367,11 @@
     if(type==='bunkers') {
       title.textContent='پناهگاه‌ها';
       const base=BUNKERS.find(b=>b.id===game.bunkerId);
-      note.textContent=`پناهگاه کنونی: ${base?.name||'کلبهٔ چوبی'} · هر پایگاه، توان دفاع و گنجایش متفاوتی دارد.`;
+      note.textContent=`پناهگاه کنونی: ${base?.nameFa||'کلبهٔ چوبی'} · هر پایگاه، توان دفاع و گنجایش متفاوتی دارد.`;
       for(const b of BUNKERS) {
         const owned=game.ownedBunkers.includes(b.id), can=canPay(b.cost), selected=game.bunkerId===b.id;
         const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'+(selected?' selected':'');
-        btn.innerHTML=`<span class="data-title">${b.name}</span><span class="data-desc">${b.note} · دفاع ${b.defense}</span><span class="data-meta"><span>${owned?'ساخته‌شده':costText(b.cost)}</span><span>${selected?'فعال':owned?'انتخاب':'بساز'}</span></span>`;
+        btn.innerHTML=`<span class="data-title">${b.nameFa}</span><span class="data-desc">${b.note} · ${b.effect.label} · دفاع ${b.defense} · گنجایش ${fa(b.size[0]*b.size[1])} اتاق</span><span class="data-meta"><span>${owned?'ساخته‌شده':costText(b.cost)}</span><span>${selected?'فعال':owned?'انتخاب':'بساز'}</span></span>`;
         btn.addEventListener('click',()=>buyOrSelectBunker(b.id)); cards.appendChild(btn);
       }
     } else if(type==='rooms') {
@@ -366,12 +379,12 @@
       note.textContent='اتاق را انتخاب کن، سپس یک خانهٔ خالی و کنده‌شده را نشانه بگیر و دکمهٔ عمل را بزن.';
       for(const [id,r] of Object.entries(ROOMS)) {
         const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'+(game.selectedRoom===id?' selected':'');
-        btn.innerHTML=`<span class="data-title">${r.name}</span><span class="data-desc">${r.effect}${r.defense?` · دفاع +${r.defense}`:''}</span><span class="data-meta"><span class="cost">${costText(r.cost)}</span><span>انتخاب</span></span>`;
+        btn.innerHTML=`<span class="data-title">${r.name}</span><span class="data-desc">${r.desc}${r.effect.defense?` · دفاع +${r.effect.defense}`:''}</span><span class="data-meta"><span class="cost">${costText(r.cost)}</span><span>انتخاب</span></span>`;
         btn.addEventListener('click',()=>{game.selectedRoom=id; closeModal(); showToast(`${r.name} انتخاب شد؛ خانهٔ خالی را نشانه بگیر.`,2100); updateUI(true);}); cards.appendChild(btn);
       }
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='با دستهٔ سمت چپ حرکت کن. در جنگل کنار درخت، سنگ یا بوته دکمهٔ عمل را بزن؛ خوراک را با دکمهٔ ◉ مصرف کن. با رسیدن شب، جانوران به پناهگاه یورش می‌آورند. در زیرزمین، خانهٔ خالی را لمس کن، حفر کن و اتاق بساز. پناهگاه و اتاق‌های آسیب‌دیده را با چوب و سنگ تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>عمل:</b> فاصله یا E.</b>';
+      note.innerHTML='با دستهٔ سمت چپ حرکت کن. در جنگل کنار درخت، سنگ یا بوته دکمهٔ عمل را بزن؛ خوراک را با دکمهٔ ◉ مصرف کن. با رسیدن شب، جانوران به پناهگاه یورش می‌آورند. در زیرزمین، خانهٔ خالی را لمس کن، حفر کن و اتاق بساز. پناهگاه و اتاق‌های آسیب‌دیده را با چوب و سنگ تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -381,11 +394,15 @@
   function costText(cost) { return Object.entries(cost).filter(([,v])=>v>0).map(([k,v])=>`${{wood:'چوب',stone:'سنگ',food:'خوراک',herbs:'گیاه'}[k]||k} ${fa(v)}`).join(' · ')||'رایگان'; }
   function canPay(cost) { return Object.entries(cost).every(([k,v])=>(game.resources[k]||0)>=v); }
   function pay(cost) { if(!canPay(cost))return false; for(const [k,v] of Object.entries(cost))game.resources[k]=(game.resources[k]||0)-v; return true; }
+  function addResource(key,amount) {
+    const cap=28+Math.floor(combinedEffects().capacity||0),before=game.resources[key]||0;
+    game.resources[key]=Math.min(cap,before+amount);return game.resources[key]-before;
+  }
   function buyOrSelectBunker(id) {
     const b=BUNKERS.find(x=>x.id===id); if(!b)return;
     if(!game.ownedBunkers.includes(id)) {
       if(!pay(b.cost)) { showToast(`منابع کافی نیست؛ نیاز داری به ${costText(b.cost)}.`,2300); beep('hit'); return; }
-      game.ownedBunkers.push(id); game.bunkers[id]={hp:100}; beep('build'); showToast(`${b.name} ساخته شد.`,2000);
+      game.ownedBunkers.push(id); game.bunkers[id]={hp:100}; beep('build'); showToast(`${b.nameFa} ساخته شد.`,2000);
     }
     game.bunkerId=id; closeModal(); updateUI(true); saveGame();
   }
@@ -483,7 +500,7 @@
     drawCamp(MAP.cx,MAP.cy);
     const drawables=[];
     for(const n of world.nodes) if(n.x>cam.x-90&&n.x<cam.x+W+90&&n.y>cam.y-90&&n.y<cam.y+H+90) drawables.push({y:n.y,o:n,type:n.type});
-    for(const a of world.animals) if(a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100) drawables.push({y:a.y+8,o:a,type:'animal'});
+    for(const a of world.animals) if(a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100) drawables.push({y:a.y+8,o:a,type:'animal'});
     const px=game.player.x,py=game.player.y;drawables.push({y:py+7,o:game.player,type:'player'});
     drawables.sort((a,b)=>a.y-b.y);
     for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else drawPlayerForest(px,py);}
@@ -500,22 +517,37 @@
 
   // --- Side-view bunker, tile digging and construction ---
   function bunkerLayout() {
-    const cell=Math.min(62,W/(GRID.cols+1.2),H/6.15);
-    const left=(W-cell*GRID.cols)/2, ground=H*.285, top=ground+16;
-    return {cell,left,ground,top,width:cell*GRID.cols,height:cell*GRID.rows};
+    const ground=H*.285,top=ground+16,joystickClearance=(W<=760?139:153);
+    const cell=Math.min(62,(W-joystickClearance-12)/GRID.cols,Math.max(29,(H-top-80)/GRID.rows));
+    const width=cell*GRID.cols,left=Math.max((W-width)/2,joystickClearance);
+    return {cell,left,ground,top,width,height:cell*GRID.rows};
   }
   function drawSurfaceShelter(x,y,bunker) {
-    const base=bunker||BUNKERS[0];
+    const base=bunker||BUNKERS[0], style=base.style||'hut';
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(x,y+15,73,14,0,0,Math.PI*2);ctx.fill();
-    if(base.id==='cave') {
-      ctx.fillStyle=base.tint;ctx.beginPath();ctx.moveTo(x-48,y+7);ctx.lineTo(x-34,y-31);ctx.lineTo(x-14,y-52);ctx.lineTo(x+17,y-48);ctx.lineTo(x+45,y-22);ctx.lineTo(x+51,y+7);ctx.closePath();ctx.fill();
-      ctx.fillStyle='#161d19';ctx.beginPath();ctx.ellipse(x+2,y+4,20,25,0,0,Math.PI*2);ctx.fill();
-    } else if(base.id==='root') {
-      ctx.strokeStyle='#62533b';ctx.lineWidth=11;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x-45,y-36);ctx.quadraticCurveTo(x-22,y+5,x-12,y+2);ctx.moveTo(x+41,y-32);ctx.quadraticCurveTo(x+23,y+8,x+11,y+4);ctx.stroke();
-      ctx.fillStyle='#324e35';ctx.beginPath();ctx.ellipse(x,y-33,43,27,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1b2920';ctx.beginPath();ctx.moveTo(x-17,y+7);ctx.lineTo(x-12,y-17);ctx.lineTo(x+18,y-17);ctx.lineTo(x+22,y+7);ctx.closePath();ctx.fill();
+    if(style==='cave'||style==='hidden') {
+      ctx.fillStyle=base.tint;ctx.beginPath();ctx.moveTo(x-49,y+7);ctx.lineTo(x-36,y-28);ctx.lineTo(x-17,y-51);ctx.lineTo(x+17,y-48);ctx.lineTo(x+44,y-22);ctx.lineTo(x+52,y+7);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#161d19';ctx.beginPath();ctx.ellipse(x+2,y+4,style==='hidden'?13:20,style==='hidden'?18:25,0,0,Math.PI*2);ctx.fill();
+      if(style==='hidden'){ctx.strokeStyle='#827459';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x-21,y-10);ctx.quadraticCurveTo(x,y-29,x+22,y-8);ctx.stroke();}
+    } else if(style==='root'||style==='farm'||style==='swamp') {
+      ctx.strokeStyle=style==='swamp'?'#736346':'#62533b';ctx.lineWidth=style==='swamp'?7:11;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x-45,y-36);ctx.quadraticCurveTo(x-22,y+5,x-12,y+2);ctx.moveTo(x+41,y-32);ctx.quadraticCurveTo(x+23,y+8,x+11,y+4);ctx.stroke();
+      ctx.fillStyle=base.tint;ctx.beginPath();ctx.ellipse(x,y-33,43,27,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1b2920';ctx.beginPath();ctx.moveTo(x-17,y+7);ctx.lineTo(x-12,y-17);ctx.lineTo(x+18,y-17);ctx.lineTo(x+22,y+7);ctx.closePath();ctx.fill();
+      if(style==='swamp'){ctx.strokeStyle='#adba88';ctx.lineWidth=2;for(let n=-2;n<=2;n++){ctx.beginPath();ctx.moveTo(x+n*14,y+8);ctx.lineTo(x+n*16,y-22-(n%2)*10);ctx.stroke();}}
+      if(style==='farm'){ctx.fillStyle='#8ca257';for(let n=-2;n<=2;n++){ctx.beginPath();ctx.ellipse(x+n*10,y-31-Math.abs(n)*2,5,3,n*.2,0,Math.PI*2);ctx.fill();}}
+    } else if(style==='tower') {
+      ctx.fillStyle=base.tint;ctx.fillRect(x-19,y-45,38,53);ctx.fillStyle='#46382b';ctx.fillRect(x-11,y-5,22,13);ctx.fillStyle='#bd985e';ctx.fillRect(x-25,y-48,50,7);ctx.fillRect(x-17,y-59,34,9);ctx.fillStyle='#e5c886';ctx.fillRect(x-4,y-38,8,7);ctx.fillRect(x-4,y-24,8,7);
+    } else if(style==='fortress'||style==='forge') {
+      ctx.fillStyle=base.tint;ctx.fillRect(x-48,y-24,96,32);ctx.fillStyle=style==='forge'?'#543629':'#6b7069';
+      for(let n=0;n<4;n++){ctx.fillRect(x-48+n*25,y-33,18,10);ctx.fillRect(x-48+n*25,y-17,24,3);}
+      ctx.fillStyle=style==='forge'?'#ee8c47':'#252b26';ctx.fillRect(x-10,y-8,20,16);if(style==='forge'){ctx.fillStyle='#ffd07a';ctx.beginPath();ctx.arc(x,y-1,4+Math.sin(gameTime*6)*1.4,0,Math.PI*2);ctx.fill();}
+    } else if(style==='trap') {
+      ctx.fillStyle='#58422c';ctx.fillRect(x-37,y-18,74,26);ctx.fillStyle=base.tint;ctx.beginPath();ctx.moveTo(x-47,y-17);ctx.lineTo(x,y-49);ctx.lineTo(x+48,y-17);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#d1b06e';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-38,y-14);ctx.lineTo(x+37,y-14);ctx.moveTo(x-26,y-5);ctx.lineTo(x-18,y+5);ctx.moveTo(x+26,y-5);ctx.lineTo(x+18,y+5);ctx.stroke();
     } else {
-      ctx.fillStyle='#58422c';ctx.fillRect(x-37,y-18,74,26);ctx.fillStyle='#987145';ctx.beginPath();ctx.moveTo(x-47,y-17);ctx.lineTo(x,y-49);ctx.lineTo(x+48,y-17);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#58422c';ctx.fillRect(x-37,y-18,74,26);ctx.fillStyle=base.tint;ctx.beginPath();ctx.moveTo(x-47,y-17);ctx.lineTo(x,y-49);ctx.lineTo(x+48,y-17);ctx.closePath();ctx.fill();
       ctx.fillStyle='#30271c';ctx.fillRect(x-10,y-8,21,17);ctx.strokeStyle='#c29a5a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-38,y-15);ctx.lineTo(x+37,y-15);ctx.stroke();
+      if(style==='trade'){ctx.fillStyle='#d6be83';ctx.fillRect(x-29,y-11,9,7);ctx.fillRect(x+19,y-11,9,7);}
+      if(style==='infirmary'){ctx.fillStyle='#e6dfc6';ctx.fillRect(x-3,y-13,6,14);ctx.fillRect(x-8,y-8,16,5);}
     }
     ctx.fillStyle='#a2a177';ctx.fillRect(x-58,y+7,116,5);
   }
@@ -527,8 +559,12 @@
     ctx.fillStyle=def.color;ctx.fillRect(x+10,y+12,cell-20,5);
     if(room.type==='storage'){
       ctx.fillStyle='#9e7440';ctx.fillRect(x+13,y+22,cell*.42,cell*.35);ctx.strokeStyle='#d2ae72';ctx.lineWidth=1;ctx.strokeRect(x+13,y+22,cell*.42,cell*.35);ctx.beginPath();ctx.moveTo(x+13,y+29);ctx.lineTo(x+cell*.42+13,y+29);ctx.stroke();
+    } else if(room.type==='kitchen') {
+      ctx.fillStyle='#5a4a38';ctx.fillRect(x+12,y+cell*.48,cell-24,cell*.2);ctx.fillStyle='#df8747';ctx.beginPath();ctx.arc(x+cell*.5,y+cell*.51,cell*.1,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f2c16f';ctx.beginPath();ctx.arc(x+cell*.5,y+cell*.49,cell*.045,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#c3ae82';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+cell*.5,y+cell*.27);ctx.lineTo(x+cell*.5,y+cell*.39);ctx.stroke();
     } else if(room.type==='bed') {
       ctx.fillStyle='#b4816f';ctx.fillRect(x+12,y+23,cell-25,cell*.29);ctx.fillStyle='#e4c49b';ctx.fillRect(x+14,y+24,cell*.28,cell*.1);ctx.fillStyle='#45382e';ctx.fillRect(x+12,y+cell*.52,cell-25,3);
+    } else if(room.type==='workshop') {
+      ctx.fillStyle='#777b73';ctx.fillRect(x+13,y+cell*.48,cell-26,5);ctx.fillStyle='#b7b5a5';ctx.fillRect(x+cell*.36,y+cell*.34,cell*.28,cell*.15);ctx.fillStyle='#695743';ctx.fillRect(x+cell*.48,y+cell*.49,4,cell*.19);ctx.strokeStyle='#d2b678';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+cell*.7,y+cell*.34);ctx.lineTo(x+cell*.78,y+cell*.22);ctx.stroke();
     } else if(room.type==='trap') {
       ctx.strokeStyle='#c2a96c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+14,y+cell*.65);ctx.lineTo(x+cell/2,y+cell*.3);ctx.lineTo(x+cell-13,y+cell*.65);ctx.stroke();ctx.fillStyle='#a85d45';ctx.beginPath();ctx.arc(x+cell/2,y+cell*.47,4,0,Math.PI*2);ctx.fill();
     }
@@ -570,7 +606,7 @@
     }
     // Base integrity and mineable prompt.
     ctx.fillStyle='rgba(4,8,7,.58)';roundedRect(ctx,Math.max(8,W-170),g.ground+14,155,25,8);ctx.fill();
-    ctx.fillStyle='#e9d7ae';ctx.font='bold 10px Tahoma';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(`${b.name} · استحکام ${fa(game.bunkers[game.bunkerId]?.hp??100)}٪`,W-23,g.ground+26);
+    ctx.fillStyle='#e9d7ae';ctx.font='bold 10px Tahoma';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(`${b.nameFa} · استحکام ${fa(game.bunkers[game.bunkerId]?.hp??100)}٪`,W-23,g.ground+26);
     const damaged=Object.values(game.rooms).filter(r=>r.hp<r.maxHp).length;
     ctx.fillStyle='rgba(0,0,0,.5)';roundedRect(ctx,10,g.ground+13,138,27,8);ctx.fill();ctx.fillStyle='#d8ceb1';ctx.textAlign='left';ctx.fillText(`اتاق‌ها ${fa(Object.keys(game.rooms).length)} · آسیب ${fa(damaged)}`,20,g.ground+26);
   }
@@ -619,6 +655,7 @@
   }
   function updateAnimals(dt) {
     for(const a of world.animals) {
+      if(a.hp<=0)continue;
       const d=Math.hypot(game.player.x-a.x,game.player.y-a.y);
       a.attack=Math.max(0,a.attack-dt);
       if(d<220&&game.mode==='forest') { const dx=(game.player.x-a.x)/(d||1),dy=(game.player.y-a.y)/(d||1);a.dir=Math.atan2(dy,dx);a.x+=dx*dt*(d>43?31:0);a.y+=dy*dt*(d>43?31:0); }
@@ -640,6 +677,7 @@
   function updateActionHint() {
     const label=$('actionLabel'), hint=$('hint'); if(!game||!active)return;
     if(game.mode==='forest') {
+      hint.classList.remove('bunker-hint');
       const n=nearestNode(86),a=nearestAnimal(58),camp=Math.hypot(game.player.x-MAP.cx,game.player.y-MAP.cy)<99;
       if(a){label.textContent='دفاع';hint.textContent='جانور نزدیک است؛ دکمهٔ عمل را برای مقابله بزن.';}
       else if(camp){label.textContent='پناه';hint.textContent='به پناهگاه برگرد؛ شب، جانوران به ورودی حمله می‌کنند.';}
@@ -647,6 +685,7 @@
       else {label.textContent='برداشت';hint.textContent='بوته‌ها، درخت‌ها و سنگ‌ها را در میان مه پیدا کن.';}
       $('forestControls').style.display='flex';$('bunkerTools').style.display='none';
     } else {
+      hint.classList.add('bunker-hint');
       $('forestControls').style.display='none';$('bunkerTools').style.display='flex';
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k];
       if(room)hint.textContent=`${ROOMS[room.type]?.name||'اتاق'} · سطح ${fa(room.level)} · سلامت ${fa(room.hp)}/${fa(room.maxHp)}؛ برای ارتقا، عمل را بزن.`;
@@ -659,19 +698,17 @@
     const animal=nearestAnimal(61);
     if(animal) {
       animal.hp-=22;beep('hit');
-      if(animal.hp<=0){game.resources.food+=1;game.resources.herbs+=animal.kind==='leopard'?1:0;showToast('جانور عقب‌نشینی کرد؛ مقداری خوراک پیدا کردی.',2000);}
+      if(animal.hp<=0){addResource('food',1);if(animal.kind==='leopard')addResource('herbs',1);showToast('جانور عقب‌نشینی کرد؛ مقداری خوراک پیدا کردی.',2000);}
       else showToast('با چوبدستی دفاع کردی؛ مراقب باش!',1400);
       return;
     }
+    if(Math.hypot(game.player.x-MAP.cx,game.player.y-MAP.cy)<99){enterBunker();return;}
     const result=nearestNode(80);
-    if(!result){
-      if(Math.hypot(game.player.x-MAP.cx,game.player.y-MAP.cy)<100){enterBunker();return;}
-      showToast('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;
-    }
+    if(!result){showToast('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;}
     const n=result.node;
-    if(n.type==='tree'){const gain=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=gain;game.resources.wood+=gain;showToast(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
-    else if(n.type==='rock'){const gain=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=gain;game.resources.stone+=gain;showToast(`سنگ رودخانه‌ای برداشتی: +${fa(gain)} سنگ.`,1500);}
-    else {n.remaining--;if(n.herb){game.resources.herbs++;showToast('گیاه دارویی هیرکانی پیدا کردی: +۱ گیاه.',1600);}else{game.resources.food++;showToast('میوهٔ جنگلی چیدی: +۱ خوراک.',1500);}}
+    if(n.type==='tree'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('wood',gain);showToast(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
+    else if(n.type==='rock'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('stone',gain);showToast(`سنگ رودخانه‌ای برداشتی: +${fa(gain)} سنگ.`,1500);}
+    else {n.remaining--;if(n.herb){addResource('herbs',1);showToast('گیاه دارویی هیرکانی پیدا کردی: +۱ گیاه.',1600);}else{addResource('food',1);showToast('میوهٔ جنگلی چیدی: +۱ خوراک.',1500);}}
     beep('gather');
   }
   function eat() {
@@ -700,13 +737,14 @@
     const t=currentTarget(),k=keyOf(t.c,t.r),room=game.rooms[k];
     if(room) {
       if(room.level>=3){showToast('این اتاق به بالاترین سطح رسیده است.',1600);return;}
-      const cost={wood:2+room.level,stone:room.level};
+      const def=ROOMS[room.type]||ROOMS.storage,cost={...def.upgrade};
+      for(const key of Object.keys(cost))cost[key]*=room.level;
       if(!pay(cost)){showToast(`برای ارتقا نیاز داری: ${costText(cost)}.`,1800);return;}
       room.level++;room.maxHp+=10;room.hp=Math.min(room.maxHp,room.hp+18);beep('build');showToast(`${ROOMS[room.type].name} به سطح ${fa(room.level)} رسید.`,1800);return;
     }
     if(!game.dug[k]) {
       if(!adjacentToDug(t.c,t.r)){showToast('برای گسترش تونل، خانه‌ای کنار فضای کنده‌شده انتخاب کن.',1900);return;}
-      game.dug[k]=true;game.resources.stone+=1;beep('dig');showToast('سنگ را کندی؛ +۱ سنگ. حالا می‌توانی اتاق بسازی.',1600);return;
+      game.dug[k]=true;addResource('stone',1);beep('dig');showToast('سنگ را کندی؛ +۱ سنگ. حالا می‌توانی اتاق بسازی.',1600);return;
     }
     if(!game.selectedRoom){showToast('یک اتاق انتخاب کن یا خانهٔ سنگی دیگری را برای حفر نشانه بگیر.',2000);return;}
     const def=ROOMS[game.selectedRoom];
@@ -723,30 +761,53 @@
     base.hp=Math.min(100,base.hp+25);beep('build');showToast('بخش آسیب‌دیدهٔ پناهگاه تعمیر شد.',1600);
   }
 
-  function roomDefense() { return Object.values(game.rooms).reduce((s,r)=>s+((ROOMS[r.type]?.defense||0)*(r.hp>0?r.level:0)),0); }
+  function combinedEffects() {
+    const base=BUNKERS.find(b=>b.id===game.bunkerId)||BUNKERS[0], e=base.effect||{};
+    const total={warmth:e.warmth||0,stealth:e.stealth||0,healing:e.healing||0,raidDamage:e.raidDamage||0,gatherBonus:e.gatherBonus||0,capacity:e.capacity||0,defense:0,production:{...(e.production||{})}};
+    for(const room of Object.values(game.rooms)) {
+      if(room.hp<=0)continue;
+      const re=ROOMS[room.type]?.effect||{},level=room.level||1;
+      total.warmth+=(re.warmth||0)*level;total.healing+=(re.healing||0)*level;total.stealth+=(re.stealth||0)*level;
+      total.raidDamage+=(re.raidDamage||0)*level;total.gatherBonus+=(re.gatherBonus||0)*level;total.capacity+=(re.capacity||0)*level;total.defense+=(re.defense||0)*level;
+      for(const [resource,amount] of Object.entries(re.production||{}))total.production[resource]=(total.production[resource]||0)+amount*level;
+    }
+    return total;
+  }
+  function roomDefense() { return combinedEffects().defense; }
   function baseDefense() { return (BUNKERS.find(b=>b.id===game.bunkerId)?.defense||0)+roomDefense(); }
   function beginNight() {
     game.phase='night';game.phaseTime=0;game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.stepTimer=0;game.raidTimer=3;game.selectedCell=null;
     beep('raid');showToast('شب فرارسید؛ گرگ‌ها و پلنگ‌ها ورودی پناهگاه را محاصره کرده‌اند!',3500);
   }
   function nightRaid() {
-    const base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100});
-    const raw=8+Math.floor(Math.random()*8),def=baseDefense(),damage=Math.max(1,Math.round(raw-Math.min(raw-1,def*.28)));
+    const base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100}),effects=combinedEffects();
+    const raw=8+Math.floor(Math.random()*8),def=baseDefense();
+    const evade=clamp((effects.stealth||0)+(effects.raidDamage||0),0,.84);
+    const damage=Math.max(1,Math.round(raw*(1-evade)-Math.min(raw*.68,def*.22)));
     base.hp=Math.max(0,base.hp-damage);
-    const rooms=Object.entries(game.rooms).filter(([,r])=>r.hp>0);
+    const rooms=Object.entries(game.rooms).filter(([,r])=>r.hp>0).sort((a,b)=>a[1].hp/a[1].maxHp-b[1].hp/b[1].maxHp);
     let damaged='';
-    if(rooms.length&&Math.random()<.72){const [k,r]=rooms[Math.floor(Math.random()*rooms.length)];const hit=Math.ceil(damage*(.75+Math.random()*.6));r.hp=Math.max(0,r.hp-hit);damaged=` ${ROOMS[r.type].name} ${r.hp===0?'از کار افتاد':'آسیب دید'}.`;}
+    if(rooms.length&&Math.random()<.78){const [k,r]=rooms[Math.floor(Math.random()*Math.min(3,rooms.length))];const hit=Math.ceil(damage*(.75+Math.random()*.6));r.hp=Math.max(0,r.hp-hit);damaged=` ${ROOMS[r.type].name} ${r.hp===0?'از کار افتاد':'آسیب دید'}.`;}
     if(base.hp===0){game.stats.health=Math.max(0,game.stats.health-3);}
     beep('raid');showToast(`یورش شبانه! پناهگاه ${fa(damage)}٪ آسیب دید.${damaged}`,2500);
   }
   function updateSurvival(dt) {
-    const p=game.phase==='night';
-    game.stats.hunger=clamp(game.stats.hunger-dt*(p?.095:.07),0,100);
-    if(p&&game.mode==='bunker') game.stats.warmth=clamp(game.stats.warmth+dt*.2,0,100);
-    else if(p)game.stats.warmth=clamp(game.stats.warmth-dt*.42,0,100);
+    const night=game.phase==='night',effects=combinedEffects();
+    game.stats.hunger=clamp(game.stats.hunger-dt*(night?.095:.07),0,100);
+    if(night&&game.mode==='bunker')game.stats.warmth=clamp(game.stats.warmth+dt*Math.max(.035,.12+effects.warmth),0,100);
+    else if(night)game.stats.warmth=clamp(game.stats.warmth-dt*.42,0,100);
     else game.stats.warmth=clamp(game.stats.warmth+dt*.055,0,100);
     if(game.stats.hunger<13||game.stats.warmth<14)game.stats.health=clamp(game.stats.health-dt*.32,0,100);
-    else if(game.mode==='bunker'&&Object.values(game.rooms).some(r=>r.type==='bed'&&r.hp>0))game.stats.health=clamp(game.stats.health+dt*.035,0,100);
+    else if(game.mode==='bunker'&&effects.healing>0)game.stats.health=clamp(game.stats.health+dt*effects.healing,0,100);
+  }
+  function produceAtDawn() {
+    const production=combinedEffects().production,labels={wood:'چوب',stone:'سنگ',food:'خوراک',herbs:'گیاه'};
+    const lines=[];
+    for(const [resource,amount] of Object.entries(production)){
+      const gain=Math.floor(amount);if(gain<=0)continue;
+      const received=addResource(resource,gain);if(received>0)lines.push(`+${fa(received)} ${labels[resource]||resource}`);
+    }
+    return lines.length?`تولید روزانه: ${lines.join(' · ')}.`:'';
   }
   function update(dt) {
     if(!active||!game)return;
@@ -756,7 +817,7 @@
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
     else {
       game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0){nightRaid();game.raidTimer=7.1+Math.random()*2.6;}
-      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;game.mode='forest';game.player.x=MAP.cx+66;game.player.y=MAP.cy+12;game.stats.warmth=clamp(game.stats.warmth+9,0,100);showToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن.`,2600);beep('gather');}
+      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;game.mode='forest';game.player.x=MAP.cx+66;game.player.y=MAP.cy+12;game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();showToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن. ${produced}`,3000);beep('gather');}
     }
     if(game.tutorial?.active){game.tutorial.time+=dt;if(game.tutorial.time>=60){game.tutorial.active=false;showToast('آموزش کامل شد؛ از هیرکانی مراقبت کن.',2200);}}
     if(game.stats.health<=0){game.stats.health=0;game.gameOver=true;active=false;try{localStorage.removeItem(SAVE_KEY);}catch(e){}$('gameOverReason').textContent='سرما و خطرهای جنگل توانت را گرفتند.';setScreen('gameover');return;}
@@ -775,7 +836,7 @@
     const s=game.stats;
     $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);
     $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;
-    $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);
+    $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);$('herbsValue').textContent=fa(game.resources.herbs||0);
     const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
     $('phaseText').textContent=game.phase==='day'?`روز ${fa(game.day)} · روشنایی`:`روز ${fa(game.day)} · یورش شب`;
