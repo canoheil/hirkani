@@ -1,0 +1,17 @@
+{
+  "name": "hirkani",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A procedural 2D survival game set in Iran's Hyrcanian forests",
+  "scripts": {
+    "cap:add:android": "cap add android",
+    "cap:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.1",
+    "@capacitor/core": "6.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.1"
+  }
+}
