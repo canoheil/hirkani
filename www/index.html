@@ -61,7 +61,8 @@
     .icon-button.active { color: #f5ce7d; background: rgba(187,129,54,.2); border-color: rgba(244,194,105,.55); }
     .icon-button:active, .action-button:active, .soft-button:active { transform: scale(.95); }
     .controls { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-    #joystick { position: absolute; left: max(15px, env(safe-area-inset-left, 0px)); bottom: calc(13px + var(--safe-bottom)); width: 126px; height: 126px; border-radius: 50%; background: radial-gradient(circle at 44% 39%, rgba(147,175,133,.18), rgba(14,23,18,.62)); border: 1px solid rgba(231,239,216,.24); box-shadow: inset 0 0 18px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.22); pointer-events: auto; touch-action: none; }
+    #joystick { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(12px + var(--safe-bottom)); width: 132px; height: 132px; border-radius: 50%; background: radial-gradient(circle at 44% 39%, rgba(147,175,133,.18), rgba(14,23,18,.62)); border: 1px solid rgba(231,239,216,.24); box-shadow: inset 0 0 18px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.22); opacity: .66; transition: opacity .12s ease; pointer-events: auto; touch-action: none; }
+    #joystick.active { opacity: .88; }
     #joyKnob { position: absolute; width: 54px; height: 54px; top: 50%; left: 50%; margin: -27px 0 0 -27px; border-radius: 50%; background: linear-gradient(145deg, rgba(170,197,151,.9), rgba(71,111,75,.92)); border: 1px solid rgba(255,255,255,.45); box-shadow: 0 5px 13px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.35); }
     .right-controls { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(15px + var(--safe-bottom)); display: flex; align-items: end; gap: 7px; pointer-events: auto; }
     #actionButton { order: -1; }
@@ -236,9 +237,6 @@
     #resourcePanel .resource .ui-icon { width:17px; height:17px; }
     #resourcePanel .resource b { color:#f7efd9; font-size:12px; }
     .controls { z-index:6; }
-    #joystickZone { position:absolute; left:0; top:28%; width:45%; height:72%; pointer-events:none; touch-action:none; z-index:1; }
-    #joystick { position:absolute; left:18%; top:72%; bottom:auto; width:132px; height:132px; transform:translate(-50%,-50%); opacity:0; pointer-events:none; transition:opacity .12s ease; background:radial-gradient(circle at 43% 38%,rgba(150,178,137,.2),rgba(14,23,18,.67)); border:1px solid rgba(231,239,216,.28); }
-    #joystick.active { opacity:.96; pointer-events:auto; }
     #joystick.running { border-color:rgba(231,191,112,.55); box-shadow:inset 0 0 18px rgba(0,0,0,.25),0 0 0 2px rgba(231,191,112,.2),0 6px 18px rgba(0,0,0,.22); }
     #joystick.running::after { content:""; position:absolute; inset:-4px; border:1px solid rgba(231,191,112,.48); border-radius:50%; box-shadow:0 0 8px rgba(231,191,112,.16); pointer-events:none; }
     #joyKnob { transition:transform .055s ease-out; }
@@ -271,11 +269,8 @@
     .tool-button b .ui-icon { width:18px; height:18px; }
     #minimapLabel { font-size:9px; }
     #toast { font-size:12px; }
-    #joystickZone { touch-action:none; }
     .action-sheet.open,.status-panel.open { will-change:transform,opacity; }
-    @media (pointer: coarse) { #joystickZone { pointer-events:auto; } }
     @media (max-width:760px) {
-      #joystickZone { pointer-events:auto; }
       .hud-topbar { width:calc(100% - 18px); gap:6px; }
       .top-context,.hud-tools { min-height:46px; padding:4px 5px; gap:5px; }
       .top-context { gap:5px; }
@@ -288,8 +283,7 @@
       .hud-tools { gap:4px; }
       .status-panel { top:calc(59px + var(--safe-top)); }
       #minimapWrap { width:100px; height:min(68px,max(0px,calc(28vh - 62px - var(--safe-top)))); }
-      #joystickZone { top:28%; width:45%; height:72%; }
-      #joystick { width:120px; height:120px; }
+      #joystick { width:112px; height:112px; }
       .right-controls { right:max(10px,env(safe-area-inset-right,0px)); bottom:calc(10px + var(--safe-bottom)); gap:7px; }
       #actionButton { width:68px; height:68px; }
       .more-button { min-width:50px; min-height:50px; }
@@ -322,7 +316,6 @@
       #minimapLabel { display:none; }
       #toast { top:calc(28vh - 28px); left:auto; right:max(10px,env(safe-area-inset-right,0px)); max-width:min(38vw,280px); padding:4px 7px; font-size:8px; line-height:1.25; transform:translateY(-6px); }
       #toast.show { transform:translateY(0); }
-      #joystickZone { top:28%; width:45%; height:72%; }
       .right-controls { bottom:calc(7px + var(--safe-bottom)); }
       .action-sheet { bottom:calc(80px + var(--safe-bottom)); max-height:54vh; }
     }
@@ -374,9 +367,7 @@
     <div id="raidWarning" role="status" aria-live="polite"><span id="raidWarningArrow" aria-hidden="true">▲</span><span id="raidWarningText">زوزه از لبهٔ جنگل</span></div>
     <div id="minimapWrap" aria-hidden="true"><canvas id="minimapCanvas"></canvas><span id="minimapLabel">نقشه</span></div>
     <div class="controls" id="controls" style="display:none">
-      <div id="joystickZone" aria-label="حرکت با دستهٔ مجازی">
-        <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
-      </div>
+      <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
         <button class="action-button" id="actionButton" aria-label="عمل"><span class="action-glyph" id="actionGlyph" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3v18M5 10l7-7 7 7M6 18h12"/></svg></span><span id="actionLabel">عمل</span></button>
         <button class="more-button" id="moreButton" aria-label="گشودن کنش‌های بیشتر" aria-controls="actionSheet" aria-expanded="false"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>بیشتر</span></button>
@@ -879,7 +870,7 @@
       title.textContent='کارگاه ساخت';note.textContent='مواد را از جنگل بردار و دستورهای ساخت را در سه دسته ببین؛ خوراک‌ها هنگام ساخت مصرف می‌شوند.';craftCategory='tools';renderCraftingTabs();renderCraftingCards();
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='نیمهٔ چپ صفحه را لمس کن تا دستهٔ شناور باز شود؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن نوارهای وضعیت و منابع، نشانِ قلب را در بالا لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='دستهٔ ثابتِ پایینِ چپ را لمس کن؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن نوارهای وضعیت و منابع، نشانِ قلب را در بالا لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -2037,7 +2028,7 @@
     saveTimer+=dt;uiTimer+=dt;if(saveTimer>=5){saveTimer=0;saveGame();}if(uiTimer>=.12){uiTimer=0;updateUI();}
   }
   const tutorialSteps=[
-    [0,'نیمهٔ چپ صفحه را لمس کن تا دستهٔ شناور باز شود؛ آرام بکش تا آهسته راه بروی و دسته را تا ۶۵٪ ببر تا بدوی. دویدن توان را مصرف می‌کند؛ اگر خالی شد تا رسیدن به ۲۰٪ فقط راه برو.'],
+    [0,'دستهٔ ثابتِ پایینِ چپ را لمس کن؛ آرام بکش تا آهسته راه بروی و دسته را تا ۶۵٪ ببر تا بدوی. دویدن توان را مصرف می‌کند؛ اگر خالی شد تا رسیدن به ۲۰٪ فقط راه برو.'],
     [9,'کنار منبع بایست؛ دکمهٔ طلاییِ کنش را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
     [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن صدا می‌کند و خوراک، مشعل و دود آتش جانوران را جذب می‌کنند. غذا را بخور، آرام بمان و نور را خاموش کن؛ آتش و تله هم شکارچی را عقب می‌رانند.'],
     [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
@@ -2078,35 +2069,22 @@
     if(force)draw();
   }
 
-  // Input: a floating left-half joystick, eased radial response, and one contextual primary action.
-  const pad=$('joystick'),knob=$('joyKnob'),joyZone=$('joystickZone'),controls=$('controls');
-  function placeFloatingJoystick(e) {
-    const area=joyZone.getBoundingClientRect(),controlRect=controls.getBoundingClientRect(),padRect=pad.getBoundingClientRect(),width=pad.offsetWidth||padRect.width||120,height=pad.offsetHeight||padRect.height||width,halfW=width*.5,halfH=height*.5,viewportW=window.innerWidth||innerWidth,viewportH=window.innerHeight||innerHeight,edge=6;
-    const minX=Math.max(area.left+halfW+edge,halfW+edge),maxX=Math.min(area.right,viewportW*.45)-halfW-edge,minY=Math.max(area.top+halfH+edge,viewportH*.28+halfH+edge),maxY=Math.min(area.bottom,viewportH)-halfH-edge;
-    const bound=(value,min,max)=>clamp(value,Math.min(min,max),Math.max(min,max));
-    let cx=bound(e.clientX,minX,maxX),cy=bound(e.clientY,minY,maxY);
-    const mapRect=$('minimapWrap').getBoundingClientRect(),mapVisible=mapRect.width>0&&mapRect.height>0,gap=8;
-    const overlapsMap=(x,y)=>mapVisible&&x+halfW>mapRect.left-gap&&x-halfW<mapRect.right+gap&&y+halfH>mapRect.top-gap&&y-halfH<mapRect.bottom+gap;
-    if(overlapsMap(cx,cy)){
-      const candidates=[[cx,mapRect.bottom+halfH+gap],[cx,mapRect.top-halfH-gap],[mapRect.left-halfW-gap,cy],[mapRect.right+halfW+gap,cy]].map(([x,y])=>[bound(x,minX,maxX),bound(y,minY,maxY)]).filter(([x,y])=>!overlapsMap(x,y));
-      if(candidates.length){candidates.sort((a,b)=>Math.hypot(a[0]-e.clientX,a[1]-e.clientY)-Math.hypot(b[0]-e.clientX,b[1]-e.clientY));[cx,cy]=candidates[0];}
-    }
-    pad.style.left=`${cx-controlRect.left}px`;pad.style.top=`${cy-controlRect.top}px`;
-  }
+  // Input: a fixed bottom-left joystick with an eased radial response and one contextual primary action.
+  const pad=$('joystick'),knob=$('joyKnob');
   function setJoy(e) {
-    const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,limit=Math.max(20,Math.min(r.width,r.height)*.34);
+    const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,knobSize=knob.offsetWidth||50,limit=Math.max(12,Math.min(r.width-knobSize,r.height-knobSize)*.5-2);
     let dx=e.clientX-cx,dy=e.clientY-cy,m=Math.hypot(dx,dy);if(m>limit){dx=dx/m*limit;dy=dy/m*limit;m=limit;}
     const raw=clamp(m/limit,0,1),deadzone=.09,linear=raw<=deadzone?0:(raw-deadzone)/(1-deadzone),response=linear*linear*(3-2*linear);
     joystick.targetX=m?dx/m*response:0;joystick.targetY=m?dy/m*response:0;knob.style.transform=`translate(${dx}px,${dy}px)`;
   }
   function beginJoy(e) {
-    if(joystick.pointer!==null)return;e.preventDefault();if(e.currentTarget===joyZone||e.target===joyZone)placeFloatingJoystick(e);joystick.pointer=e.pointerId;pad.classList.add('active');const capture=e.currentTarget||pad;if(capture.setPointerCapture)capture.setPointerCapture(e.pointerId);setJoy(e);
+    if(joystick.pointer!==null){e.preventDefault();return;}e.preventDefault();joystick.pointer=e.pointerId;pad.classList.add('active');if(pad.setPointerCapture)pad.setPointerCapture(e.pointerId);setJoy(e);
   }
-  joyZone.addEventListener('pointerdown',beginJoy);pad.addEventListener('pointerdown',beginJoy);
+  pad.addEventListener('pointerdown',beginJoy);
   function moveJoy(e){if(joystick.pointer===e.pointerId)setJoy(e);}
-  joyZone.addEventListener('pointermove',moveJoy);pad.addEventListener('pointermove',moveJoy);
+  pad.addEventListener('pointermove',moveJoy);
   function endJoy(e){if(joystick.pointer===e.pointerId){joystick.pointer=null;joystick.targetX=joystick.targetY=joystick.x=joystick.y=0;pad.classList.remove('active');knob.style.transform='translate(0,0)';}}
-  for(const target of [joyZone,pad]){target.addEventListener('pointerup',endJoy);target.addEventListener('pointercancel',endJoy);target.addEventListener('lostpointercapture',endJoy);}
+  pad.addEventListener('pointerup',endJoy);pad.addEventListener('pointercancel',endJoy);pad.addEventListener('lostpointercapture',endJoy);
   const actionButton=$('actionButton');
   function beginActionPress(e){if(actionPointer!==null){e.preventDefault();return;}e.preventDefault();actionPointer=e.pointerId;actionButton.classList.add('pressed');if(actionButton.setPointerCapture)actionButton.setPointerCapture(e.pointerId);}
   function endActionPress(e){if(actionPointer!==e.pointerId)return;actionPointer=null;actionButton.classList.remove('pressed');if(e.type==='pointerup'){haptic(12);doAction();}}
