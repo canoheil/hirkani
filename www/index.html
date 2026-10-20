@@ -34,6 +34,10 @@
     .cycle-title { font-size: 11px; color: #f1dfb7; font-weight: 800; white-space: nowrap; }
     .cycle-track { width: 100%; height: 4px; border-radius: 5px; background: rgba(255,255,255,.13); overflow: hidden; margin-top: 5px; }
     .cycle-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg,#c77a48,#e8bf69); transition: width .25s linear; }
+    .compass-widget { display: flex; align-items: center; gap: 5px; padding-inline: 3px; }
+    .compass-ring { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle,rgba(218,187,116,.13),rgba(255,255,255,.03)); border: 1px solid rgba(232,201,134,.36); }
+    #compassArrow { color: #f1c977; font-size: 15px; font-weight: 900; line-height: 1; transform-origin: center; }
+    #biomeName { max-width: 62px; overflow: hidden; color: #d6dccb; font-size: 8px; white-space: nowrap; text-overflow: ellipsis; }
     .vitals { display: flex; gap: 9px; min-width: 226px; }
     .stat { width: 65px; display: flex; flex-direction: column; gap: 3px; }
     .stat-label { display: flex; justify-content: space-between; font-size: 9px; color: #dce0d0; white-space: nowrap; }
@@ -135,6 +139,9 @@
       .brand-mini .brand-name { display: none; }
       .cycle { min-width: 76px; }
       .cycle-title { font-size: 9px; }
+      .compass-ring { width: 23px; height: 23px; }
+      #compassArrow { font-size: 12px; }
+      #biomeName { max-width: 46px; font-size: 7px; }
       .resources { gap: 4px; }
       .resource { font-size: 9px; }
       .resource-label { display: none; }
@@ -159,6 +166,7 @@
       <div class="top-group glass">
         <div class="brand-mini"><span class="brand-mark">❧</span><span class="brand-name">هیرکانی</span></div>
         <div class="cycle"><div class="cycle-title" id="phaseText">روز ۱ · روشنایی</div><div class="cycle-track"><div class="cycle-fill" id="cycleFill"></div></div></div>
+        <div class="compass-widget" id="compassWidget" aria-label="جهت ورودی بانکر"><div class="compass-ring"><span id="compassArrow">▲</span></div><span id="biomeName">جنگل انبوه</span></div>
       </div>
       <div class="top-group glass vitals">
         <div class="stat"><div class="stat-label"><span>سلامت</span><b id="healthValue">۱۰۰</b></div><div class="stat-track"><div class="stat-fill" id="healthFill"></div></div></div>
@@ -259,7 +267,9 @@
   const $ = id => document.getElementById(id);
   const canvas = $('world');
   const ctx = canvas.getContext('2d', { alpha:false });
-  const MAP = { w:2200, h:1550, cx:1100, cy:775 };
+  const MAP = { w:6400, h:4300, cx:3200, cy:2150 };
+  const CHUNK_SIZE=512,CHUNK_COLS=Math.ceil(MAP.w/CHUNK_SIZE),CHUNK_ROWS=Math.ceil(MAP.h/CHUNK_SIZE),GROUND_TILE=96;
+  const BIOME_NAMES={forest:'جنگل انبوه',clearing:'دشت باز',hill:'تپهٔ سنگی',swamp:'باتلاق',river:'رودخانه'};
   const BUNKER_ENTRANCE = { x:MAP.cx+34, y:MAP.cy };
   const GRID = { cols:12, rows:4 };
   const DAY_LENGTH = 86;
@@ -284,33 +294,79 @@
     const prey=kind==='deer'||kind==='rabbit';
     return {id,kind,predator:false,x,y,vx:0,vy:0,hp:kind==='deer'?54:kind==='rabbit'?24:0,maxHp:kind==='deer'?54:kind==='rabbit'?24:0,dir:rand()*Math.PI*2,state:kind==='deer'?'graze':'wander',stateTimer:1+rand()*5,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryX:x,territoryY:y,territoryRadius:kind==='deer'?230:kind==='rabbit'?130:280,fleeTimer:0,respawnTimer:0,prey};
   }
+  function riverX(y) { return MAP.cx+880+Math.sin(y*.00155)*980+Math.sin(y*.0037)*145; }
+  function inEllipse(x,y,cx,cy,rx,ry) { const dx=(x-cx)/rx,dy=(y-cy)/ry;return dx*dx+dy*dy<=1; }
+  function biomeAt(x,y) {
+    if(Math.abs(x-riverX(y))<58)return 'river';
+    if(inEllipse(x,y,1450,3440,940,700))return 'swamp';
+    if(inEllipse(x,y,5050,880,1120,850))return 'hill';
+    if(inEllipse(x,y,2730,2150,760,540)||inEllipse(x,y,1160,1160,520,370)||inEllipse(x,y,4550,2920,600,430))return 'clearing';
+    return 'forest';
+  }
+  const BIOME_PALETTES={forest:['#39573f','#3d5a42','#405d44'],clearing:['#63734d','#687650','#6e7a53'],hill:['#5b6159','#626960','#696e65'],swamp:['#3a5044','#405449','#45594b'],river:['#2e4b53','#31555e','#345a62']};
+  function chunkKey(cx,cy) { return `${cx},${cy}`; }
+  function makeChunk(cx,cy) {
+    const x=cx*CHUNK_SIZE,y=cy*CHUNK_SIZE,w=Math.min(CHUNK_SIZE,MAP.w-x),h=Math.min(CHUNK_SIZE,MAP.h-y),chunkBiome=biomeAt(x+w/2,y+h/2);
+    let seed=(world.seed^Math.imul(cx+11,374761393)^Math.imul(cy+17,668265263))|0;const r=seeded(seed),terrain=[],nodes=[],fauna=[];
+    for(let ty=y;ty<y+h;ty+=GROUND_TILE)for(let tx=x;tx<x+w;tx+=GROUND_TILE){
+      const tileW=Math.min(GROUND_TILE,x+w-tx),tileH=Math.min(GROUND_TILE,y+h-ty),biome=biomeAt(tx+tileW/2,ty+tileH/2),details=[];
+      for(let i=0;i<4;i++)details.push({x:tx+r()*tileW,y:ty+r()*tileH,variant:r(),scale:.5+r()*.8});
+      terrain.push({x:tx,y:ty,w:tileW,h:tileH,biome,details});
+    }
+    for(let i=0;i<29;i++){
+      const nx=x+18+r()*Math.max(1,w-36),ny=y+18+r()*Math.max(1,h-36),biome=biomeAt(nx,ny);
+      if(Math.hypot(nx-MAP.cx,ny-MAP.cy)<190||biome==='river'&&r()>.2)continue;
+      const pick=r();let type;
+      if(biome==='forest')type=pick<.65?'tree':pick<.84?'bush':'rock';
+      else if(biome==='clearing')type=pick<.27?'tree':pick<.77?'bush':'rock';
+      else if(biome==='hill')type=pick<.16?'tree':pick<.32?'bush':'rock';
+      else if(biome==='swamp')type=pick<.33?'tree':pick<.84?'bush':'rock';
+      else type=pick<.82?'rock':'bush';
+      if(nodes.some(n=>Math.hypot(n.x-nx,n.y-ny)<32))continue;
+      const remaining=type==='tree'?2:type==='rock'?3:2;
+      nodes.push({id:`${cx}:${cy}:${i}`,chunkX:cx,chunkY:cy,index:i,type,x:nx,y:ny,remaining,maxRemaining:remaining,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),species:r()<.7?'broad':'needle',scale:.76+r()*.5,herb:type==='bush'&&r()<(biome==='swamp' ? .72 : biome==='forest' ? .34 : .2)});
+    }
+    const addWild=(kind,count)=>{for(let i=0;i<count;i++){const ax=x+35+r()*Math.max(1,w-70),ay=y+35+r()*Math.max(1,h-70);if(Math.hypot(ax-MAP.cx,ay-MAP.cy)<205)continue;fauna.push(makeWildlife(`${kind}-${cx}-${cy}-${i}`,kind,ax,ay,r));}};
+    const roll=r();
+    if(chunkBiome==='forest'){addWild('deer',roll<.42?1:0);addWild('rabbit',roll<.82?1+(r()<.36?1:0):0);addWild('bird',1+(r()<.68?1:0));addWild('butterfly',1+(r()<.7?1:0));}
+    else if(chunkBiome==='clearing'){addWild('deer',1+(r()<.48?1:0));addWild('rabbit',1+(r()<.55?1:0));addWild('bird',2+(r()<.5?1:0));addWild('butterfly',2+(r()<.7?1:0));}
+    else if(chunkBiome==='hill'){addWild('deer',r()<.3?1:0);addWild('rabbit',1+(r()<.3?1:0));addWild('bird',2);addWild('butterfly',r()<.5?1:0);}
+    else if(chunkBiome==='swamp'){addWild('rabbit',r()<.6?1:0);addWild('bird',2+(r()<.5?1:0));addWild('butterfly',2+(r()<.75?1:0));}
+    else {addWild('deer',r()<.38?1:0);addWild('rabbit',1);addWild('bird',2+(r()<.55?1:0));addWild('butterfly',1);}
+    return {cx,cy,x,y,w,h,biome:chunkBiome,terrain,nodes,fauna};
+  }
+  function getChunk(cx,cy) {
+    if(!world||cx<0||cy<0||cx>=CHUNK_COLS||cy>=CHUNK_ROWS)return null;
+    const key=chunkKey(cx,cy);let chunk=world.chunks.get(key);
+    if(!chunk){chunk=makeChunk(cx,cy);world.chunks.set(key,chunk);}
+    return chunk;
+  }
+  function chunksInRect(left,top,width,height,margin=0) {
+    const x0=clamp(Math.floor((left-margin)/CHUNK_SIZE),0,CHUNK_COLS-1),x1=clamp(Math.floor((left+width+margin)/CHUNK_SIZE),0,CHUNK_COLS-1);
+    const y0=clamp(Math.floor((top-margin)/CHUNK_SIZE),0,CHUNK_ROWS-1),y1=clamp(Math.floor((top+height+margin)/CHUNK_SIZE),0,CHUNK_ROWS-1),result=[];
+    for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const chunk=getChunk(cx,cy);if(chunk)result.push(chunk);}
+    return result;
+  }
+  function chunksAround(x,y,radius=1) { return chunksInRect(x-radius*CHUNK_SIZE,y-radius*CHUNK_SIZE,CHUNK_SIZE*(radius*2+1),CHUNK_SIZE*(radius*2+1)); }
+  function ensureChunksAround(x,y,radius=1) { return chunksAround(x,y,radius); }
+  function nodesNear(x,y,radius) {
+    const found=[];for(const chunk of chunksInRect(x-radius,y-radius,radius*2,radius*2))for(const n of chunk.nodes)if(Math.hypot(n.x-x,n.y-y)<=radius)found.push(n);return found;
+  }
   function makeWorld() {
-    const r=seeded(73129),nodes=[],animals=[];let id=0;
-    const put=(type,x,y,extra={})=>nodes.push({id:id++,type,x,y,remaining:type==='tree'?2:type==='rock'?3:2,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),...extra});
-    for(let y=45;y<MAP.h-40;y+=106)for(let x=45;x<MAP.w-40;x+=110){const px=x+(r()-.5)*76,py=y+(r()-.5)*73,d=Math.hypot(px-MAP.cx,py-MAP.cy);if(d<178||r()<.14)continue;put('tree',px,py,{species:r()<.7?'broad':'needle',scale:.76+r()*.5});}
-    for(let i=0;i<34;i++){const a=r()*Math.PI*2,d=160+r()*900;put('rock',clamp(MAP.cx+Math.cos(a)*d,40,MAP.w-40),clamp(MAP.cy+Math.sin(a)*d*.68,40,MAP.h-40));}
-    for(let i=0;i<43;i++){const a=r()*Math.PI*2,d=100+r()*870;put('bush',clamp(MAP.cx+Math.cos(a)*d,35,MAP.w-35),clamp(MAP.cy+Math.sin(a)*d*.7,35,MAP.h-35),{herb:r()<.39});}
-    const territories=[
-      {id:'western-wolves',kind:'wolf',packId:'ridge-pack',x:MAP.cx-770,y:MAP.cy-330,radius:270,count:2},
-      {id:'southern-leopard',kind:'leopard',packId:'',x:MAP.cx+835,y:MAP.cy+455,radius:300,count:1}
+    const r=seeded(73129),animals=[],territories=[
+      {id:'western-woods',kind:'wolf',packId:'west-pack',x:700,y:2150,radius:410,count:2},
+      {id:'northern-ridge',kind:'wolf',packId:'north-pack',x:5000,y:520,radius:430,count:2},
+      {id:'southern-forest',kind:'wolf',packId:'south-pack',x:5400,y:3600,radius:430,count:2},
+      {id:'western-leopard',kind:'leopard',packId:'',x:750,y:830,radius:420,count:1},
+      {id:'southern-leopard',kind:'leopard',packId:'',x:2450,y:3480,radius:420,count:1}
     ];
     let predatorId=0;
-    for(const t of territories)for(let i=0;i<t.count;i++){
-      const angle=(i/t.count)*Math.PI*2+r()*.45,rad=28+r()*55;
-      const x=clamp(t.x+Math.cos(angle)*rad,50,MAP.w-50),y=clamp(t.y+Math.sin(angle)*rad,50,MAP.h-50);
-      animals.push(makePredator(`pred-${predatorId++}`,t.kind,x,y,t,t.packId,r));
-    }
-    const randomPoint=(minFromCamp=260)=>{let x=MAP.cx,y=MAP.cy;for(let i=0;i<30;i++){x=40+r()*(MAP.w-80);y=40+r()*(MAP.h-80);if(Math.hypot(x-MAP.cx,y-MAP.cy)>minFromCamp)break;}return{x,y};};
-    let wildlifeId=0;
-    for(let i=0;i<3;i++){const p=randomPoint(300);animals.push(makeWildlife(`deer-${wildlifeId++}`,'deer',p.x,p.y,r));}
-    for(let i=0;i<7;i++){const p=randomPoint(220);animals.push(makeWildlife(`hare-${wildlifeId++}`,'rabbit',p.x,p.y,r));}
-    for(let i=0;i<6;i++){const p=randomPoint(120);animals.push(makeWildlife(`bird-${wildlifeId++}`,'bird',p.x,p.y,r));}
-    for(let i=0;i<8;i++){const p=randomPoint(100);animals.push(makeWildlife(`butterfly-${wildlifeId++}`,'butterfly',p.x,p.y,r));}
-    return {nodes,animals,territories,rand:r,effects:[],fires:[],traps:[]};
+    for(const t of territories){t.biome=biomeAt(t.x,t.y);for(let i=0;i<t.count;i++){const angle=(i/t.count)*Math.PI*2+r()*.45,rad=40+r()*95,x=clamp(t.x+Math.cos(angle)*rad,50,MAP.w-50),y=clamp(t.y+Math.sin(angle)*rad,50,MAP.h-50);animals.push(makePredator(`pred-${predatorId++}`,t.kind,x,y,t,t.packId,r));}}
+    return {seed:73129,chunks:new Map(),animals,territories,rand:r,effects:[],fires:[],traps:[]};
   }
   function freshGame() {
     return {
-      mode:'forest', day:1, phase:'day', phaseTime:0,
+      worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0,
       player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
       stats:{health:100,hunger:82,warmth:76,stamina:100}, resources:{wood:12,stone:8,food:4,herbs:2},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
@@ -365,7 +421,9 @@
   function saveGame() {
     if(!game||!active||game.gameOver) return;
     try {
-      const data={...game, muted, nodes:world.nodes.map(n=>n.remaining)};
+      const chunkState=[];
+      for(const chunk of world.chunks.values())if(chunk.nodes.some(n=>n.remaining!==n.maxRemaining))chunkState.push({cx:chunk.cx,cy:chunk.cy,remaining:chunk.nodes.map(n=>n.remaining)});
+      const data={...game,muted,chunkState};delete data.nodes;
       localStorage.setItem(SAVE_KEY,JSON.stringify(data));
       game.lastSave=Date.now();
     } catch(e) { /* storage can be disabled */ }
@@ -377,17 +435,21 @@
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
     game=freshGame();Object.assign(game,data);muted=!!data.muted;
     game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
+    const oldWorldVersion=data.worldVersion||1;
+    if(oldWorldVersion<2){game.player.x=clamp((data.player.x??1100)/2200*MAP.w,35,MAP.w-35);game.player.y=clamp((data.player.y??775)/1550*MAP.h,35,MAP.h-35);}
+    game.worldVersion=2;delete game.nodes;delete game.chunkState;
     world=makeWorld();
-    if(Array.isArray(data.nodes)) data.nodes.forEach((amount,i)=>{if(world.nodes[i])world.nodes[i].remaining=amount;});
+    if(Array.isArray(data.chunkState))for(const state of data.chunkState){const chunk=getChunk(state.cx,state.cy);if(chunk&&Array.isArray(state.remaining))state.remaining.forEach((amount,i)=>{if(chunk.nodes[i])chunk.nodes[i].remaining=clamp(amount,0,chunk.nodes[i].maxRemaining);});}
     if(game.mode==='bunker'&&game.phase==='day') game.mode='bunker';
-    active=true; game.gameOver=false; setScreen('game'); updateUI(true); showToast('سفرت از آخرین پناهگاه ادامه پیدا کرد.',1800); return true;
+    ensureChunksAround(game.player.x,game.player.y,1);
+    active=true;game.gameOver=false;setScreen('game');updateUI(true);showToast('سفرت از آخرین پناهگاه ادامه پیدا کرد.',1800);return true;
   }
   async function requestImmersive() {
     try { if(!document.fullscreenElement&&document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); } catch(e) {}
     try { if(screen.orientation&&screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(e) {}
   }
   function startNew() {
-    game=freshGame(); world=makeWorld(); active=true; gameTime=0; muted=false;
+    game=freshGame();world=makeWorld();ensureChunksAround(game.player.x,game.player.y,1);active=true;gameTime=0;muted=false;
     try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
     setScreen('game'); requestImmersive(); beep('build'); updateUI(true);
     showToast('راهت را با دستهٔ حرکت پیدا کن؛ نزدیک منابع، دکمهٔ برداشت را بزن.',3300);
@@ -586,19 +648,30 @@
     ctx.strokeStyle='#86714a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(t.x,t.y,11,5,.15,0,Math.PI*2);ctx.stroke();
     ctx.strokeStyle='#63543c';ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(t.x-12,t.y+5);ctx.lineTo(t.x-2,t.y-6);ctx.lineTo(t.x+10,t.y+4);ctx.moveTo(t.x-8,t.y+5);ctx.lineTo(t.x+8,t.y-4);ctx.stroke();
   }
+  function drawRiver() {
+    const start=clamp(cam.y-CHUNK_SIZE,0,MAP.h),end=clamp(cam.y+H+CHUNK_SIZE,0,MAP.h);
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();for(let y=start;y<=end;y+=24){const x=riverX(y);if(y===start)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+    ctx.strokeStyle='rgba(27,43,43,.78)';ctx.lineWidth=126;ctx.stroke();ctx.strokeStyle='rgba(48,85,91,.94)';ctx.lineWidth=94;ctx.stroke();
+    ctx.strokeStyle='rgba(121,164,156,.24)';ctx.lineWidth=2;ctx.beginPath();for(let y=start;y<=end;y+=24){const x=riverX(y)+Math.sin(y*.012)*13;if(y===start)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();
+  }
   function drawForest() {
     ctx.fillStyle='#294333';ctx.fillRect(0,0,W,H);
-    cam.x=clamp(game.player.x-W/2,0,MAP.w-W);cam.y=clamp(game.player.y-H/2,0,MAP.h-H);
+    cam.x=clamp(game.player.x-W/2,0,Math.max(0,MAP.w-W));cam.y=clamp(game.player.y-H/2,0,Math.max(0,MAP.h-H));
+    const visibleChunks=chunksInRect(cam.x,cam.y,W,H,CHUNK_SIZE);
     ctx.save();ctx.translate(-cam.x,-cam.y);
-    // Mossy ground with hand-drawn flecks.
     ctx.fillStyle='#3e5b43';ctx.fillRect(cam.x,cam.y,W,H);
-    for(let gy=Math.floor(cam.y/50)*50;gy<cam.y+H+50;gy+=50) for(let gx=Math.floor(cam.x/50)*50;gx<cam.x+W+50;gx+=50) {
-      const n=((gx*13+gy*7)%17+17)%17;
-      ctx.fillStyle=n<7?'rgba(121,146,91,.10)':'rgba(18,46,31,.09)';
-      ctx.beginPath();ctx.ellipse(gx+n*2,gy+((n*9)%43),9+(n%5),3,((n%3)-1)*.22,0,Math.PI*2);ctx.fill();
-      if(n%4===0){ctx.strokeStyle='rgba(179,169,111,.12)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(gx+25,gy+23);ctx.lineTo(gx+30,gy+17);ctx.moveTo(gx+28,gy+25);ctx.lineTo(gx+34,gy+19);ctx.stroke();}
+    for(const chunk of visibleChunks)for(const tile of chunk.terrain){
+      if(tile.x+tile.w<cam.x||tile.x>cam.x+W||tile.y+tile.h<cam.y||tile.y>cam.y+H)continue;
+      const palette=BIOME_PALETTES[tile.biome]||BIOME_PALETTES.forest;ctx.fillStyle=palette[Math.floor((tile.details[0]?.variant||0)*palette.length)%palette.length];ctx.fillRect(tile.x,tile.y,tile.w+1,tile.h+1);
+      for(const detail of tile.details){
+        const x=detail.x,y=detail.y,s=detail.scale,v=detail.variant;
+        if(tile.biome==='hill'){ctx.fillStyle=v>.55?'rgba(190,190,170,.12)':'rgba(23,33,28,.14)';ctx.beginPath();ctx.ellipse(x,y,3+v*5,2+s*2,v*2,0,Math.PI*2);ctx.fill();}
+        else if(tile.biome==='swamp'){ctx.strokeStyle=v>.45?'rgba(157,166,111,.18)':'rgba(22,42,33,.18)';ctx.lineWidth=1+s;ctx.beginPath();ctx.moveTo(x,y+3);ctx.lineTo(x+(v-.5)*5,y-4-s*3);ctx.stroke();}
+        else if(tile.biome==='river'){ctx.strokeStyle='rgba(150,184,176,.14)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-4,y);ctx.lineTo(x+5,y+(v-.5)*3);ctx.stroke();}
+        else {ctx.fillStyle=tile.biome==='clearing'?'rgba(193,188,126,.13)':'rgba(137,160,104,.10)';ctx.beginPath();ctx.ellipse(x,y,2+s*4,1+s,v*2,0,Math.PI*2);ctx.fill();}
+      }
     }
-    // A worn deer trail leading from the camp into the hazel and beech forest.
+    drawRiver();
     ctx.lineCap='round';ctx.strokeStyle='rgba(167,144,98,.19)';ctx.lineWidth=32;ctx.beginPath();ctx.moveTo(MAP.cx+20,MAP.cy);ctx.bezierCurveTo(MAP.cx+270,MAP.cy+50,MAP.cx+240,MAP.cy-220,MAP.cx+510,MAP.cy-260);ctx.stroke();
     ctx.strokeStyle='rgba(213,189,133,.10)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(MAP.cx+20,MAP.cy);ctx.bezierCurveTo(MAP.cx+270,MAP.cy+50,MAP.cx+240,MAP.cy-220,MAP.cx+510,MAP.cy-260);ctx.stroke();
     drawCamp(MAP.cx,MAP.cy);
@@ -606,16 +679,14 @@
     for(const t of world.traps||[])if(!t.triggered&&t.x>cam.x-60&&t.x<cam.x+W+60&&t.y>cam.y-60&&t.y<cam.y+H+60)drawSnare(t);
     drawParticles();
     const drawables=[];
-    for(const n of world.nodes) if(n.x>cam.x-90&&n.x<cam.x+W+90&&n.y>cam.y-90&&n.y<cam.y+H+90) drawables.push({y:n.y,o:n,type:n.type});
-    for(const a of world.animals) if(a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100) drawables.push({y:a.y+8,o:a,type:'animal'});
-    const px=game.player.x,py=game.player.y;drawables.push({y:py+7,o:game.player,type:'player'});
-    drawables.sort((a,b)=>a.y-b.y);
-    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else drawPlayerForest(px,py);}
-    // Ambient lowland mist between the tree trunks.
-    for(let i=0;i<4;i++){
-      const fx=(MAP.cx+((i*443+gameTime*3)%1100)-550),fy=(MAP.cy+((i*257)%730)-365);
-      if(fx>cam.x-150&&fx<cam.x+W+150&&fy>cam.y-70&&fy<cam.y+H+70){const g=ctx.createRadialGradient(fx,fy,8,fx,fy,180);g.addColorStop(0,'rgba(218,225,193,.09)');g.addColorStop(1,'rgba(218,225,193,0)');ctx.fillStyle=g;ctx.fillRect(fx-180,fy-75,360,150);}
+    for(const chunk of visibleChunks){
+      for(const n of chunk.nodes)if(n.x>cam.x-90&&n.x<cam.x+W+90&&n.y>cam.y-90&&n.y<cam.y+H+90)drawables.push({y:n.y,o:n,type:n.type});
+      for(const a of chunk.fauna)if((a.hp>0||!a.prey)&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
     }
+    for(const a of world.animals)if(a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
+    const px=game.player.x,py=game.player.y;drawables.push({y:py+7,o:game.player,type:'player'});drawables.sort((a,b)=>a.y-b.y);
+    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else drawPlayerForest(px,py);}
+    for(let i=0;i<4;i++){const fx=MAP.cx+((i*443+gameTime*3)%1100)-550,fy=MAP.cy+((i*257)%730)-365;if(fx>cam.x-150&&fx<cam.x+W+150&&fy>cam.y-70&&fy<cam.y+H+70){const g=ctx.createRadialGradient(fx,fy,8,fx,fy,180);g.addColorStop(0,'rgba(218,225,193,.09)');g.addColorStop(1,'rgba(218,225,193,0)');ctx.fillStyle=g;ctx.fillRect(fx-180,fy-75,360,150);}}
     ctx.restore();
     const darkness=game.phase==='night'?0.52:game.phaseTime>DAY_LENGTH*.72?clamp((game.phaseTime-DAY_LENGTH*.72)/(DAY_LENGTH*.28)*.2,0,.2):0;
     if(darkness>0){ctx.fillStyle=`rgba(10,17,32,${darkness})`;ctx.fillRect(0,0,W,H);const px=game.player.x-cam.x,py=game.player.y-cam.y;ctx.globalCompositeOperation='screen';const glow=ctx.createRadialGradient(px,py,6,px,py,180);glow.addColorStop(0,'rgba(235,189,112,.31)');glow.addColorStop(.4,'rgba(186,159,104,.12)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.fillRect(px-180,py-180,360,360);ctx.globalCompositeOperation='source-over';}
@@ -784,7 +855,7 @@
       if(moving){
         p.faceX=dx;p.faceY=dy;p.animTime=(p.animTime||0)+dt*(p.running?15:9);
         const speed=(p.running?236:148)*carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1),nx=clamp(p.x+dx*speed*dt,20,MAP.w-20),ny=clamp(p.y+dy*speed*dt,20,MAP.h-20);
-        const blocked=(x,y)=>world.nodes.some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
+        const blocked=(x,y)=>nodesNear(x,y,58).some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
         if(!blocked(nx,p.y))p.x=nx;if(!blocked(p.x,ny))p.y=ny;
         if(p.running){p.puffTimer=(p.puffTimer||0)-dt;if(p.puffTimer<=0){spawnRunPuff(p.x,p.y);p.puffTimer=.17;}}else p.puffTimer=.08;
       }else{p.running=false;p.puffTimer=0;}
@@ -897,9 +968,9 @@
     }
   }
   function updateAnimals(dt) {
-    for(const a of world.animals){
-      if((a.predator||a.prey)&&a.hp<=0){respawnCreature(a,dt);continue;}
-      if(a.predator)updatePredator(a,dt);else updatePrey(a,dt);
+    for(const a of world.animals){if(a.hp<=0){respawnCreature(a,dt);continue;}updatePredator(a,dt);}
+    for(const chunk of chunksAround(game.player.x,game.player.y,1))for(const a of chunk.fauna){
+      if(a.prey&&a.hp<=0){respawnCreature(a,dt);continue;}updatePrey(a,dt);
     }
   }
   function updatePlayerEffects(dt) {
@@ -910,12 +981,13 @@
   }
   function nearestNode(max=80) {
     let found=null,best=max;
-    for(const n of world.nodes){if(n.remaining<=0)continue;const d=Math.hypot(n.x-game.player.x,n.y-game.player.y);if(d<best){best=d;found=n;}}
+    for(const n of nodesNear(game.player.x,game.player.y,max)){if(n.remaining<=0)continue;const d=Math.hypot(n.x-game.player.x,n.y-game.player.y);if(d<best){best=d;found=n;}}
     return found?{node:found,d:best}:null;
   }
   function nearestAnimal(max=55) {
-    let found=null,best=max;
-    for(const a of world.animals){if(a.hp<=0||(!a.predator&&a.kind!=='deer'&&a.kind!=='rabbit'))continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
+    let found=null,best=max;const candidates=[...world.animals];
+    for(const chunk of chunksInRect(game.player.x-max,game.player.y-max,max*2,max*2))candidates.push(...chunk.fauna);
+    for(const a of candidates){if(a.hp<=0||(!a.predator&&a.kind!=='deer'&&a.kind!=='rabbit'))continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
     return found;
   }
   function atBunkerEntrance(range=66) {
@@ -1109,6 +1181,8 @@
     const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
     $('phaseText').textContent=game.phase==='day'?`روز ${fa(game.day)} · روشنایی`:`روز ${fa(game.day)} · یورش شب`;
+    const compass=$('compassWidget'),biome=biomeAt(game.player.x,game.player.y),bdx=BUNKER_ENTRANCE.x-game.player.x,bdy=BUNKER_ENTRANCE.y-game.player.y;
+    compass.style.display=game.mode==='forest'?'flex':'none';$('biomeName').textContent=BIOME_NAMES[biome]||BIOME_NAMES.forest;$('compassArrow').style.transform=`rotate(${Math.atan2(bdy,bdx)*180/Math.PI+90}deg)`;
     $('soundButton').textContent=muted?'♪̸':'♫';
     let stepIndex=-1;
     if(game.tutorial?.active){for(let i=0;i<tutorialSteps.length;i++)if(game.tutorial.time>=tutorialSteps[i][0])stepIndex=i;}
@@ -1157,7 +1231,7 @@
     const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
     if(game.mode==='forest'){
       const wx=x+cam.x,wy=y+cam.y;game.player.target={x:clamp(wx,15,MAP.w-15),y:clamp(wy,15,MAP.h-15)};
-      const node=world.nodes.find(n=>n.remaining>0&&Math.hypot(n.x-wx,n.y-wy)<42);if(node){const dx=wx-node.x,dy=wy-node.y,d=Math.hypot(dx,dy)||1;game.player.target={x:node.x+dx/d*42,y:node.y+dy/d*42};}
+      const node=nodesNear(wx,wy,42).find(n=>n.remaining>0&&Math.hypot(n.x-wx,n.y-wy)<42);if(node){const dx=wx-node.x,dy=wy-node.y,d=Math.hypot(dx,dy)||1;game.player.target={x:node.x+dx/d*42,y:node.y+dy/d*42};}
     } else {
       const g=bunkerLayout(),c=Math.floor((x-g.left)/g.cell),rr=Math.floor((y-g.top)/g.cell);
       if(c>=0&&c<GRID.cols&&rr>=0&&rr<GRID.rows){game.selectedCell={c,r:rr};updateUI(true);}
