@@ -60,14 +60,14 @@
     .tool-button { min-width: 58px; height: 42px; border-radius: 11px; padding: 0 9px; border: 1px solid rgba(231,229,204,.2); background: rgba(39,54,42,.93); color: #ece9d9; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; justify-content: center; white-space: nowrap; }
     .tool-button b { font-size: 15px; }
     .tool-button.active { background: linear-gradient(145deg,#b88544,#e1b365); color: #2a2113; border-color: rgba(255,230,170,.55); }
-    #hint { position: absolute; bottom: calc(145px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); max-width: min(47vw, 390px); text-align: center; color: #f1e9d3; font-size: 10px; padding: 7px 12px; border-radius: 14px; background: rgba(15,24,19,.72); border: 1px solid rgba(239,229,198,.16); text-shadow: 0 2px 5px #000; }
-    #hint.bunker-hint { top: calc(62px + var(--safe-top)); bottom: auto; left: max(9px, env(safe-area-inset-left, 0px)); transform: none; max-width: clamp(94px, 18vw, 160px); padding: 5px 8px; text-align: right; font-size: 8px; line-height: 1.55; }
-    #tutorialBox { display: none; position: absolute; top: calc(67px + var(--safe-top)); left: 50%; transform: translateX(-50%); width: min(420px, 53vw); padding: 10px 13px; border-radius: 15px; border: 1px solid rgba(228,190,113,.35); background: rgba(25,35,27,.86); box-shadow: 0 8px 20px rgba(0,0,0,.22); pointer-events: auto; text-align: center; }
-    #tutorialText { font-size: 11px; line-height: 1.7; color: #f0e7d0; }
-    #tutorialFooter { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; color: #d7bf8e; font-size: 9px; }
-    #tutorialProgress { height: 3px; flex: 1; margin-inline: 8px; border-radius: 6px; background: rgba(255,255,255,.16); overflow: hidden; }
-    #tutorialProgress i { display: block; height: 100%; width: 0; background: var(--amber); }
-    .tiny-link { color: #ebc577; background: transparent; padding: 3px 4px; font-size: 9px; }
+    #tutorialBox { display: none; position: absolute; top: calc(62px + var(--safe-top)); left: max(10px, env(safe-area-inset-left, 0px)); width: min(235px, 31vw); padding: 6px 9px; border-radius: 11px; border: 1px solid rgba(228,190,113,.34); background: rgba(25,35,27,.82); box-shadow: 0 5px 14px rgba(0,0,0,.18); pointer-events: none; text-align: right; z-index: 6; }
+    #tutorialText { font-size: 9px; line-height: 1.55; color: #f0e7d0; }
+    #tutorialFooter { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; color: #d7bf8e; font-size: 8px; }
+    #tutorialCount { opacity: .75; }
+    .tiny-link { min-width: 42px; min-height: 22px; color: #ebc577; background: transparent; padding: 2px 4px; font-size: 8px; pointer-events: auto; }
+    #duskBanner { display: none; position: absolute; top: calc(62px + var(--safe-top)); right: max(10px, env(safe-area-inset-right, 0px)); max-width: min(245px, 34vw); align-items: center; gap: 7px; padding: 6px 9px; border-radius: 11px; color: #fff0ce; background: rgba(45,34,20,.87); border: 1px solid rgba(237,184,93,.48); box-shadow: 0 5px 14px rgba(0,0,0,.18); font-size: 9px; line-height: 1.45; pointer-events: none; z-index: 6; }
+    #bunkerArrow { flex: 0 0 auto; color: #f0c676; font-size: 20px; font-weight: 900; line-height: 1; transform-origin: center; }
+
     #toast { position: absolute; top: 76px; left: 50%; transform: translate(-50%,-8px); opacity: 0; transition: opacity .18s, transform .18s; max-width: 88vw; padding: 9px 15px; border-radius: 13px; color: #fff5df; background: rgba(21,31,24,.92); border: 1px solid rgba(227,174,84,.42); box-shadow: 0 8px 20px rgba(0,0,0,.24); font-size: 11px; line-height: 1.55; text-align: center; z-index: 18; pointer-events: none; }
     #toast.show { opacity: 1; transform: translate(-50%,0); }
     .screen { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 20; padding: 20px; background: linear-gradient(120deg, rgba(9,16,12,.78), rgba(11,17,13,.36)); pointer-events: auto; }
@@ -117,9 +117,9 @@
       .soft-button { width: 49px; height: 49px; }
       #bunkerTools { bottom: calc(13px + var(--safe-bottom)); gap: 4px; }
       .tool-button { min-width: 52px; padding: 0 6px; font-size: 9px; height: 39px; }
-      #hint { bottom: calc(129px + var(--safe-bottom)); max-width: 43vw; font-size: 9px; }
-      #tutorialBox { top: calc(57px + var(--safe-top)); width: min(370px, 51vw); padding: 8px 10px; }
-      #tutorialText { font-size: 10px; }
+      #tutorialBox { top: calc(58px + var(--safe-top)); width: min(220px, 34vw); padding: 5px 7px; }
+      #tutorialText { font-size: 8.5px; }
+      #duskBanner { top: calc(58px + var(--safe-top)); max-width: min(220px, 34vw); padding: 5px 7px; font-size: 8.5px; }
       #toast { top: 64px; }
       .card-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
       .data-card { min-height: 88px; padding: 8px; }
@@ -133,8 +133,8 @@
       .resource-label { display: none; }
       #bunkerTools { max-width: calc(100vw - 246px); overflow-x: auto; justify-content: flex-start; }
       .tool-button { min-width: 48px; }
-      #hint:not(.bunker-hint) { display: none; }
-      #tutorialBox { width: min(330px, 65vw); }
+      #tutorialBox { width: min(190px, 38vw); }
+      #duskBanner { max-width: min(205px, 44vw); }
       .card-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .modal-card { max-height: 78vh; padding: 12px; }
       .data-card { min-height: 82px; }
@@ -166,8 +166,8 @@
         <button class="icon-button" id="soundButton" aria-label="صدا">♫</button>
       </div>
     </div>
-    <div id="tutorialBox"><div id="tutorialText"></div><div id="tutorialFooter"><span id="tutorialTime">۰:۶۰</span><div id="tutorialProgress"><i></i></div><button class="tiny-link" id="skipTutorial">رد کردن</button></div></div>
-    <div id="hint"></div>
+    <div id="tutorialBox" aria-live="polite"><div id="tutorialText"></div><div id="tutorialFooter"><span id="tutorialCount">۱/۶</span><button class="tiny-link" id="skipTutorial">رد آموزش</button></div></div>
+    <div id="duskBanner" role="status" aria-live="polite"><span id="bunkerArrow" aria-hidden="true">↑</span><span id="duskText">غروب نزدیکه، برگرد به بانکر</span></div>
     <div class="controls" id="controls" style="display:none">
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
@@ -238,17 +238,18 @@
     { id:'hidden', nameFa:'پناهگاه پنهان', cost:{wood:18,stone:15,herbs:5,food:4}, size:[5,4], effect:{label:'ردپای بسیار کم',warmth:.025,stealth:.62,production:{}}, defense:16, tint:'#53634f', style:'hidden', note:'ورودی پوشیده و هوای مرداب، رد پناهگاه را محو می‌کند.' }
   ];
   const ROOMS = {
-    storage:{ name:'انبار', cost:{wood:3,stone:1}, upgrade:{wood:2,stone:1}, desc:'ظرفیت ذخیره‌سازی بیشتر', effect:{capacity:8,defense:1}, color:'#bd9957' },
-    kitchen:{ name:'آشپزخانه', cost:{wood:4,stone:1}, upgrade:{wood:3,stone:1}, desc:'خوراک روزانه و گرمای اجاق', effect:{warmth:.025,production:{food:1},defense:1}, color:'#d8894c' },
-    bed:{ name:'اتاق خواب', cost:{wood:3,stone:0}, upgrade:{wood:3,stone:1}, desc:'بازیابی گرما و سلامت', effect:{warmth:.085,healing:.07}, color:'#bd806c' },
-    workshop:{ name:'کارگاه', cost:{wood:5,stone:3}, upgrade:{wood:3,stone:2}, desc:'سنگ روزانه و برداشت بهتر', effect:{gatherBonus:.08,production:{stone:1},defense:1}, color:'#88918a' },
-    trap:{ name:'اتاق تله', cost:{wood:2,stone:2}, upgrade:{wood:2,stone:2}, desc:'کاهش آسیب یورش شبانه', effect:{raidDamage:.1,defense:5}, color:'#778e58' }
+    storage:{ name:'انبار', short:'انبار', cost:{wood:3,stone:1}, upgrade:{wood:2,stone:1}, desc:'ظرفیت ذخیره‌سازی بیشتر', effect:{capacity:8,defense:1}, color:'#bd9957' },
+    kitchen:{ name:'آشپزخانه', short:'آشپز', cost:{wood:4,stone:1}, upgrade:{wood:3,stone:1}, desc:'خوراک روزانه و گرمای اجاق', effect:{warmth:.025,production:{food:1},defense:1}, color:'#d8894c' },
+    bed:{ name:'اتاق خواب', short:'خواب', cost:{wood:3,stone:0}, upgrade:{wood:3,stone:1}, desc:'بازیابی گرما و سلامت', effect:{warmth:.085,healing:.07}, color:'#bd806c' },
+    workshop:{ name:'کارگاه', short:'کارگاه', cost:{wood:5,stone:3}, upgrade:{wood:3,stone:2}, desc:'سنگ روزانه و برداشت بهتر', effect:{gatherBonus:.08,production:{stone:1},defense:1}, color:'#88918a' },
+    trap:{ name:'اتاق تله', short:'تله', cost:{wood:2,stone:2}, upgrade:{wood:2,stone:2}, desc:'کاهش آسیب یورش شبانه', effect:{raidDamage:.1,defense:5}, color:'#778e58' }
   };
 
   const $ = id => document.getElementById(id);
   const canvas = $('world');
   const ctx = canvas.getContext('2d', { alpha:false });
   const MAP = { w:2200, h:1550, cx:1100, cy:775 };
+  const BUNKER_ENTRANCE = { x:MAP.cx+34, y:MAP.cy };
   const GRID = { cols:12, rows:4 };
   const DAY_LENGTH = 86;
   const NIGHT_LENGTH = 31;
@@ -568,9 +569,13 @@
     } else if(room.type==='trap') {
       ctx.strokeStyle='#c2a96c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+14,y+cell*.65);ctx.lineTo(x+cell/2,y+cell*.3);ctx.lineTo(x+cell-13,y+cell*.65);ctx.stroke();ctx.fillStyle='#a85d45';ctx.beginPath();ctx.arc(x+cell/2,y+cell*.47,4,0,Math.PI*2);ctx.fill();
     }
-    ctx.fillStyle='#f1dfbb';ctx.font=`bold ${Math.max(8,cell*.16)}px Tahoma`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(def.name,x+cell/2,y+cell-15);
-    ctx.fillStyle='#e6c677';ctx.font=`bold ${Math.max(8,cell*.15)}px Tahoma`;ctx.textAlign='right';ctx.fillText('سطح '+fa(lv),x+cell-7,y+8);
-    if(room.hp<room.maxHp){ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(x+8,y+cell-5,cell-16,3);ctx.fillStyle='#d77763';ctx.fillRect(x+8,y+cell-5,(cell-16)*room.hp/room.maxHp,3);}
+    const badgeH=Math.max(7,Math.min(9,cell*.22)),badgeY=y+7,labelH=Math.max(8,Math.min(10,cell*.26)),labelY=y+cell-labelH-5;
+    ctx.fillStyle='rgba(11,16,13,.9)';roundedRect(ctx,x+5,labelY,cell-10,labelH,3);ctx.fill();
+    ctx.fillStyle='#f1dfbb';ctx.font=`bold ${Math.max(7,Math.min(9,cell*.14))}px Tahoma`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(def.short||def.name,x+cell/2,labelY+labelH/2,cell-12);
+    const badgeW=Math.min(cell-10,Math.max(24,cell*.68));
+    ctx.fillStyle='rgba(10,15,12,.82)';roundedRect(ctx,x+cell-badgeW-5,badgeY,badgeW,badgeH,3);ctx.fill();
+    ctx.fillStyle='#e6c677';ctx.font=`bold ${Math.max(7,Math.min(8,cell*.13))}px Tahoma`;ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('سطح '+fa(lv),x+cell-8,badgeY+badgeH/2,badgeW-4);
+    if(room.hp<room.maxHp){ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(x+8,y+cell-3,cell-16,2);ctx.fillStyle='#d77763';ctx.fillRect(x+8,y+cell-3,(cell-16)*room.hp/room.maxHp,2);}
   }
   function drawBunker() {
     const g=bunkerLayout(), b=BUNKERS.find(x=>x.id===game.bunkerId)||BUNKERS[0];
@@ -656,9 +661,9 @@
   function updateAnimals(dt) {
     for(const a of world.animals) {
       if(a.hp<=0)continue;
-      const d=Math.hypot(game.player.x-a.x,game.player.y-a.y);
+      const d=Math.hypot(game.player.x-a.x,game.player.y-a.y),hunting=game.mode==='forest'&&(game.phase==='night'?d<760:d<220);
       a.attack=Math.max(0,a.attack-dt);
-      if(d<220&&game.mode==='forest') { const dx=(game.player.x-a.x)/(d||1),dy=(game.player.y-a.y)/(d||1);a.dir=Math.atan2(dy,dx);a.x+=dx*dt*(d>43?31:0);a.y+=dy*dt*(d>43?31:0); }
+      if(hunting) { const dx=(game.player.x-a.x)/(d||1),dy=(game.player.y-a.y)/(d||1),speed=game.phase==='night'?58:31;a.dir=Math.atan2(dy,dx);a.x+=dx*dt*(d>28?speed:0);a.y+=dy*dt*(d>28?speed:0); }
       else {a.roam-=dt;if(a.roam<=0){a.dir+=(world.rand()-.5)*2.8;a.roam=1.4+world.rand()*3.8;}a.x+=Math.cos(a.dir)*dt*10;a.y+=Math.sin(a.dir)*dt*8;}
       a.x=clamp(a.x,35,MAP.w-35);a.y=clamp(a.y,35,MAP.h-35);
       if(d<38&&game.mode==='forest'&&a.attack<=0&&game.player.invuln<=0){a.attack=2.3;game.player.invuln=.9;game.stats.health=Math.max(0,game.stats.health-(a.kind==='leopard'?12:8));beep('hit');showToast(a.kind==='leopard'?'پلنگ هیرکانی خراش انداخت! عقب‌نشینی کن.':'گرگ به تو حمله کرد! از دسته برای فرار استفاده کن.',1800);}
@@ -674,27 +679,28 @@
     for(const a of world.animals){if(a.hp<=0)continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
     return found;
   }
-  function updateActionHint() {
-    const label=$('actionLabel'), hint=$('hint'); if(!game||!active)return;
+  function atBunkerEntrance(range=66) {
+    return Math.hypot(game.player.x-BUNKER_ENTRANCE.x,game.player.y-BUNKER_ENTRANCE.y)<=range;
+  }
+  function updateControlsUI() {
+    if(!game||!active)return;
+    const label=$('actionLabel'),eatButton=$('eatButton');
+    $('forestControls').style.display='flex';
     if(game.mode==='forest') {
-      hint.classList.remove('bunker-hint');
-      const n=nearestNode(86),a=nearestAnimal(58),camp=Math.hypot(game.player.x-MAP.cx,game.player.y-MAP.cy)<99;
-      if(a){label.textContent='دفاع';hint.textContent='جانور نزدیک است؛ دکمهٔ عمل را برای مقابله بزن.';}
-      else if(camp){label.textContent='پناه';hint.textContent='به پناهگاه برگرد؛ شب، جانوران به ورودی حمله می‌کنند.';}
-      else if(n){label.textContent=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';hint.textContent='نزدیک منبع بایست و دکمهٔ طلایی را بزن.';}
-      else {label.textContent='برداشت';hint.textContent='بوته‌ها، درخت‌ها و سنگ‌ها را در میان مه پیدا کن.';}
-      $('forestControls').style.display='flex';$('bunkerTools').style.display='none';
+      eatButton.style.display='flex';$('bunkerTools').style.display='none';
+      const n=nearestNode(86),a=nearestAnimal(58);
+      if(atBunkerEntrance())label.textContent='ورود';
+      else if(a)label.textContent='دفاع';
+      else if(n)label.textContent=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';
+      else label.textContent='عمل';
     } else {
-      hint.classList.add('bunker-hint');
-      $('forestControls').style.display='none';$('bunkerTools').style.display='flex';
+      eatButton.style.display='none';$('bunkerTools').style.display='flex';
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k];
-      if(room)hint.textContent=`${ROOMS[room.type]?.name||'اتاق'} · سطح ${fa(room.level)} · سلامت ${fa(room.hp)}/${fa(room.maxHp)}؛ برای ارتقا، عمل را بزن.`;
-      else if(game.dug[k])hint.textContent=game.selectedRoom?`${ROOMS[game.selectedRoom]?.name||'اتاق'} انتخاب شده؛ عمل را برای ساخت بزن.`:'خانه خالی است؛ اتاقی انتخاب کن یا خانهٔ دیگری را حفر کن.';
-      else hint.textContent='خانهٔ سنگی را لمس کن و دکمهٔ عمل را بزن تا حفر شود.';
-      $('actionLabel').textContent='عمل';
+      label.textContent=room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':'عمل';
     }
   }
   function gather() {
+    if(atBunkerEntrance()){enterBunker();return;}
     const animal=nearestAnimal(61);
     if(animal) {
       animal.hp-=22;beep('hit');
@@ -702,7 +708,6 @@
       else showToast('با چوبدستی دفاع کردی؛ مراقب باش!',1400);
       return;
     }
-    if(Math.hypot(game.player.x-MAP.cx,game.player.y-MAP.cy)<99){enterBunker();return;}
     const result=nearestNode(80);
     if(!result){showToast('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;}
     const n=result.node;
@@ -776,8 +781,10 @@
   function roomDefense() { return combinedEffects().defense; }
   function baseDefense() { return (BUNKERS.find(b=>b.id===game.bunkerId)?.defense||0)+roomDefense(); }
   function beginNight() {
-    game.phase='night';game.phaseTime=0;game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.stepTimer=0;game.raidTimer=3;game.selectedCell=null;
-    beep('raid');showToast('شب فرارسید؛ گرگ‌ها و پلنگ‌ها ورودی پناهگاه را محاصره کرده‌اند!',3500);
+    game.phase='night';game.phaseTime=0;game.player.target=null;game.player.stepTimer=0;game.raidTimer=3;
+    if(game.mode==='bunker')game.selectedCell=null;
+    beep('raid');
+    showToast(game.mode==='forest'?'شب فرارسید؛ بیرون ماندی! سرما آسیب می‌زند؛ با پیکان ورودی را پیدا کن.':'شب فرارسید؛ گرگ‌ها و پلنگ‌ها به ورودی پناهگاه یورش می‌آورند.',3500);
   }
   function nightRaid() {
     const base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100}),effects=combinedEffects();
@@ -795,7 +802,7 @@
     const night=game.phase==='night',effects=combinedEffects();
     game.stats.hunger=clamp(game.stats.hunger-dt*(night?.095:.07),0,100);
     if(night&&game.mode==='bunker')game.stats.warmth=clamp(game.stats.warmth+dt*Math.max(.035,.12+effects.warmth),0,100);
-    else if(night)game.stats.warmth=clamp(game.stats.warmth-dt*.42,0,100);
+    else if(night){game.stats.warmth=clamp(game.stats.warmth-dt*.72,0,100);game.stats.health=clamp(game.stats.health-dt*.36,0,100);}
     else game.stats.warmth=clamp(game.stats.warmth+dt*.055,0,100);
     if(game.stats.hunger<13||game.stats.warmth<14)game.stats.health=clamp(game.stats.health-dt*.32,0,100);
     else if(game.mode==='bunker'&&effects.healing>0)game.stats.health=clamp(game.stats.health+dt*effects.healing,0,100);
@@ -817,7 +824,7 @@
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
     else {
       game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0){nightRaid();game.raidTimer=7.1+Math.random()*2.6;}
-      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;game.mode='forest';game.player.x=MAP.cx+66;game.player.y=MAP.cy+12;game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();showToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن. ${produced}`,3000);beep('gather');}
+      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;if(game.mode==='bunker'){game.mode='forest';game.player.x=BUNKER_ENTRANCE.x+42;game.player.y=BUNKER_ENTRANCE.y+5;game.player.target=null;}game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();showToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن. ${produced}`,3000);beep('gather');}
     }
     if(game.tutorial?.active){game.tutorial.time+=dt;if(game.tutorial.time>=60){game.tutorial.active=false;showToast('آموزش کامل شد؛ از هیرکانی مراقبت کن.',2200);}}
     if(game.stats.health<=0){game.stats.health=0;game.gameOver=true;active=false;try{localStorage.removeItem(SAVE_KEY);}catch(e){}$('gameOverReason').textContent='سرما و خطرهای جنگل توانت را گرفتند.';setScreen('gameover');return;}
@@ -827,9 +834,9 @@
     [0,'با دستهٔ سمت چپ در میان درختان حرکت کن. درخت، سنگ و بوته‌های میوه‌دار را پیدا کن.'],
     [9,'کنار منبع بایست؛ دکمهٔ طلایی را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
     [19,'گرسنگی را با دکمهٔ «خوراک» کم کن. پلنگ و گرگ را دیدی، فاصله بگیر یا از خودت دفاع کن.'],
-    [30,'نزدیک ورودی کلبه بمان. با غروب خودکار به زیرزمین می‌روی و یورش شبانه شروع می‌شود.'],
-    [40,'در پناهگاه یک خانهٔ سنگی را لمس کن و «کندن» را بزن؛ فضای تازه برای اتاق باز می‌شود.'],
-    [50,'«اتاق» را انتخاب کن، خانهٔ خالی را لمس کن و عمل را بزن. «تعمیر» را برای آسیب‌های شبانه به کار ببر.']
+    [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
+    [40,'در زیرزمین خانهٔ سنگی را لمس کن، «کندن» را انتخاب کن و دکمهٔ عمل را بزن؛ فضای اتاق باز می‌شود.'],
+    [50,'«اتاق» را انتخاب کن، خانهٔ خالی را لمس کن و دکمهٔ طلایی را بزن. «تعمیر» آسیب‌های شبانه را برمی‌گرداند.']
   ];
   function updateUI(force=false) {
     if(!game||!active)return;
@@ -841,9 +848,22 @@
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
     $('phaseText').textContent=game.phase==='day'?`روز ${fa(game.day)} · روشنایی`:`روز ${fa(game.day)} · یورش شب`;
     $('soundButton').textContent=muted?'♪̸':'♫';
-    const tut=game.tutorial?.active;$('tutorialBox').style.display=tut?'block':'none';
-    if(tut){const sec=game.tutorial.time;let step=tutorialSteps[0];for(const s of tutorialSteps)if(sec>=s[0])step=s;$('tutorialText').textContent=step[1];$('tutorialTime').textContent=`${fa(Math.ceil(60-sec))} ثانیه`;$('tutorialProgress').firstElementChild.style.width=`${clamp(sec/60*100,0,100)}%`;}
-    updateActionHint();
+    let stepIndex=-1;
+    if(game.tutorial?.active){for(let i=0;i<tutorialSteps.length;i++)if(game.tutorial.time>=tutorialSteps[i][0])stepIndex=i;}
+    const stepStart=stepIndex>=0?tutorialSteps[stepIndex][0]:0;
+    const stepEnd=stepIndex>=0?Math.min(60,stepStart+6):0;
+    const showStep=stepIndex>=0&&game.tutorial.active&&game.tutorial.time<stepEnd;
+    $('tutorialBox').style.display=showStep?'block':'none';
+    if(showStep){$('tutorialText').textContent=tutorialSteps[stepIndex][1];$('tutorialCount').textContent=`${fa(stepIndex+1)} / ${fa(tutorialSteps.length)}`;}
+    const outside=game.mode==='forest',lateDay=game.phase==='day'&&game.phaseTime>=DAY_LENGTH-30,coldNight=game.phase==='night'&&outside;
+    const showDusk=outside&&(lateDay||coldNight);
+    $('duskBanner').style.display=showDusk?'flex':'none';
+    if(showDusk){
+      $('duskText').textContent=coldNight?'شب بیرونه؛ به بانکر برگرد!':'غروب نزدیکه، برگرد به بانکر';
+      const dx=BUNKER_ENTRANCE.x-game.player.x,dy=BUNKER_ENTRANCE.y-game.player.y;
+      $('bunkerArrow').style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI+90}deg)`;
+    }
+    updateControlsUI();
     if(force)draw();
   }
 
