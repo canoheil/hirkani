@@ -1,5 +1,5 @@
 ## Status
 
-The gameplay feedback pass is implemented in `www/index.html` and committed as `80b4452`.
+Feedback round 2 is in progress. Group A (procedural character animation) is complete: `www/index.html` now draws idle breathing, directional walk/run cycles, a grounded shadow, running dust/leaf puffs, and contextual gathering/swing animations.
 
-Validation passed: inline JavaScript syntax check, `git diff --check`, and a simulated smoke test for edge joystick input, tutorial auto-dismissal, manual bunker entry, the pre-dusk warning/compass, and remaining outdoors at night. Physical-device testing is still pending. The Android build setup was not changed in this pass.
+Validation passed: inline JavaScript syntax check, `git diff --check`, and a temporary VM smoke test covering movement states, facing, running puffs, and the gathering animation. Groups B–D remain pending. Keep the game self-contained in `www/index.html`; do not change the Android build setup.
