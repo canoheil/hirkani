@@ -85,7 +85,7 @@
     #bunkerArrow { flex: 0 0 auto; color: #f0c676; font-size: 20px; font-weight: 900; line-height: 1; transform-origin: center; }
     #raidWarning { display:none; position:absolute; top:calc(101px + var(--safe-top)); right:max(10px,env(safe-area-inset-right,0px)); max-width:min(280px,44vw); align-items:center; gap:7px; padding:6px 9px; border-radius:11px; color:#f6e8d1; background:rgba(37,23,22,.88); border:1px solid rgba(201,93,74,.52); box-shadow:0 5px 16px rgba(0,0,0,.28); font-size:9px; line-height:1.45; pointer-events:none; z-index:7; }
     #raidWarningArrow { display:grid; place-items:center; flex:0 0 24px; width:24px; height:24px; border-radius:50%; color:#f1b071; background:rgba(139,50,44,.25); border:1px solid rgba(222,129,90,.42); font-size:13px; transform-origin:center; }
-    #minimapWrap { position:absolute; left:max(12px,env(safe-area-inset-left,0px)); top:calc(56px + var(--safe-top)); bottom:auto; width:120px; height:min(80px,max(0px,calc(28vh - 62px - var(--safe-top)))); padding:0; overflow:hidden; border:1px solid rgba(223,206,166,.52); border-radius:12px; background:rgba(14,23,19,.9); box-shadow:0 5px 17px rgba(0,0,0,.34); pointer-events:none; z-index:4; }
+    #minimapWrap { position:absolute; left:max(12px,env(safe-area-inset-left,0px)); top:max(12px,env(safe-area-inset-top,0px)); bottom:auto; width:180px; height:120px; padding:0; overflow:hidden; border:1px solid rgba(223,206,166,.52); border-radius:12px; background:rgba(14,23,19,.9); box-shadow:0 5px 17px rgba(0,0,0,.34); pointer-events:none; z-index:4; }
     #minimapCanvas { display:block; width:100%; height:100%; }
     #minimapLabel { position:absolute; left:5px; bottom:4px; padding:2px 5px; border-radius:6px; color:#f1e7cf; background:rgba(10,16,13,.68); font-size:8px; pointer-events:none; }
     #mapOverlay { display:none; position:absolute; inset:0; overflow:hidden; background:rgba(8,14,11,.98); pointer-events:auto; z-index:8; }
@@ -158,7 +158,7 @@
       #tutorialText { font-size: 8.5px; }
       #duskBanner { top: calc(58px + var(--safe-top)); max-width: min(220px, 34vw); padding: 5px 7px; font-size: 8.5px; }
       #toast { top: 64px; }
-      #minimapWrap { width:100px; height:min(68px,max(0px,calc(28vh - 62px - var(--safe-top)))); }
+      #minimapWrap { width:150px; height:100px; }
       #mapHeader { top:calc(62px + var(--safe-top)); padding:7px 9px; }
       .map-title-group strong { font-size:11px; }
       #mapLegend { font-size:8px; }
@@ -181,7 +181,7 @@
       .tool-button { min-width: 48px; }
       #tutorialBox { width: min(190px, 38vw); }
       #duskBanner { max-width: min(205px, 44vw); }
-      #minimapWrap { width:90px; height:min(60px,max(0px,calc(28vh - 62px - var(--safe-top)))); }
+      #minimapWrap { width:135px; height:90px; }
       #mapHeader { top:calc(58px + var(--safe-top)); width:calc(100% - 14px); padding:6px 7px; }
       #mapLegend { display:none; }
       .map-title-group strong { font-size:10px; }
@@ -282,7 +282,7 @@
       #biomeName { max-width:54px; font-size:8px; }
       .hud-tools { gap:4px; }
       .status-panel { top:calc(59px + var(--safe-top)); }
-      #minimapWrap { width:100px; height:min(68px,max(0px,calc(28vh - 62px - var(--safe-top)))); }
+      #minimapWrap { width:150px; height:100px; }
       #joystick { width:112px; height:112px; }
       .right-controls { right:max(10px,env(safe-area-inset-right,0px)); bottom:calc(10px + var(--safe-bottom)); gap:7px; }
       #actionButton { width:68px; height:68px; }
@@ -312,7 +312,7 @@
     @media (max-height:420px) and (orientation:landscape) {
       .top-context,.hud-tools { min-height:42px; }
       .status-panel { top:calc(53px + var(--safe-top)); }
-      #minimapWrap { width:min(96px,22vw); height:min(58px,max(0px,calc(28vh - 62px - var(--safe-top)))); }
+      #minimapWrap { width:min(144px,34vw); height:96px; }
       #minimapLabel { display:none; }
       #toast { top:calc(28vh - 28px); left:auto; right:max(10px,env(safe-area-inset-right,0px)); max-width:min(38vw,280px); padding:4px 7px; font-size:8px; line-height:1.25; transform:translateY(-6px); }
       #toast.show { transform:translateY(0); }
