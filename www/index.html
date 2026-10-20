@@ -49,6 +49,8 @@
     #warmthFill { background: linear-gradient(90deg,#527b76,#e6a260); }
     #staminaFill { background: linear-gradient(90deg,#658456,#c8d77b); }
     #staminaFill.low { background: linear-gradient(90deg,#a84d3f,#ef916a); }
+    #sanityFill { background: linear-gradient(90deg,#5a7770,#b9c894); }
+    #sanityFill.low { background: linear-gradient(90deg,#704b72,#c78291); }
     .resources { display: flex; align-items: center; gap: 8px; padding-inline: 9px; }
     .resource { color: #f4efdf; font-size: 11px; white-space: nowrap; display: flex; gap: 4px; align-items: center; }
     .resource i { font-style: normal; color: #e9bd68; }
@@ -116,7 +118,7 @@
       .brand-mini { font-size: 11px; gap: 4px; }
       .brand-mark { width: 25px; height: 25px; font-size: 16px; border-radius: 8px; }
       .vitals { min-width: 0; gap: 5px; }
-      .stat { width: clamp(43px, 8.7vw, 65px); }
+      .stat { width: clamp(38px, 7.2vw, 60px); }
       .stat-label { font-size: 8px; }
       .stat-label b { font-size: 9px; }
       .resources { gap: 5px; }
@@ -136,6 +138,7 @@
       .data-card { min-height: 88px; padding: 8px; }
     }
     @media (max-width: 560px) {
+      .stat { width: clamp(34px, 7.2vw, 40px); }
       .brand-mini .brand-name { display: none; }
       .cycle { min-width: 76px; }
       .cycle-title { font-size: 9px; }
@@ -173,6 +176,7 @@
         <div class="stat"><div class="stat-label"><span>گرما</span><b id="warmthValue">۸۰</b></div><div class="stat-track"><div class="stat-fill" id="warmthFill"></div></div></div>
         <div class="stat"><div class="stat-label"><span>سیری</span><b id="hungerValue">۸۰</b></div><div class="stat-track"><div class="stat-fill" id="hungerFill"></div></div></div>
         <div class="stat"><div class="stat-label"><span>توان</span><b id="staminaValue">۱۰۰</b></div><div class="stat-track"><div class="stat-fill" id="staminaFill"></div></div></div>
+        <div class="stat"><div class="stat-label"><span>آرامش</span><b id="sanityValue">۱۰۰</b></div><div class="stat-track"><div class="stat-fill" id="sanityFill"></div></div></div>
       </div>
       <div class="top-group glass resources">
         <div class="resource" title="چوب"><i>♧</i><b id="woodValue">۰</b><span class="resource-label">چوب</span></div>
@@ -401,13 +405,13 @@
       const offset=20+edgeRand()*92,x=side==='west'?offset:MAP.w-offset,ry=clamp(y+(edgeRand()-.5)*24,10,MAP.h-10);
       edgeCliffs.push({id:`cliff-${side}-${y}-${i}`,type:'rock',x,y:ry,remaining:1,radius:20,variant:edgeRand()});
     }
-    return {seed:73129,chunks:new Map(),animals,territories,edgeTrees,edgeCliffs,rand:r,effects:[],fires:[],traps:[]};
+    return {seed:73129,chunks:new Map(),animals,territories,edgeTrees,edgeCliffs,rand:r,effects:[],fires:[],traps:[],hallucinations:[]};
   }
   function freshGame() {
     return {
       worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0,
-      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
-      stats:{health:100,hunger:82,warmth:76,stamina:100}, resources:{wood:12,stone:8,food:4,herbs:2},
+      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
+      stats:{health:100,hunger:82,warmth:76,stamina:100,sanity:100}, resources:{wood:12,stone:8,food:4,herbs:2},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
       dug:{'5,2':true,'4,3':true,'5,3':true,'6,3':true},
       rooms:{'5,3':{type:'bed',level:1,hp:48,maxHp:48},'6,3':{type:'storage',level:1,hp:48,maxHp:48}},
@@ -473,7 +477,7 @@
   function loadSaved() {
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
     game=freshGame();Object.assign(game,data);muted=!!data.muted;
-    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
+    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
     const oldWorldVersion=data.worldVersion||1;
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
     game.player.x=clamp(game.player.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.y=clamp(game.player.y,WORLD_EDGE,MAP.h-WORLD_EDGE);
@@ -523,7 +527,7 @@
       }
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ برای دویدن دکمهٔ «دویدن» را نگه دار (Shift روی رایانه). نوار توان بالای صفحه را زیر نظر بگیر: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ برای دویدن دکمهٔ «دویدن» را نگه دار (Shift روی رایانه). نوار توان بالای صفحه را زیر نظر بگیر: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -634,6 +638,12 @@
     if(a.predator&&(a.state==='alert'||a.state==='chase'||a.state==='attack')){ctx.fillStyle=a.state==='attack'?'#f17455':'#f0d18a';ctx.font='bold 11px Tahoma';ctx.textAlign='center';ctx.fillText(a.state==='attack'?'!':'·',0,-45);}
     ctx.restore();
     if(a.predator&&a.hp<a.maxHp){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-18,y-47,36,3);ctx.fillStyle='#d87966';ctx.fillRect(x-18,y-47,36*clamp(a.hp/a.maxHp,0,1),3);}
+  }
+  function drawShadowCreature(shadow) {
+    const fade=clamp(shadow.life/shadow.maxLife,0,1),waver=Math.sin(gameTime*3+shadow.phase)*2.2;
+    ctx.save();ctx.translate(shadow.x+waver,shadow.y+Math.cos(gameTime*2+shadow.phase)*2);ctx.globalAlpha=.42*fade;
+    ctx.fillStyle='#090d17';ctx.strokeStyle='rgba(119,119,153,.35)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-10,4);ctx.lineTo(-12,-7);ctx.lineTo(-8,-14);ctx.lineTo(-10,-24);ctx.lineTo(-3,-20);ctx.lineTo(1,-30);ctx.lineTo(5,-19);ctx.lineTo(12,-23);ctx.lineTo(9,-12);ctx.lineTo(13,-4);ctx.lineTo(6,7);ctx.lineTo(-5,8);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle=`rgba(190,190,220,${.36*fade})`;ctx.fillRect(-4,-15,2,2);ctx.fillRect(4,-15,2,2);ctx.restore();
   }
   function drawPlayerForest(x,y) {
     const p=game.player,breath=Math.sin(gameTime*2.6)*.55,phase=p.animTime||0;
@@ -749,8 +759,9 @@
     for(const wall of world.edgeTrees)if(insideWorld(wall.x,wall.y)&&wall.x>cam.x-90&&wall.x<cam.x+W+90&&wall.y>cam.y-90&&wall.y<cam.y+H+90)drawables.push({y:wall.y,o:wall,type:'tree'});
     for(const rock of world.edgeCliffs)if(insideWorld(rock.x,rock.y)&&rock.x>cam.x-45&&rock.x<cam.x+W+45&&rock.y>cam.y-45&&rock.y<cam.y+H+45)drawables.push({y:rock.y,o:rock,type:'rock'});
     for(const a of world.animals)if(insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
+    for(const shadow of world.hallucinations||[])if(insideWorld(shadow.x,shadow.y)&&shadow.x>cam.x-45&&shadow.x<cam.x+W+45&&shadow.y>cam.y-45&&shadow.y<cam.y+H+45)drawables.push({y:shadow.y+8,o:shadow,type:'shadow'});
     const px=game.player.x,py=game.player.y;drawables.push({y:py+7,o:game.player,type:'player'});drawables.sort((a,b)=>a.y-b.y);
-    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else if(it.type==='camp')drawCamp(it.o.x,it.o.y);else if(it.type==='fire')drawCampfire(it.o);else if(it.type==='trap')drawSnare(it.o);else drawPlayerForest(px,py);}
+    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else if(it.type==='shadow')drawShadowCreature(it.o);else if(it.type==='camp')drawCamp(it.o.x,it.o.y);else if(it.type==='fire')drawCampfire(it.o);else if(it.type==='trap')drawSnare(it.o);else drawPlayerForest(px,py);}
     for(let i=0;i<4;i++){const fx=MAP.cx+((i*443+gameTime*3)%1100)-550,fy=MAP.cy+((i*257)%730)-365;if(fx>cam.x-150&&fx<cam.x+W+150&&fy>cam.y-70&&fy<cam.y+H+70){const g=ctx.createRadialGradient(fx,fy,8,fx,fy,180);g.addColorStop(0,'rgba(218,225,193,.09)');g.addColorStop(1,'rgba(218,225,193,0)');ctx.fillStyle=g;ctx.fillRect(fx-180,fy-75,360,150);}}
     ctx.restore();drawNightLighting();drawMorningFog();
     if(game.player.bleedTimer>0){const blood=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.28,W/2,H/2,Math.max(W,H)*.78);blood.addColorStop(0,'rgba(90,8,12,0)');blood.addColorStop(1,`rgba(135,18,21,${.18*clamp(game.player.bleedTimer/8,0,1)})`);ctx.fillStyle=blood;ctx.fillRect(0,0,W,H);}
@@ -880,9 +891,17 @@
     ctx.fillStyle='rgba(0,0,0,.5)';roundedRect(ctx,10,g.ground+13,138,27,8);ctx.fill();ctx.fillStyle='#d8ceb1';ctx.textAlign='left';ctx.fillText(`اتاق‌ها ${fa(Object.keys(game.rooms).length)} · آسیب ${fa(damaged)}`,20,g.ground+26);
   }
 
+  function drawSanityDistortion() {
+    const sanity=game.stats.sanity??100;if(sanity>=58)return;
+    const power=clamp((58-sanity)/58,0,1);ctx.save();
+    const haze=ctx.createRadialGradient(W*.5,H*.5,Math.min(W,H)*.12,W*.5,H*.5,Math.max(W,H)*.78);haze.addColorStop(0,'rgba(45,35,63,0)');haze.addColorStop(1,`rgba(72,46,77,${.19*power})`);ctx.fillStyle=haze;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle=`rgba(177,153,192,${.11*power})`;ctx.lineWidth=1;
+    for(let i=0;i<5;i++){const y=((i*113+gameTime*26)%(H+24))-12;ctx.beginPath();for(let x=0;x<=W;x+=24){const dy=Math.sin(x*.018+gameTime*2.1+i)*3.2*power;if(x===0)ctx.moveTo(x,y+dy);else ctx.lineTo(x,y+dy);}ctx.stroke();}
+    ctx.restore();
+  }
   function draw() {
     if(!game||!active){ctx.fillStyle='#17221b';ctx.fillRect(0,0,W,H);drawMenuBackdrop();return;}
-    if(game.mode==='forest') drawForest(); else drawBunker();
+    if(game.mode==='forest')drawForest();else drawBunker();drawSanityDistortion();
   }
   function drawMenuBackdrop() {
     const t=gameTime*.2;ctx.fillStyle='#1b3024';ctx.fillRect(0,0,W,H);
@@ -1217,6 +1236,25 @@
     if(base.hp===0){game.stats.health=Math.max(0,game.stats.health-3);}
     beep('raid');showToast(`یورش شبانه! پناهگاه ${fa(damage)}٪ آسیب دید.${damaged}`,2500);
   }
+  function spawnHallucination() {
+    const p=game.player,rand=world.rand||Math.random,angle=rand()*Math.PI*2,radius=175+rand()*Math.min(390,Math.max(W,H)*.55),x=clamp(p.x+Math.cos(angle)*radius,WORLD_EDGE+18,MAP.w-WORLD_EDGE-18),y=clamp(p.y+Math.sin(angle)*radius,WORLD_EDGE+18,MAP.h-WORLD_EDGE-18);
+    world.hallucinations.push({x,y,life:3.5+rand()*1.8,maxLife:5.3,phase:rand()*Math.PI*2,drift:(rand()-.5)*14});if(world.hallucinations.length>3)world.hallucinations.shift();
+  }
+  function updateSanity(dt) {
+    const p=game.player,night=game.phase==='night'&&game.mode==='forest';let drain=night?1.25:0,recovery=game.mode==='bunker'?8.2:.12,stress=0;
+    if(game.mode==='forest'){
+      for(const predator of world.animals){if(!predator.predator||predator.hp<=0)continue;const d=Math.hypot(predator.x-p.x,predator.y-p.y);if(d<620){const activeThreat=['alert','stalk','chase','attack'].includes(predator.state),pressure=(1-d/620)*(activeThreat?1.35:.65);stress=Math.max(stress,pressure);}}
+      drain+=stress*4.1;
+      const campDistance=Math.hypot(p.x-(MAP.cx-34),p.y-MAP.cy);if(campDistance<250)recovery=Math.max(recovery,5.6*(1-campDistance/430));
+      for(const fire of world.fires||[]){const d=Math.hypot(fire.x-p.x,fire.y-p.y);if(d<(fire.radius||150)*1.35)recovery=Math.max(recovery,6.2*(1-d/((fire.radius||150)*1.7)));}
+      if(p.torchLit)recovery=Math.max(recovery,3.4);
+    }
+    game.stats.sanity=clamp((game.stats.sanity??100)+(recovery-drain)*dt,0,100);
+    p.hallucinationTimer=(p.hallucinationTimer||0)-dt;
+    if(game.mode==='forest'&&game.stats.sanity<34&&p.hallucinationTimer<=0){spawnHallucination();p.hallucinationTimer=4.2+(world.rand?.()||Math.random())*3.4;}
+    for(const shadow of world.hallucinations||[]){shadow.life-=dt;shadow.x+=Math.sin(gameTime*1.4+shadow.phase)*shadow.drift*dt;shadow.y+=Math.cos(gameTime*1.1+shadow.phase)*shadow.drift*.28*dt;}
+    world.hallucinations=(world.hallucinations||[]).filter(shadow=>shadow.life>0);
+  }
   function updateSurvival(dt) {
     const night=game.phase==='night',effects=combinedEffects();
     game.stats.hunger=clamp(game.stats.hunger-dt*(night?.095:.07),0,100);
@@ -1239,7 +1277,7 @@
     if(!active||!game)return;
     gameTime+=dt;updateMovement(dt);updateHazards(dt);updateParticles(dt);
     if(game.mode==='forest')updateAnimals(dt);
-    updatePlayerEffects(dt);updateSurvival(dt);
+    updateSanity(dt);updatePlayerEffects(dt);updateSurvival(dt);
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
     else {
       game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0){nightRaid();game.raidTimer=7.1+Math.random()*2.6;}
@@ -1260,9 +1298,9 @@
   function updateUI(force=false) {
     if(!game||!active)return;
     const s=game.stats;
-    const stamina=clamp(s.stamina??100,0,100);
-    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);
-    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);
+    const stamina=clamp(s.stamina??100,0,100),sanity=clamp(s.sanity??100,0,100);
+    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);$('sanityValue').textContent=fa(sanity);
+    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);$('sanityFill').style.width=`${sanity}%`;$('sanityFill').classList.toggle('low',sanity<30);
     $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);$('herbsValue').textContent=fa(game.resources.herbs||0);
     const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
