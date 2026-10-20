@@ -51,11 +51,14 @@
     .controls { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
     #joystick { position: absolute; left: max(15px, env(safe-area-inset-left, 0px)); bottom: calc(13px + var(--safe-bottom)); width: 126px; height: 126px; border-radius: 50%; background: radial-gradient(circle at 44% 39%, rgba(147,175,133,.18), rgba(14,23,18,.62)); border: 1px solid rgba(231,239,216,.24); box-shadow: inset 0 0 18px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.22); pointer-events: auto; touch-action: none; }
     #joyKnob { position: absolute; width: 54px; height: 54px; top: 50%; left: 50%; margin: -27px 0 0 -27px; border-radius: 50%; background: linear-gradient(145deg, rgba(170,197,151,.9), rgba(71,111,75,.92)); border: 1px solid rgba(255,255,255,.45); box-shadow: 0 5px 13px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.35); }
-    .right-controls { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(15px + var(--safe-bottom)); display: flex; align-items: end; gap: 11px; pointer-events: auto; }
+    .right-controls { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(15px + var(--safe-bottom)); display: flex; align-items: end; gap: 7px; pointer-events: auto; }
+    #actionButton { order: -1; }
+    .soft-button.active { border-color: rgba(244,194,105,.8); box-shadow: 0 0 0 3px rgba(237,181,83,.14), 0 6px 16px rgba(0,0,0,.25); }
     .action-button { width: 77px; height: 77px; border-radius: 50%; font-size: 12px; font-weight: 900; line-height: 1.15; color: #241c10; background: radial-gradient(circle at 38% 29%, #f2d28d, #cf9344 72%); border: 2px solid rgba(255,242,197,.56); box-shadow: 0 7px 20px rgba(0,0,0,.34), inset 0 2px rgba(255,255,255,.42); text-shadow: 0 1px rgba(255,255,255,.3); }
     .action-glyph { display: block; font-size: 22px; line-height: 1; margin-bottom: 3px; }
     .soft-button { width: 56px; height: 56px; border-radius: 19px; color: #f3ecd9; background: linear-gradient(145deg, rgba(55,76,58,.96), rgba(24,37,29,.96)); border: 1px solid rgba(226,230,207,.27); font-size: 11px; font-weight: 800; box-shadow: 0 6px 16px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 3px; }
     .soft-button span { font-size: 19px; line-height: 1; }
+    .soft-button:disabled { opacity: .48; cursor: default; }
     #bunkerTools { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(19px + var(--safe-bottom)); align-items: center; gap: 6px; padding: 6px; border-radius: 16px; pointer-events: auto; }
     .tool-button { min-width: 58px; height: 42px; border-radius: 11px; padding: 0 9px; border: 1px solid rgba(231,229,204,.2); background: rgba(39,54,42,.93); color: #ece9d9; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; justify-content: center; white-space: nowrap; }
     .tool-button b { font-size: 15px; }
@@ -114,7 +117,8 @@
       #joystick { width: 112px; height: 112px; }
       #joyKnob { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
       .action-button { width: 70px; height: 70px; }
-      .soft-button { width: 49px; height: 49px; }
+      .right-controls { gap: 5px; }
+      .soft-button { width: 49px; height: 49px; font-size: 9px; }
       #bunkerTools { bottom: calc(13px + var(--safe-bottom)); gap: 4px; }
       .tool-button { min-width: 52px; padding: 0 6px; font-size: 9px; height: 39px; }
       #tutorialBox { top: calc(58px + var(--safe-top)); width: min(220px, 34vw); padding: 5px 7px; }
@@ -172,6 +176,8 @@
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
         <button class="soft-button" id="eatButton"><span>◉</span>خوراک</button>
+        <button class="soft-button" id="fireButton" aria-label="روشن‌کردن آتش"><span>♨</span>آتش</button>
+        <button class="soft-button" id="trapButton" aria-label="گذاشتن تله"><span>⌁</span>تله</button>
         <button class="action-button" id="actionButton"><span class="action-glyph">✦</span><span id="actionLabel">برداشت</span></button>
       </div>
       <div class="glass" id="bunkerTools">
@@ -266,29 +272,41 @@
   function seeded(seed) {
     return function() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   }
+  function makePredator(id,kind,x,y,territory,packId='',rand=Math.random) {
+    return {id,kind,predator:true,x,y,vx:0,vy:0,hp:kind==='leopard'?72:58,maxHp:kind==='leopard'?72:58,dir:rand()*Math.PI*2,state:'idle',stateTimer:2+rand()*4,attackCooldown:rand()*1.3,attackTimer:0,lostTimer:0,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryId:territory.id,territoryX:territory.x,territoryY:territory.y,territoryRadius:territory.radius,packId,ambush:kind==='leopard',respawnTimer:0,hitFlash:0};
+  }
+  function makeWildlife(id,kind,x,y,rand=Math.random) {
+    const prey=kind==='deer'||kind==='rabbit';
+    return {id,kind,predator:false,x,y,vx:0,vy:0,hp:kind==='deer'?54:kind==='rabbit'?24:0,maxHp:kind==='deer'?54:kind==='rabbit'?24:0,dir:rand()*Math.PI*2,state:kind==='deer'?'graze':'wander',stateTimer:1+rand()*5,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryX:x,territoryY:y,territoryRadius:kind==='deer'?230:kind==='rabbit'?130:280,fleeTimer:0,respawnTimer:0,prey};
+  }
   function makeWorld() {
-    const r=seeded(73129), nodes=[], animals=[]; let id=0;
-    const put=(type,x,y,extra={})=>nodes.push({id:id++,type,x,y,remaining: type==='tree'?2:type==='rock'?3:2, radius:type==='tree'?21:type==='rock'?17:15, variant:r(), ...extra});
-    for(let y=45;y<MAP.h-40;y+=106) for(let x=45;x<MAP.w-40;x+=110) {
-      const px=x+(r()-.5)*76, py=y+(r()-.5)*73, d=Math.hypot(px-MAP.cx,py-MAP.cy);
-      if(d<178 || r()<.14) continue;
-      put('tree',px,py,{species:r()<.7?'broad':'needle',scale:.76+r()*.5});
+    const r=seeded(73129),nodes=[],animals=[];let id=0;
+    const put=(type,x,y,extra={})=>nodes.push({id:id++,type,x,y,remaining:type==='tree'?2:type==='rock'?3:2,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),...extra});
+    for(let y=45;y<MAP.h-40;y+=106)for(let x=45;x<MAP.w-40;x+=110){const px=x+(r()-.5)*76,py=y+(r()-.5)*73,d=Math.hypot(px-MAP.cx,py-MAP.cy);if(d<178||r()<.14)continue;put('tree',px,py,{species:r()<.7?'broad':'needle',scale:.76+r()*.5});}
+    for(let i=0;i<34;i++){const a=r()*Math.PI*2,d=160+r()*900;put('rock',clamp(MAP.cx+Math.cos(a)*d,40,MAP.w-40),clamp(MAP.cy+Math.sin(a)*d*.68,40,MAP.h-40));}
+    for(let i=0;i<43;i++){const a=r()*Math.PI*2,d=100+r()*870;put('bush',clamp(MAP.cx+Math.cos(a)*d,35,MAP.w-35),clamp(MAP.cy+Math.sin(a)*d*.7,35,MAP.h-35),{herb:r()<.39});}
+    const territories=[
+      {id:'western-wolves',kind:'wolf',packId:'ridge-pack',x:MAP.cx-770,y:MAP.cy-330,radius:270,count:2},
+      {id:'southern-leopard',kind:'leopard',packId:'',x:MAP.cx+835,y:MAP.cy+455,radius:300,count:1}
+    ];
+    let predatorId=0;
+    for(const t of territories)for(let i=0;i<t.count;i++){
+      const angle=(i/t.count)*Math.PI*2+r()*.45,rad=28+r()*55;
+      const x=clamp(t.x+Math.cos(angle)*rad,50,MAP.w-50),y=clamp(t.y+Math.sin(angle)*rad,50,MAP.h-50);
+      animals.push(makePredator(`pred-${predatorId++}`,t.kind,x,y,t,t.packId,r));
     }
-    for(let i=0;i<34;i++) { let a=r()*Math.PI*2, d=160+r()*900; put('rock',clamp(MAP.cx+Math.cos(a)*d,40,MAP.w-40),clamp(MAP.cy+Math.sin(a)*d*.68,40,MAP.h-40)); }
-    for(let i=0;i<43;i++) { let a=r()*Math.PI*2, d=100+r()*870; put('bush',clamp(MAP.cx+Math.cos(a)*d,35,MAP.w-35),clamp(MAP.cy+Math.sin(a)*d*.7,35,MAP.h-35),{herb:r()<.39}); }
-    for(let i=0;i<7;i++) {
-      let a=r()*Math.PI*2,d=330+r()*740;
-      animals.push({id:i,kind:i<4?'wolf':'leopard',x:clamp(MAP.cx+Math.cos(a)*d,60,MAP.w-60),y:clamp(MAP.cy+Math.sin(a)*d*.75,60,MAP.h-60),vx:0,vy:0,hp:40,maxHp:40,dir:r()*Math.PI*2,roam:1+r()*3,attack:0});
-    }
-    // Two silhouettes can be encountered around the first day's outer trail.
-    animals[0].x=MAP.cx+290; animals[0].y=MAP.cy-205;
-    animals[1].x=MAP.cx-370; animals[1].y=MAP.cy+120;
-    return {nodes,animals,rand:r,effects:[]};
+    const randomPoint=(minFromCamp=260)=>{let x=MAP.cx,y=MAP.cy;for(let i=0;i<30;i++){x=40+r()*(MAP.w-80);y=40+r()*(MAP.h-80);if(Math.hypot(x-MAP.cx,y-MAP.cy)>minFromCamp)break;}return{x,y};};
+    let wildlifeId=0;
+    for(let i=0;i<3;i++){const p=randomPoint(300);animals.push(makeWildlife(`deer-${wildlifeId++}`,'deer',p.x,p.y,r));}
+    for(let i=0;i<7;i++){const p=randomPoint(220);animals.push(makeWildlife(`hare-${wildlifeId++}`,'rabbit',p.x,p.y,r));}
+    for(let i=0;i<6;i++){const p=randomPoint(120);animals.push(makeWildlife(`bird-${wildlifeId++}`,'bird',p.x,p.y,r));}
+    for(let i=0;i<8;i++){const p=randomPoint(100);animals.push(makeWildlife(`butterfly-${wildlifeId++}`,'butterfly',p.x,p.y,r));}
+    return {nodes,animals,territories,rand:r,effects:[],fires:[],traps:[]};
   }
   function freshGame() {
     return {
       mode:'forest', day:1, phase:'day', phaseTime:0,
-      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,hp:100,invuln:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
+      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
       stats:{health:100,hunger:82,warmth:76}, resources:{wood:12,stone:8,food:4,herbs:2},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
       dug:{'5,2':true,'4,3':true,'5,3':true,'6,3':true},
@@ -385,7 +403,7 @@
       }
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='با دستهٔ سمت چپ حرکت کن. در جنگل کنار درخت، سنگ یا بوته دکمهٔ عمل را بزن؛ خوراک را با دکمهٔ ◉ مصرف کن. با رسیدن شب، جانوران به پناهگاه یورش می‌آورند. در زیرزمین، خانهٔ خالی را لمس کن، حفر کن و اتاق بساز. پناهگاه و اتاق‌های آسیب‌دیده را با چوب و سنگ تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ گوزن و خرگوش را برای خوراک شکار کن. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با مشعل آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -449,20 +467,49 @@
     else {ctx.globalAlpha=.4;ctx.fillStyle='#5b6547';ctx.fillRect(x-8,y-1,16,5);ctx.globalAlpha=1;}
   }
   function drawAnimal(a) {
-    const x=a.x,y=a.y, leopard=a.kind==='leopard', s=leopard?1.03:.95;
+    const x=a.x,y=a.y,phase=a.animTime||0,moving=Math.hypot(a.vx||0,a.vy||0)>7;
     ctx.save();ctx.translate(x,y);ctx.rotate(a.dir||0);
-    ctx.fillStyle='rgba(5,12,9,.25)';ctx.beginPath();ctx.ellipse(0,10,24,9,0,0,Math.PI*2);ctx.fill();
-    const fur=leopard?'#bc9b55':'#777d76', shadow=leopard?'#80673c':'#555e5a';
-    ctx.fillStyle=fur;ctx.beginPath();ctx.ellipse(0,0,22*s,11*s,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=shadow;ctx.beginPath();ctx.ellipse(-8,7,4,8,0,0,Math.PI*2);ctx.ellipse(9,7,4,8,0,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(18,-2,8,0,Math.PI*2);ctx.fillStyle=fur;ctx.fill();
-    ctx.fillStyle=shadow;ctx.beginPath();ctx.moveTo(13,-8);ctx.lineTo(16,-17);ctx.lineTo(21,-9);ctx.closePath();ctx.fill();
-    ctx.beginPath();ctx.moveTo(21,-8);ctx.lineTo(27,-13);ctx.lineTo(27,-5);ctx.closePath();ctx.fill();
-    ctx.strokeStyle=fur;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-18,1);ctx.quadraticCurveTo(-32,-5,-31,6);ctx.stroke();
-    if(leopard){ctx.fillStyle='rgba(36,30,17,.7)';for(const [sx,sy] of [[-12,-3],[-2,4],[7,-4],[4,4],[-7,1]]){ctx.beginPath();ctx.arc(sx,sy,2,0,Math.PI*2);ctx.fill();}}
-    else {ctx.fillStyle='rgba(224,226,213,.25)';ctx.beginPath();ctx.ellipse(-3,-5,11,3,-.1,0,Math.PI*2);ctx.fill();}
+    if(a.kind==='bird'||a.kind==='butterfly'){
+      const flap=Math.sin(gameTime*(a.kind==='bird'?17:21)+phase),butterfly=a.kind==='butterfly';
+      ctx.globalAlpha=butterfly ? .84 : .92;ctx.fillStyle=butterfly?'#d6bc65':'#382c24';ctx.beginPath();ctx.ellipse(0,-5,3.5,2.4,0,0,Math.PI*2);ctx.fill();
+      if(butterfly){ctx.fillStyle=phase%2?'#d77f4e':'#e9c86d';ctx.beginPath();ctx.ellipse(-3,-6,3,3+Math.abs(flap)*3,-.35,0,Math.PI*2);ctx.ellipse(3,-6,3,3+Math.abs(flap)*3,.35,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#493d30';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(-1,-11);ctx.moveTo(0,-7);ctx.lineTo(2,-11);ctx.stroke();}
+      else {ctx.strokeStyle='#d5d1bb';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-1,-5);ctx.quadraticCurveTo(-7,-8-Math.abs(flap)*5,-12,-5);ctx.moveTo(1,-5);ctx.quadraticCurveTo(7,-8-Math.abs(flap)*5,12,-5);ctx.stroke();ctx.fillStyle='#ddd6c1';ctx.beginPath();ctx.ellipse(13,-5,3,1.2,0,0,Math.PI*2);ctx.fill();}
+      ctx.restore();return;
+    }
+    ctx.fillStyle='rgba(5,12,9,.3)';ctx.beginPath();ctx.ellipse(0,2,a.kind==='deer'?23:18,6,0,0,Math.PI*2);ctx.fill();
+    const step=moving?Math.sin(phase)*(a.state==='chase'||a.state==='retreat'?5:3):Math.sin(phase*.5)*.45;
+    const drawLeg=(hx,hy,offset,color,width=3)=>{const swing=Math.sin(phase+offset)*(moving?step:0);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx+swing*.7,hy+6);ctx.lineTo(hx+swing,hy+12);ctx.stroke();ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(hx+swing-2,hy+12);ctx.lineTo(hx+swing+2,hy+12);ctx.stroke();};
+    if(a.kind==='deer'){
+      const coat='#a98255',dark='#654d38';ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(-2,-10,19,8,0,0,Math.PI*2);ctx.fill();
+      drawLeg(-13,-8,0,'#604b37',2.7);drawLeg(-4,-7,Math.PI,'#7c6040',2.7);drawLeg(7,-8,Math.PI*.7,'#604b37',2.7);drawLeg(13,-8,Math.PI*1.7,'#7c6040',2.7);
+      ctx.fillStyle=coat;ctx.beginPath();ctx.ellipse(-2,-13,19,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d5b982';ctx.beginPath();ctx.ellipse(-6,-13,10,4,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=coat;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(11,-16);ctx.quadraticCurveTo(17,-22,17,-28);ctx.stroke();ctx.fillStyle='#b79062';ctx.beginPath();ctx.ellipse(19,-29,6,4,-.12,0,Math.PI*2);ctx.fill();ctx.fillStyle='#29251e';ctx.beginPath();ctx.arc(22,-29,1,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=dark;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(17,-32);ctx.lineTo(15,-39);ctx.lineTo(12,-42);ctx.moveTo(15,-39);ctx.lineTo(19,-43);ctx.moveTo(20,-32);ctx.lineTo(22,-38);ctx.lineTo(26,-41);ctx.moveTo(22,-38);ctx.lineTo(18,-42);ctx.stroke();
+      ctx.fillStyle='#eee0c5';ctx.beginPath();ctx.arc(-20,-15,2.4,0,Math.PI*2);ctx.fill();
+    } else if(a.kind==='rabbit'){
+      const fur='#a99b83',leg='#655747';drawLeg(-5,-6,Math.PI,leg,2.8);drawLeg(5,-6,0,leg,2.6);
+      ctx.fillStyle=fur;ctx.beginPath();ctx.ellipse(-2,-8,11,7,.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(8,-13,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e5d6bf';ctx.beginPath();ctx.arc(-12,-8,3.1,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#8d7666';ctx.beginPath();ctx.ellipse(7,-22,2.5,8,-.16,0,Math.PI*2);ctx.ellipse(12,-21,2.2,7,.22,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d5a4a0';ctx.beginPath();ctx.ellipse(7,-22,1,5,-.16,0,Math.PI*2);ctx.ellipse(12,-21,1,4,.22,0,Math.PI*2);ctx.fill();ctx.fillStyle='#25231e';ctx.beginPath();ctx.arc(10,-14,1,0,Math.PI*2);ctx.fill();
+    } else {
+      const leopard=a.kind==='leopard',stalking=a.state==='stalk';
+      if(leopard&&a.ambush&&(a.state==='idle'||stalking))ctx.globalAlpha=.7;
+      const fur=a.hitFlash>0?'#d17b61':leopard?'#bd9652':'#737b77',dark=leopard?'#705438':'#454e4b',belly=leopard?'#e1c98d':'#d0d0c3';
+      if(leopard){ctx.strokeStyle=dark;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-19,-11);ctx.bezierCurveTo(-33,-13,-40,-22,-43,-17);ctx.quadraticCurveTo(-47,-8,-39,-7);ctx.stroke();}
+      else {ctx.strokeStyle=dark;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-19,-11);ctx.quadraticCurveTo(-29,-17,-36,-12+Math.sin(phase)*2);ctx.lineTo(-40,-8);ctx.stroke();}
+      drawLeg(-14,-8,0,dark,leopard?3.7:3.5);drawLeg(-7,-7,Math.PI,dark,leopard?3.4:3.2);drawLeg(8,-8,Math.PI*.75,dark,leopard?3.6:3.4);drawLeg(14,-8,Math.PI*1.75,dark,leopard?3.3:3.1);
+      ctx.fillStyle=fur;ctx.beginPath();ctx.ellipse(-1,stalking?-13:-15,leopard?23:22,stalking?8:10,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=belly;ctx.beginPath();ctx.ellipse(1,-9,13,3,0,0,Math.PI*2);ctx.fill();
+      if(leopard){ctx.fillStyle='rgba(63,43,25,.82)';for(const [sx,sy] of [[-16,-16],[-11,-10],[-6,-18],[-3,-12],[3,-19],[7,-14],[12,-17],[15,-12]]){ctx.beginPath();ctx.arc(sx,sy,1.7,0,Math.PI*2);ctx.arc(sx+.7,sy-.2,.65,0,Math.PI*2);ctx.fill();}}
+      else {ctx.fillStyle='rgba(226,229,215,.7)';ctx.beginPath();ctx.ellipse(-4,-19,12,3.4,-.12,0,Math.PI*2);ctx.fill();ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(-2,-22,11,2,0,0,Math.PI*2);ctx.fill();}
+      ctx.strokeStyle=fur;ctx.lineWidth=leopard?4:5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(11,-18);ctx.quadraticCurveTo(16,-24+Math.sin(phase*.7)*.7,19,-28);ctx.stroke();
+      ctx.fillStyle=fur;ctx.beginPath();ctx.arc(20,-28,7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=dark;ctx.beginPath();if(leopard){ctx.moveTo(16,-32);ctx.lineTo(16,-39);ctx.lineTo(22,-34);ctx.moveTo(22,-34);ctx.lineTo(27,-39);ctx.lineTo(27,-31);}else{ctx.moveTo(15,-32);ctx.lineTo(12,-42);ctx.lineTo(20,-35);ctx.lineTo(24,-43);ctx.lineTo(26,-31);}ctx.fill();
+      ctx.fillStyle=leopard?'#ddc98e':'#d8d4c4';ctx.beginPath();ctx.ellipse(25,-26,5,3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#211e19';ctx.beginPath();ctx.arc(22,-29,1.2,0,Math.PI*2);ctx.fill();ctx.arc(29,-26,1,0,Math.PI*2);ctx.fill();
+      if(a.state==='attack'){ctx.fillStyle='#f0d3b2';ctx.beginPath();ctx.moveTo(26,-24);ctx.lineTo(30,-21);ctx.lineTo(25,-22);ctx.closePath();ctx.fill();}
+    }
+    if(a.predator&&(a.state==='alert'||a.state==='chase'||a.state==='attack')){ctx.fillStyle=a.state==='attack'?'#f17455':'#f0d18a';ctx.font='bold 11px Tahoma';ctx.textAlign='center';ctx.fillText(a.state==='attack'?'!':'·',0,-45);}
     ctx.restore();
-    if(a.hp<a.maxHp){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(x-16,y-22,32,3);ctx.fillStyle='#d87966';ctx.fillRect(x-16,y-22,32*a.hp/a.maxHp,3);}
+    if(a.predator&&a.hp<a.maxHp){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-18,y-47,36,3);ctx.fillStyle='#d87966';ctx.fillRect(x-18,y-47,36*clamp(a.hp/a.maxHp,0,1),3);}
   }
   function drawPlayerForest(x,y) {
     const p=game.player,breath=Math.sin(gameTime*2.6)*.55,phase=p.animTime||0;
@@ -504,11 +551,23 @@
     ctx.fillStyle='rgba(10,14,11,.2)';ctx.beginPath();ctx.ellipse(x,y+14,73,33,0,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#70604a';ctx.beginPath();ctx.ellipse(x,y,70,27,-.1,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='#ae9a6a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,60,21,-.1,0,Math.PI*2);ctx.stroke();
-    // A small root-and-log shelter entrance.
     ctx.fillStyle='#402e20';ctx.beginPath();ctx.moveTo(x+19,y-15);ctx.lineTo(x+47,y-14);ctx.lineTo(x+48,y+14);ctx.lineTo(x+19,y+14);ctx.closePath();ctx.fill();
     ctx.fillStyle='#9c7142';ctx.fillRect(x+22,y-14,24,4);ctx.fillRect(x+22,y+10,24,4);
     ctx.fillStyle='#d4ae6a';ctx.beginPath();ctx.arc(x+39,y,1.8,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#e0aa5d';ctx.beginPath();ctx.arc(x-34,y-1,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(239,167,79,.18)';ctx.beginPath();ctx.arc(x-34,y-1,13,0,Math.PI*2);ctx.fill();
+  }
+  function drawCampfire(f) {
+    const flicker=Math.sin(gameTime*17+f.x*.07)*2,alpha=clamp((f.timer||0)/2,0,1);
+    const halo=ctx.createRadialGradient(f.x,f.y,4,f.x,f.y,92);halo.addColorStop(0,'rgba(239,154,65,.13)');halo.addColorStop(1,'rgba(239,154,65,0)');ctx.fillStyle=halo;ctx.fillRect(f.x-92,f.y-92,184,184);
+    ctx.fillStyle='rgba(8,12,8,.3)';ctx.beginPath();ctx.ellipse(f.x,f.y+6,17,6,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#62472c';ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(f.x-12,f.y+1);ctx.lineTo(f.x+12,f.y-3);ctx.moveTo(f.x-9,f.y-4);ctx.lineTo(f.x+10,f.y+3);ctx.stroke();
+    ctx.globalAlpha=alpha;ctx.fillStyle='#dc5d37';ctx.beginPath();ctx.moveTo(f.x-7,f.y);ctx.quadraticCurveTo(f.x-10,f.y-13-flicker,f.x-1,f.y-21-flicker);ctx.quadraticCurveTo(f.x+2,f.y-13,f.x+7,f.y);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#f4bc52';ctx.beginPath();ctx.moveTo(f.x-3,f.y);ctx.quadraticCurveTo(f.x-3,f.y-10-flicker,f.x+2,f.y-14-flicker);ctx.quadraticCurveTo(f.x+7,f.y-6,f.x+4,f.y);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+  }
+  function drawSnare(t) {
+    ctx.fillStyle='rgba(7,13,9,.24)';ctx.beginPath();ctx.ellipse(t.x,t.y+3,14,5,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#86714a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(t.x,t.y,11,5,.15,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#63543c';ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(t.x-12,t.y+5);ctx.lineTo(t.x-2,t.y-6);ctx.lineTo(t.x+10,t.y+4);ctx.moveTo(t.x-8,t.y+5);ctx.lineTo(t.x+8,t.y-4);ctx.stroke();
   }
   function drawForest() {
     ctx.fillStyle='#294333';ctx.fillRect(0,0,W,H);
@@ -525,7 +584,10 @@
     // A worn deer trail leading from the camp into the hazel and beech forest.
     ctx.lineCap='round';ctx.strokeStyle='rgba(167,144,98,.19)';ctx.lineWidth=32;ctx.beginPath();ctx.moveTo(MAP.cx+20,MAP.cy);ctx.bezierCurveTo(MAP.cx+270,MAP.cy+50,MAP.cx+240,MAP.cy-220,MAP.cx+510,MAP.cy-260);ctx.stroke();
     ctx.strokeStyle='rgba(213,189,133,.10)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(MAP.cx+20,MAP.cy);ctx.bezierCurveTo(MAP.cx+270,MAP.cy+50,MAP.cx+240,MAP.cy-220,MAP.cx+510,MAP.cy-260);ctx.stroke();
-    drawCamp(MAP.cx,MAP.cy);drawParticles();
+    drawCamp(MAP.cx,MAP.cy);
+    for(const f of world.fires||[])if(f.x>cam.x-120&&f.x<cam.x+W+120&&f.y>cam.y-120&&f.y<cam.y+H+120)drawCampfire(f);
+    for(const t of world.traps||[])if(!t.triggered&&t.x>cam.x-60&&t.x<cam.x+W+60&&t.y>cam.y-60&&t.y<cam.y+H+60)drawSnare(t);
+    drawParticles();
     const drawables=[];
     for(const n of world.nodes) if(n.x>cam.x-90&&n.x<cam.x+W+90&&n.y>cam.y-90&&n.y<cam.y+H+90) drawables.push({y:n.y,o:n,type:n.type});
     for(const a of world.animals) if(a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100) drawables.push({y:a.y+8,o:a,type:'animal'});
@@ -540,6 +602,7 @@
     ctx.restore();
     const darkness=game.phase==='night'?0.52:game.phaseTime>DAY_LENGTH*.72?clamp((game.phaseTime-DAY_LENGTH*.72)/(DAY_LENGTH*.28)*.2,0,.2):0;
     if(darkness>0){ctx.fillStyle=`rgba(10,17,32,${darkness})`;ctx.fillRect(0,0,W,H);const px=game.player.x-cam.x,py=game.player.y-cam.y;ctx.globalCompositeOperation='screen';const glow=ctx.createRadialGradient(px,py,6,px,py,180);glow.addColorStop(0,'rgba(235,189,112,.31)');glow.addColorStop(.4,'rgba(186,159,104,.12)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.fillRect(px-180,py-180,360,360);ctx.globalCompositeOperation='source-over';}
+    if(game.player.bleedTimer>0){const blood=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.28,W/2,H/2,Math.max(W,H)*.78);blood.addColorStop(0,'rgba(90,8,12,0)');blood.addColorStop(1,`rgba(135,18,21,${.18*clamp(game.player.bleedTimer/8,0,1)})`);ctx.fillStyle=blood;ctx.fillRect(0,0,W,H);}
     const vignette=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.23,W/2,H/2,Math.max(W,H)*.78);vignette.addColorStop(0,'rgba(0,0,0,0)');vignette.addColorStop(1,'rgba(5,10,8,.28)');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   }
 
@@ -693,12 +756,11 @@
       p.moving=moving;p.running=!!(moving&&keys.Shift);
       if(moving){
         p.faceX=dx;p.faceY=dy;p.animTime=(p.animTime||0)+dt*(p.running?15:9);
-        const speed=p.running?224:148,nx=clamp(p.x+dx*speed*dt,20,MAP.w-20),ny=clamp(p.y+dy*speed*dt,20,MAP.h-20);
+        const speed=(p.running?224:148)*(p.bleedTimer>0 ? .78 : 1),nx=clamp(p.x+dx*speed*dt,20,MAP.w-20),ny=clamp(p.y+dy*speed*dt,20,MAP.h-20);
         const blocked=(x,y)=>world.nodes.some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
         if(!blocked(nx,p.y))p.x=nx;if(!blocked(p.x,ny))p.y=ny;
         if(p.running){p.puffTimer=(p.puffTimer||0)-dt;if(p.puffTimer<=0){spawnRunPuff(p.x,p.y);p.puffTimer=.17;}}else p.puffTimer=.08;
       }else{p.running=false;p.puffTimer=0;}
-      p.invuln=Math.max(0,(p.invuln||0)-dt);
     } else {
       p.moving=inputMoving;p.running=false;
       p.stepTimer=Math.max(0,(p.stepTimer||0)-dt);
@@ -711,16 +773,111 @@
       }
     }
   }
-  function updateAnimals(dt) {
-    for(const a of world.animals) {
-      if(a.hp<=0)continue;
-      const d=Math.hypot(game.player.x-a.x,game.player.y-a.y),hunting=game.mode==='forest'&&(game.phase==='night'?d<760:d<220);
-      a.attack=Math.max(0,a.attack-dt);
-      if(hunting) { const dx=(game.player.x-a.x)/(d||1),dy=(game.player.y-a.y)/(d||1),speed=game.phase==='night'?58:31;a.dir=Math.atan2(dy,dx);a.x+=dx*dt*(d>28?speed:0);a.y+=dy*dt*(d>28?speed:0); }
-      else {a.roam-=dt;if(a.roam<=0){a.dir+=(world.rand()-.5)*2.8;a.roam=1.4+world.rand()*3.8;}a.x+=Math.cos(a.dir)*dt*10;a.y+=Math.sin(a.dir)*dt*8;}
-      a.x=clamp(a.x,35,MAP.w-35);a.y=clamp(a.y,35,MAP.h-35);
-      if(d<38&&game.mode==='forest'&&a.attack<=0&&game.player.invuln<=0){a.attack=2.3;game.player.invuln=.9;game.stats.health=Math.max(0,game.stats.health-(a.kind==='leopard'?12:8));beep('hit');showToast(a.kind==='leopard'?'پلنگ هیرکانی خراش انداخت! عقب‌نشینی کن.':'گرگ به تو حمله کرد! از دسته برای فرار استفاده کن.',1800);}
+  function outsidePlayerView(x,y,margin=90) {
+    const sx=x-cam.x,sy=y-cam.y;return sx<-margin||sx>W+margin||sy<-margin||sy>H+margin;
+  }
+  function moveCreature(a,tx,ty,speed,dt) {
+    const dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy)||1,step=Math.min(d,speed*dt),ox=a.x,oy=a.y;
+    a.x=clamp(a.x+dx/d*step,35,MAP.w-35);a.y=clamp(a.y+dy/d*step,35,MAP.h-35);
+    a.vx=dt?(a.x-ox)/dt:0;a.vy=dt?(a.y-oy)/dt:0;
+    if(Math.hypot(a.vx,a.vy)>3)a.dir=Math.atan2(a.vy,a.vx);
+    a.animTime=(a.animTime||0)+dt*(Math.hypot(a.vx,a.vy)>5?Math.hypot(a.vx,a.vy)*.075:1.8);
+  }
+  function changeAnimalState(a,state,timer=0) {
+    if(a.state===state){if(timer>0)a.stateTimer=Math.max(a.stateTimer||0,timer);return;}
+    a.state=state;a.stateTimer=timer;a.vx=0;a.vy=0;
+    if(state==='attack'){a.attackTimer=.28;a.didBite=false;}
+  }
+  function respawnCreature(a,dt) {
+    if(a.hp>0)return false;
+    a.respawnTimer=(a.respawnTimer|| (a.predator?150:a.kind==='deer'?65:42))-dt;
+    if(a.respawnTimer>0)return true;
+    const rand=world.rand||Math.random;
+    for(let tries=0;tries<24;tries++){
+      const angle=rand()*Math.PI*2,radius=rand()*(a.territoryRadius||220),x=clamp((a.territoryX??a.x)+Math.cos(angle)*radius,45,MAP.w-45),y=clamp((a.territoryY??a.y)+Math.sin(angle)*radius,45,MAP.h-45);
+      if(outsidePlayerView(x,y,120)&&Math.hypot(x-game.player.x,y-game.player.y)>Math.hypot(W/2,H/2)+120){
+        a.x=x;a.y=y;a.hp=a.maxHp;a.respawnTimer=0;a.state=a.predator?'idle':a.kind==='deer'?'graze':'wander';a.stateTimer=2+rand()*4;a.roamAngle=rand()*Math.PI*2;a.ambush=a.kind==='leopard';return false;
+      }
     }
+    a.respawnTimer=12;return true;
+  }
+  function updatePrey(a,dt) {
+    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y),isHerd=a.kind==='deer'||a.kind==='rabbit';
+    if(!isHerd&&a.kind!=='bird'&&a.kind!=='butterfly')return;
+    let dangerX=p.x,dangerY=p.y,dangerD=d,threat=d<(p.running?250:90)||(p.noiseBurst||0)>0&&d<310;
+    if(isHerd){for(const predator of world.animals){if(!predator.predator||predator.hp<=0)continue;const pd=Math.hypot(predator.x-a.x,predator.y-a.y);if(pd<170){threat=true;if(pd<dangerD){dangerX=predator.x;dangerY=predator.y;dangerD=pd;}}}}
+    a.stateTimer-=dt;
+    if(threat&&isHerd){a.state='retreat';a.fleeTimer=2.1;}
+    if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-dangerX,dy=a.y-dangerY,m=Math.hypot(dx,dy)||1,speed=a.kind==='deer'?176:a.kind==='rabbit'?140:95;moveCreature(a,a.x+dx/m*220,a.y+dy/m*220,speed,dt);return;}
+    if(a.stateTimer<=0){a.state=a.kind==='deer'?'graze':'wander';a.stateTimer=2+world.rand()*5;a.roamAngle+=(world.rand()-.5)*2.4;}
+    if(a.state==='graze'&&a.kind==='deer'){a.vx=0;a.vy=0;a.animTime=(a.animTime||0)+dt*2.2;return;}
+    const wanderSpeed=a.kind==='deer'?28:a.kind==='rabbit'?38:a.kind==='bird'?48:15;
+    const radius=a.territoryRadius||140,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.42,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.42;
+    if(Math.hypot(tx-a.x,ty-a.y)<12){a.roamAngle+=(world.rand()-.5)*2.6;a.stateTimer=0;}
+    else moveCreature(a,tx,ty,wanderSpeed,dt);
+    if(a.kind==='bird')a.y+=Math.sin(gameTime*2+a.animTime)*dt*4;
+  }
+  function hurtPlayerFromBite(a) {
+    const p=game.player;if(p.hitGrace>0)return;
+    const leopard=a.kind==='leopard',damage=leopard?20:13;
+    game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.72;p.invuln=.42;p.bleedTimer=Math.max(p.bleedTimer||0,leopard?8:6);p.bleedTickTimer=.9;p.bleedSeverity=leopard?1.15:.72;
+    beep('hit');showToast(leopard?'پلنگ گاز گرفت؛ خون‌ریزی داری! بدو یا از آتش و بانکر کمک بگیر.':'گرگ گاز گرفت؛ خون‌ریزی داری! فرار کن یا تله و آتش به کار ببر.',2200);
+  }
+  function updatePredator(a,dt) {
+    const p=game.player,d=Math.hypot(p.x-a.x,p.y-a.y),night=game.phase==='night';
+    a.attackCooldown=Math.max(0,(a.attackCooldown||0)-dt);a.hitFlash=Math.max(0,(a.hitFlash||0)-dt);
+    const trap=(world.traps||[]).find(t=>!t.triggered&&Math.hypot(a.x-t.x,a.y-t.y)<t.radius);
+    if(trap){trap.triggered=true;a.hp-=a.kind==='leopard'?48:58;a.retreatReason='snare';changeAnimalState(a,'retreat',5);showToast('تله بسته شد؛ شکارچی آسیب دید و عقب نشست.',1800);if(a.hp<=0){a.hp=0;a.respawnTimer=160;}return;}
+    const fire=(world.fires||[]).find(f=>Math.hypot(a.x-f.x,a.y-f.y)<f.radius);
+    if(fire){if(a.state!=='retreat'||a.retreatReason!=='fire'){a.retreatReason='fire';changeAnimalState(a,'retreat',3.2);}const dx=a.x-fire.x,dy=a.y-fire.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*230,a.y+dy/m*230,a.kind==='leopard'?205:190,dt);return;}
+    a.retreatReason=a.retreatReason==='fire'||a.retreatReason==='snare'?'':a.retreatReason;
+    if(game.mode!=='forest'){a.vx=0;a.vy=0;return;}
+    const noise=(p.noiseBurst||0)>0 ? 1.4 : p.running ? 1.1 : p.actionTimer>0 ? .75 : p.moving ? .42 : 0;
+    const sight=a.kind==='leopard'?(night?245:135):(night?360:210),hearing=(p.noiseBurst||0)>0?560:p.running?440:p.actionTimer>0?310:p.moving?190:0;
+    const packMateHunting=night&&a.packId&&world.animals.some(m=>m!==a&&m.predator&&m.packId===a.packId&&m.hp>0&&['alert','stalk','chase','attack'].includes(m.state)&&Math.hypot(m.x-a.x,m.y-a.y)<520);
+    const notices=d<sight||noise>0&&d<hearing||packMateHunting&&d<720;
+    if((a.state==='idle'||a.state==='wander')&&notices){a.lastX=p.x;a.lastY=p.y;a.lostTimer=0;changeAnimalState(a,'alert',a.kind==='leopard' ? .38 : .62);}
+    if(a.state==='alert'){a.dir=Math.atan2(p.y-a.y,p.x-a.x);a.stateTimer-=dt;if(a.stateTimer<=0)changeAnimalState(a,a.kind==='leopard'||d>150?'stalk':'chase');}
+    else if(a.state==='idle'){
+      a.stateTimer-=dt;a.animTime=(a.animTime||0)+dt*1.8;
+      if(a.stateTimer<=0){a.roamAngle=(world.rand?.()||Math.random())*Math.PI*2;changeAnimalState(a,'wander',2+world.rand()*4);}
+    } else if(a.state==='wander'){
+      a.stateTimer-=dt;const radius=a.territoryRadius||250,tx=a.territoryX+Math.cos(a.roamAngle)*radius*.5,ty=a.territoryY+Math.sin(a.roamAngle)*radius*.5;
+      if(a.stateTimer<=0||Math.hypot(tx-a.x,ty-a.y)<18){changeAnimalState(a,'idle',2+world.rand()*5);a.vx=0;a.vy=0;}
+      else moveCreature(a,tx,ty,a.kind==='leopard'?29:38,dt);
+    } else if(a.state==='stalk'){
+      a.lostTimer=d>800?(a.lostTimer||0)+dt:0;
+      if(a.lostTimer>3.5){changeAnimalState(a,'wander',3);return;}
+      a.lastX=p.x;a.lastY=p.y;
+      const pounceRange=a.kind==='leopard'?172:night?265:150;
+      if(d<pounceRange||p.running&&d<360||(p.noiseBurst||0)>0&&d<500){changeAnimalState(a,'chase');a.pounceTimer=a.kind==='leopard'?1.5:0;}
+      else moveCreature(a,p.x,p.y,a.kind==='leopard'?24:night?47:38,dt);
+    } else if(a.state==='chase'){
+      a.lostTimer=d>900?(a.lostTimer||0)+dt:0;
+      if(a.lostTimer>4.2){changeAnimalState(a,'wander',4);return;}
+      a.lastX=p.x;a.lastY=p.y;a.pounceTimer=Math.max(0,(a.pounceTimer||0)-dt);
+      const speed=a.kind==='leopard'?(a.pounceTimer>0?252:204):(night?202:184);
+      moveCreature(a,p.x,p.y,speed,dt);
+      const nd=Math.hypot(p.x-a.x,p.y-a.y);
+      if(nd<34&&a.attackCooldown<=0){changeAnimalState(a,'attack');a.attackCooldown=a.kind==='leopard'?2.35:2.05;}
+    } else if(a.state==='attack'){
+      a.attackTimer-=dt;
+      if(!a.didBite&&a.attackTimer<=.11){a.didBite=true;if(Math.hypot(p.x-a.x,p.y-a.y)<48)hurtPlayerFromBite(a);}
+      if(a.attackTimer<=0){a.retreatReason='bite';changeAnimalState(a,'retreat',.8);}
+    } else if(a.state==='retreat'){
+      a.stateTimer-=dt;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*230,a.y+dy/m*230,a.kind==='leopard'?182:night?166:146,dt);
+      if(a.stateTimer<=0){a.retreatReason='';if(d<190&&p.hitGrace<=0)changeAnimalState(a,'chase');else changeAnimalState(a,'wander',3+world.rand()*3);}
+    }
+  }
+  function updateAnimals(dt) {
+    for(const a of world.animals){
+      if((a.predator||a.prey)&&a.hp<=0){respawnCreature(a,dt);continue;}
+      if(a.predator)updatePredator(a,dt);else updatePrey(a,dt);
+    }
+  }
+  function updatePlayerEffects(dt) {
+    const p=game.player;p.noiseBurst=Math.max(0,(p.noiseBurst||0)-dt);p.hitGrace=Math.max(0,(p.hitGrace||0)-dt);p.bleedTimer=Math.max(0,(p.bleedTimer||0)-dt);p.invuln=Math.max(0,(p.invuln||0)-dt);
+    if(p.bleedTimer>0){p.bleedTickTimer=(p.bleedTickTimer||0)-dt;if(p.bleedTickTimer<=0){game.stats.health=Math.max(0,game.stats.health-(p.bleedSeverity||.8));p.bleedTickTimer=1.1;}}
   }
   function nearestNode(max=80) {
     let found=null,best=max;
@@ -729,7 +886,7 @@
   }
   function nearestAnimal(max=55) {
     let found=null,best=max;
-    for(const a of world.animals){if(a.hp<=0)continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
+    for(const a of world.animals){if(a.hp<=0||(!a.predator&&a.kind!=='deer'&&a.kind!=='rabbit'))continue;const d=Math.hypot(a.x-game.player.x,a.y-game.player.y);if(d<best){best=d;found=a;}}
     return found;
   }
   function atBunkerEntrance(range=66) {
@@ -737,17 +894,18 @@
   }
   function updateControlsUI() {
     if(!game||!active)return;
-    const label=$('actionLabel'),eatButton=$('eatButton');
+    const label=$('actionLabel'),eatButton=$('eatButton'),fireButton=$('fireButton'),trapButton=$('trapButton');
     $('forestControls').style.display='flex';
     if(game.mode==='forest') {
-      eatButton.style.display='flex';$('bunkerTools').style.display='none';
+      eatButton.style.display='flex';fireButton.style.display='flex';trapButton.style.display='flex';$('bunkerTools').style.display='none';
+      fireButton.disabled=game.resources.wood<2;trapButton.disabled=game.resources.wood<2||game.resources.herbs<1;
       const n=nearestNode(86),a=nearestAnimal(58);
       if(atBunkerEntrance())label.textContent='ورود';
-      else if(a)label.textContent='دفاع';
+      else if(a)label.textContent=a.predator?'دفاع':'شکار';
       else if(n)label.textContent=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';
       else label.textContent='عمل';
     } else {
-      eatButton.style.display='none';$('bunkerTools').style.display='flex';
+      eatButton.style.display='none';fireButton.style.display='none';trapButton.style.display='none';$('bunkerTools').style.display='flex';
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k];
       label.textContent=room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':'عمل';
     }
@@ -757,9 +915,10 @@
     if(atBunkerEntrance()){animatePlayerAction('interact',.35);enterBunker();return;}
     const animal=nearestAnimal(61);
     if(animal) {
-      animatePlayerAction('swing',.48);animal.hp-=22;beep('hit');
-      if(animal.hp<=0){addResource('food',1);if(animal.kind==='leopard')addResource('herbs',1);showToast('جانور عقب‌نشینی کرد؛ مقداری خوراک پیدا کردی.',2000);}
-      else showToast('با چوبدستی دفاع کردی؛ مراقب باش!',1400);
+      animatePlayerAction('swing',.52);game.player.noiseBurst=.8;animal.hp-=animal.predator?22:animal.kind==='deer'?28:24;animal.hitFlash=.28;beep('hit');
+      if(animal.hp<=0){animal.hp=0;animal.respawnTimer=animal.predator?160:animal.kind==='deer'?65:42;const meat=animal.kind==='deer'?2:1;addResource('food',meat);if(animal.kind==='leopard')addResource('herbs',1);showToast(animal.predator?'جانور را از پا درآوردی؛ شکارچی پس از مدتی برمی‌گردد.':`شکار موفق؛ +${fa(meat)} خوراک.`,2000);}
+      else if(animal.predator){if(animal.hp<animal.maxHp*.42){animal.retreatReason='wounded';changeAnimalState(animal,'retreat',1.9);}showToast('با چوبدستی ضربه زدی؛ گاز بعدی می‌تواند خطرناک باشد.',1800);}
+      else {animal.state='retreat';animal.fleeTimer=2.2;showToast('شکار زخمی شد و می‌گریزد؛ برای رسیدن باید بدوی.',1600);}
       return;
     }
     animatePlayerAction('gather',.58);
@@ -774,6 +933,24 @@
   function eat() {
     if(game.resources.food<=0){showToast('خوراکی نداری؛ از بوته‌های جنگل میوه جمع کن.',1700);beep('hit');return;}
     game.resources.food--;game.stats.hunger=clamp(game.stats.hunger+34,0,100);game.stats.warmth=clamp(game.stats.warmth+3,0,100);beep('eat');showToast('خوراک جنگلی خوردی؛ گرسنگی کمتر شد.',1400);
+  }
+  function lightFire() {
+    if(!active||game.mode!=='forest')return;
+    if(game.resources.wood<2){showToast('برای روشن‌کردن آتش، ۲ چوب لازم است.',1600);return;}
+    game.resources.wood-=2;world.fires.push({x:game.player.x,y:game.player.y,timer:24,radius:156});if(world.fires.length>2)world.fires.shift();
+    animatePlayerAction('gather',.45);game.player.noiseBurst=1.1;beep('build');showToast('آتش روشن شد؛ شکارچیان از شعله فاصله می‌گیرند.',1900);updateUI(true);
+  }
+  function placeSnare() {
+    if(!active||game.mode!=='forest')return;
+    if(game.resources.wood<2||game.resources.herbs<1){showToast('برای تله ۲ چوب و ۱ گیاه لازم است.',1700);return;}
+    game.resources.wood-=2;game.resources.herbs-=1;world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});
+    if(world.traps.length>4)world.traps.shift();animatePlayerAction('gather',.58);game.player.noiseBurst=1.25;beep('build');showToast('تلهٔ گیاهی کار گذاشتی؛ جانور نزدیک را به سمتش بکشان.',2000);updateUI(true);
+  }
+  function updateHazards(dt) {
+    for(const f of world.fires||[])f.timer-=dt;
+    world.fires=(world.fires||[]).filter(f=>f.timer>0);
+    for(const t of world.traps||[])t.timer-=dt;
+    world.traps=(world.traps||[]).filter(t=>t.timer>0&&!t.triggered);
   }
   function enterBunker() { game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.stepTimer=0;game.selectedCell=null;showToast('به پناهگاه رسیدی. برای حفر یا ساخت، خانه‌ای را لمس کن.',2200);beep('build'); }
   function exitBunker() {
@@ -873,9 +1050,9 @@
   }
   function update(dt) {
     if(!active||!game)return;
-    gameTime+=dt;updateMovement(dt);updateParticles(dt);
+    gameTime+=dt;updateMovement(dt);updateHazards(dt);updateParticles(dt);
     if(game.mode==='forest')updateAnimals(dt);
-    updateSurvival(dt);
+    updatePlayerEffects(dt);updateSurvival(dt);
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
     else {
       game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0){nightRaid();game.raidTimer=7.1+Math.random()*2.6;}
@@ -888,7 +1065,7 @@
   const tutorialSteps=[
     [0,'با دستهٔ سمت چپ در میان درختان حرکت کن. درخت، سنگ و بوته‌های میوه‌دار را پیدا کن.'],
     [9,'کنار منبع بایست؛ دکمهٔ طلایی را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
-    [19,'گرسنگی را با دکمهٔ «خوراک» کم کن. پلنگ و گرگ را دیدی، فاصله بگیر یا از خودت دفاع کن.'],
+    [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن سروصدا می‌کند. آتش و تله شکارچی را عقب می‌رانند.'],
     [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
     [40,'در زیرزمین خانهٔ سنگی را لمس کن، «کندن» را انتخاب کن و دکمهٔ عمل را بزن؛ فضای اتاق باز می‌شود.'],
     [50,'«اتاق» را انتخاب کن، خانهٔ خالی را لمس کن و دکمهٔ طلایی را بزن. «تعمیر» آسیب‌های شبانه را برمی‌گرداند.']
@@ -934,6 +1111,7 @@
   function endJoy(e){if(joystick.pointer===e.pointerId){joystick.pointer=null;joystick.x=0;joystick.y=0;knob.style.transform='translate(0,0)';}}
   pad.addEventListener('pointerup',endJoy);pad.addEventListener('pointercancel',endJoy);pad.addEventListener('lostpointercapture',endJoy);
   $('actionButton').addEventListener('click',doAction);$('eatButton').addEventListener('click',eat);
+  $('fireButton').addEventListener('click',lightFire);$('trapButton').addEventListener('click',placeSnare);
   $('digButton').addEventListener('click',()=>{game.selectedRoom=null;showToast('حفر: خانهٔ سنگی کناری را انتخاب کن.',1300);});
   $('roomButton').addEventListener('click',()=>showModal('rooms'));
   $('basesButton').addEventListener('click',()=>showModal('bunkers'));
