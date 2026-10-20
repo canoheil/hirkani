@@ -1,5 +1,7 @@
 ## Status
 
-Feedback round 2, Groups A–D, is complete in `www/index.html`. The game now includes procedural character movement and gathering animation; territorial predator AI, pack hunting, and ambient wildlife; stamina, sprinting, exhaustion/breathing, and carried-weight movement penalties; and a 6,400 × 4,300 world (about 8.07× the original area). The expanded map lazily generates deterministic 512px chunks with biome-specific terrain, resources, and wildlife, renders/culls by camera visibility, follows the player, and shows a compass toward the bunker with the current biome label. Existing saves are migrated into the larger map, and depleted resources in generated chunks persist.
+Round 2, Groups A–D, is complete. Round 3 is in progress: Group A (directional sprite facing) is complete; biome transitions/world edges, art direction, sanity, and crafting remain. The game stays self-contained in `www/index.html`; the Android build setup is unchanged.
 
-Validation passed: inline JavaScript syntax check, `git diff --check`, and temporary VM smoke tests for Groups A–D, including animation, predator behaviors/counterplay/hunting, stamina, chunk/biome generation, camera bounds, legacy-save migration, and resource persistence. No physical-device testing was performed. Keep the game self-contained in `www/index.html`; do not change the Android build setup.
+Group A fixes player orientation by keeping the sprite upright, selecting front/back/side cardinal facing, and mirroring left; animals also use cardinal facing rather than movement-angle rotation. The player has distinct front/back details and animals use discrete cardinal poses.
+
+Validation passed: inline JavaScript syntax check, `git diff --check`, the orientation VM smoke test, and the Round 2 A–D smoke tests. No physical-device testing has been performed.

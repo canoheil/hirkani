@@ -287,12 +287,18 @@
   function seeded(seed) {
     return function() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   }
+  function facing4(dx,dy,fallback='right') {
+    if(Math.max(Math.abs(dx),Math.abs(dy))<.001)return fallback;
+    if(Math.abs(dx)>Math.abs(dy))return dx<0?'left':'right';
+    return dy<0?'back':'front';
+  }
   function makePredator(id,kind,x,y,territory,packId='',rand=Math.random) {
-    return {id,kind,predator:true,x,y,vx:0,vy:0,hp:kind==='leopard'?72:58,maxHp:kind==='leopard'?72:58,dir:rand()*Math.PI*2,state:'idle',stateTimer:2+rand()*4,attackCooldown:rand()*1.3,attackTimer:0,lostTimer:0,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryId:territory.id,territoryX:territory.x,territoryY:territory.y,territoryRadius:territory.radius,packId,ambush:kind==='leopard',respawnTimer:0,hitFlash:0};
+    const angle=rand()*Math.PI*2;
+    return {id,kind,predator:true,x,y,vx:0,vy:0,hp:kind==='leopard'?72:58,maxHp:kind==='leopard'?72:58,facing:facing4(Math.cos(angle),Math.sin(angle)),state:'idle',stateTimer:2+rand()*4,attackCooldown:rand()*1.3,attackTimer:0,lostTimer:0,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryId:territory.id,territoryX:territory.x,territoryY:territory.y,territoryRadius:territory.radius,packId,ambush:kind==='leopard',respawnTimer:0,hitFlash:0};
   }
   function makeWildlife(id,kind,x,y,rand=Math.random) {
-    const prey=kind==='deer'||kind==='rabbit';
-    return {id,kind,predator:false,x,y,vx:0,vy:0,hp:kind==='deer'?54:kind==='rabbit'?24:0,maxHp:kind==='deer'?54:kind==='rabbit'?24:0,dir:rand()*Math.PI*2,state:kind==='deer'?'graze':'wander',stateTimer:1+rand()*5,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryX:x,territoryY:y,territoryRadius:kind==='deer'?230:kind==='rabbit'?130:280,fleeTimer:0,respawnTimer:0,prey};
+    const prey=kind==='deer'||kind==='rabbit',angle=rand()*Math.PI*2;
+    return {id,kind,predator:false,x,y,vx:0,vy:0,hp:kind==='deer'?54:kind==='rabbit'?24:0,maxHp:kind==='deer'?54:kind==='rabbit'?24:0,facing:facing4(Math.cos(angle),Math.sin(angle)),state:kind==='deer'?'graze':'wander',stateTimer:1+rand()*5,roamAngle:rand()*Math.PI*2,animTime:rand()*8,territoryX:x,territoryY:y,territoryRadius:kind==='deer'?230:kind==='rabbit'?130:280,fleeTimer:0,respawnTimer:0,prey};
   }
   function riverX(y) { return MAP.cx+880+Math.sin(y*.00155)*980+Math.sin(y*.0037)*145; }
   function inEllipse(x,y,cx,cy,rx,ry) { const dx=(x-cx)/rx,dy=(y-cy)/ry;return dx*dx+dy*dy<=1; }
@@ -367,7 +373,7 @@
   function freshGame() {
     return {
       worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0,
-      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
+      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
       stats:{health:100,hunger:82,warmth:76,stamina:100}, resources:{wood:12,stone:8,food:4,herbs:2},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
       dug:{'5,2':true,'4,3':true,'5,3':true,'6,3':true},
@@ -546,8 +552,10 @@
     else {ctx.globalAlpha=.4;ctx.fillStyle='#5b6547';ctx.fillRect(x-8,y-1,16,5);ctx.globalAlpha=1;}
   }
   function drawAnimal(a) {
-    const x=a.x,y=a.y,phase=a.animTime||0,moving=Math.hypot(a.vx||0,a.vy||0)>7;
-    ctx.save();ctx.translate(x,y);ctx.rotate(a.dir||0);
+    const x=a.x,y=a.y,phase=a.animTime||0,moving=Math.hypot(a.vx||0,a.vy||0)>7,facing=a.facing||'right';
+    ctx.fillStyle='rgba(5,12,9,.27)';ctx.beginPath();ctx.ellipse(x,y+4,a.kind==='deer'?23:a.kind==='rabbit'?15:a.kind==='bird'?6:18,5,0,0,Math.PI*2);ctx.fill();
+    ctx.save();ctx.translate(x,y);
+    if(facing==='left')ctx.scale(-1,1);else if(facing==='front')ctx.rotate(Math.PI/2);else if(facing==='back')ctx.rotate(-Math.PI/2);
     if(a.kind==='bird'||a.kind==='butterfly'){
       const flap=Math.sin(gameTime*(a.kind==='bird'?17:21)+phase),butterfly=a.kind==='butterfly';
       ctx.globalAlpha=butterfly ? .84 : .92;ctx.fillStyle=butterfly?'#d6bc65':'#382c24';ctx.beginPath();ctx.ellipse(0,-5,3.5,2.4,0,0,Math.PI*2);ctx.fill();
@@ -555,7 +563,6 @@
       else {ctx.strokeStyle='#d5d1bb';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-1,-5);ctx.quadraticCurveTo(-7,-8-Math.abs(flap)*5,-12,-5);ctx.moveTo(1,-5);ctx.quadraticCurveTo(7,-8-Math.abs(flap)*5,12,-5);ctx.stroke();ctx.fillStyle='#ddd6c1';ctx.beginPath();ctx.ellipse(13,-5,3,1.2,0,0,Math.PI*2);ctx.fill();}
       ctx.restore();return;
     }
-    ctx.fillStyle='rgba(5,12,9,.3)';ctx.beginPath();ctx.ellipse(0,2,a.kind==='deer'?23:18,6,0,0,Math.PI*2);ctx.fill();
     const step=moving?Math.sin(phase)*(a.state==='chase'||a.state==='retreat'?5:3):Math.sin(phase*.5)*.45;
     const drawLeg=(hx,hy,offset,color,width=3)=>{const swing=Math.sin(phase+offset)*(moving?step:0);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx+swing*.7,hy+6);ctx.lineTo(hx+swing,hy+12);ctx.stroke();ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(hx+swing-2,hy+12);ctx.lineTo(hx+swing+2,hy+12);ctx.stroke();};
     if(a.kind==='deer'){
@@ -598,18 +605,26 @@
     const gait=p.moving?Math.sin(phase)*(p.running?6.2:3.1):Math.sin(gameTime*1.8)*.35;
     const opposite=p.moving?Math.sin(phase+Math.PI)*(p.running?6.2:3.1):0;
     const armSwing=p.actionTimer>0&&p.actionKind==='swing'?actionSwing*21:p.moving?Math.sin(phase+Math.PI)*(p.running?5:2):0;
-    const facing=Math.atan2(p.faceY??0,p.faceX??1),lean=p.running ? .19 : 0;
+    const facing=p.facing||facing4(p.faceX??1,p.faceY??0),faceVisible=facing==='front',backVisible=facing==='back';
+    const leanX=p.running?(p.faceX||0)*1.2:0,leanY=p.running?(p.faceY||0)*1.2:0;
     ctx.fillStyle='rgba(4,10,7,.34)';ctx.beginPath();ctx.ellipse(x,y+2,13,5,0,0,Math.PI*2);ctx.fill();
-    ctx.save();ctx.translate(x,y-crouch);ctx.rotate(facing+lean);ctx.scale(1,1+breath*.018);
+    ctx.save();ctx.translate(x+leanX,y+leanY-crouch);if(facing==='left')ctx.scale(-1,1);ctx.scale(1,1+breath*.018);
     // Boots and swinging legs.
     ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#47382b';ctx.lineWidth=4.8;
     ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(-6+gait,-1);ctx.moveTo(2,-8);ctx.lineTo(3+opposite,-1);ctx.stroke();
     ctx.strokeStyle='#bd9b67';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-7+gait,-1);ctx.lineTo(-3+gait,-1);ctx.moveTo(1+opposite,-1);ctx.lineTo(5+opposite,-1);ctx.stroke();
-    // Pack, coat, scarf and shoulders.
-    ctx.fillStyle='#614d38';roundedRect(ctx,-14,-23,9,14,3);ctx.fill();
-    ctx.fillStyle='#294d39';roundedRect(ctx,-10,-24,18,18,5);ctx.fill();
-    ctx.fillStyle='#416748';roundedRect(ctx,-7,-22,13,12,4);ctx.fill();
-    ctx.strokeStyle='#c8a66b';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-7,-22);ctx.lineTo(6,-7);ctx.stroke();
+    // The pack is prominent from behind, absent from the front, and off to the side in profile.
+    if(backVisible){
+      ctx.fillStyle='#614d38';roundedRect(ctx,-11,-25,22,17,5);ctx.fill();
+      ctx.fillStyle='#294d39';roundedRect(ctx,-9,-24,18,14,4);ctx.fill();
+      ctx.fillStyle='#416748';roundedRect(ctx,-6,-21,12,9,3);ctx.fill();
+      ctx.strokeStyle='#c8a66b';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-7,-23);ctx.lineTo(7,-8);ctx.moveTo(7,-23);ctx.lineTo(-7,-8);ctx.stroke();
+    }else if(!faceVisible){
+      ctx.fillStyle='#614d38';roundedRect(ctx,-14,-23,9,14,3);ctx.fill();
+      ctx.fillStyle='#294d39';roundedRect(ctx,-10,-24,18,18,5);ctx.fill();
+      ctx.fillStyle='#416748';roundedRect(ctx,-7,-22,13,12,4);ctx.fill();
+      ctx.strokeStyle='#c8a66b';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-7,-22);ctx.lineTo(6,-7);ctx.stroke();
+    }
     // Arms counter-swing while moving; an action reaches or swings forward.
     const reach=p.actionTimer>0&&p.actionKind==='gather'?actionSwing*13:armSwing;
     ctx.strokeStyle='#294d39';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-5,-20);ctx.lineTo(-8-gait*.35,-13);ctx.moveTo(5,-20);ctx.lineTo(7+reach,-13+Math.abs(armSwing)*.12);ctx.stroke();
@@ -621,8 +636,10 @@
     ctx.fillStyle='#b98a5f';roundedRect(ctx,-3,-30,12,8,3);ctx.fill();
     ctx.fillStyle='#d8b48c';ctx.beginPath();ctx.arc(5,-29,6.6,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#354633';ctx.beginPath();ctx.moveTo(-2,-30);ctx.quadraticCurveTo(-3,-38,5,-37);ctx.quadraticCurveTo(12,-37,13,-31);ctx.lineTo(8,-34);ctx.lineTo(1,-32);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#332c23';ctx.beginPath();ctx.arc(9,-29,1,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#dbbd78';ctx.beginPath();ctx.arc(10,-18,2,0,Math.PI*2);ctx.fill();
+    if(faceVisible){ctx.fillStyle='#332c23';ctx.beginPath();ctx.arc(1,-29,1,0,Math.PI*2);ctx.arc(6,-29,1,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8b5e45';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(2,-26);ctx.lineTo(4,-26);ctx.stroke();}
+    else if(backVisible){ctx.fillStyle='#4f4034';ctx.beginPath();ctx.ellipse(4,-31,6,4,0,Math.PI,Math.PI*2);ctx.fill();}
+    else {ctx.fillStyle='#332c23';ctx.beginPath();ctx.arc(9,-29,1,0,Math.PI*2);ctx.fill();}
+    ctx.fillStyle='#dbbd78';ctx.beginPath();ctx.arc(faceVisible?4:10,-18,2,0,Math.PI*2);ctx.fill();
     if(p.invuln>0){ctx.strokeStyle='rgba(255,220,143,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-15,17,0,Math.PI*2);ctx.stroke();}
     ctx.restore();
   }
@@ -853,7 +870,7 @@
       }else{p.running=false;stamina=Math.min(100,stamina+dt*(moving?9:16));}
       game.stats.stamina=stamina;
       if(moving){
-        p.faceX=dx;p.faceY=dy;p.animTime=(p.animTime||0)+dt*(p.running?15:9);
+        p.faceX=dx;p.faceY=dy;p.facing=facing4(dx,dy,p.facing);p.animTime=(p.animTime||0)+dt*(p.running?15:9);
         const speed=(p.running?236:148)*carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1),nx=clamp(p.x+dx*speed*dt,20,MAP.w-20),ny=clamp(p.y+dy*speed*dt,20,MAP.h-20);
         const blocked=(x,y)=>nodesNear(x,y,58).some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
         if(!blocked(nx,p.y))p.x=nx;if(!blocked(p.x,ny))p.y=ny;
@@ -864,7 +881,7 @@
       p.stepTimer=Math.max(0,(p.stepTimer||0)-dt);
       if(magnitude>.38&&p.stepTimer<=0){
         let sx=0,sy=0;if(Math.abs(v.x)>Math.abs(v.y)){sx=Math.sign(v.x);}else{sy=Math.sign(v.y);}
-        p.faceX=sx;p.faceY=sy;p.animTime=(p.animTime||0)+dt*6.5;
+        p.faceX=sx;p.faceY=sy;p.facing=facing4(sx,sy,p.facing);p.animTime=(p.animTime||0)+dt*6.5;
         const c=clamp(p.bCol+sx,0,GRID.cols-1),r=clamp(p.bRow+sy,0,GRID.rows-1),k=keyOf(c,r);
         if(game.dug[k]){p.bCol=c;p.bRow=r;}
         p.stepTimer=.18;
@@ -878,7 +895,7 @@
     const dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy)||1,step=Math.min(d,speed*dt),ox=a.x,oy=a.y;
     a.x=clamp(a.x+dx/d*step,35,MAP.w-35);a.y=clamp(a.y+dy/d*step,35,MAP.h-35);
     a.vx=dt?(a.x-ox)/dt:0;a.vy=dt?(a.y-oy)/dt:0;
-    if(Math.hypot(a.vx,a.vy)>3)a.dir=Math.atan2(a.vy,a.vx);
+    if(Math.hypot(a.vx,a.vy)>3)a.facing=facing4(a.vx,a.vy,a.facing);
     a.animTime=(a.animTime||0)+dt*(Math.hypot(a.vx,a.vy)>5?Math.hypot(a.vx,a.vy)*.075:1.8);
   }
   function changeAnimalState(a,state,timer=0) {
@@ -894,7 +911,7 @@
     for(let tries=0;tries<24;tries++){
       const angle=rand()*Math.PI*2,radius=rand()*(a.territoryRadius||220),x=clamp((a.territoryX??a.x)+Math.cos(angle)*radius,45,MAP.w-45),y=clamp((a.territoryY??a.y)+Math.sin(angle)*radius,45,MAP.h-45);
       if(outsidePlayerView(x,y,120)&&Math.hypot(x-game.player.x,y-game.player.y)>Math.hypot(W/2,H/2)+120){
-        a.x=x;a.y=y;a.hp=a.maxHp;a.respawnTimer=0;a.state=a.predator?'idle':a.kind==='deer'?'graze':'wander';a.stateTimer=2+rand()*4;a.roamAngle=rand()*Math.PI*2;a.ambush=a.kind==='leopard';return false;
+        a.x=x;a.y=y;a.hp=a.maxHp;a.respawnTimer=0;a.state=a.predator?'idle':a.kind==='deer'?'graze':'wander';a.stateTimer=2+rand()*4;a.roamAngle=rand()*Math.PI*2;a.facing=facing4(Math.cos(a.roamAngle),Math.sin(a.roamAngle),a.facing);a.ambush=a.kind==='leopard';return false;
       }
     }
     a.respawnTimer=12;return true;
@@ -935,7 +952,7 @@
     const packMateHunting=night&&a.packId&&world.animals.some(m=>m!==a&&m.predator&&m.packId===a.packId&&m.hp>0&&['alert','stalk','chase','attack'].includes(m.state)&&Math.hypot(m.x-a.x,m.y-a.y)<520);
     const notices=d<sight||noise>0&&d<hearing||packMateHunting&&d<720;
     if((a.state==='idle'||a.state==='wander')&&notices){a.lastX=p.x;a.lastY=p.y;a.lostTimer=0;changeAnimalState(a,'alert',a.kind==='leopard' ? .38 : .62);}
-    if(a.state==='alert'){a.dir=Math.atan2(p.y-a.y,p.x-a.x);a.stateTimer-=dt;if(a.stateTimer<=0)changeAnimalState(a,a.kind==='leopard'||d>150?'stalk':'chase');}
+    if(a.state==='alert'){a.facing=facing4(p.x-a.x,p.y-a.y,a.facing);a.stateTimer-=dt;if(a.stateTimer<=0)changeAnimalState(a,a.kind==='leopard'||d>150?'stalk':'chase');}
     else if(a.state==='idle'){
       a.stateTimer-=dt;a.animTime=(a.animTime||0)+dt*1.8;
       if(a.stateTimer<=0){a.roamAngle=(world.rand?.()||Math.random())*Math.PI*2;changeAnimalState(a,'wander',2+world.rand()*4);}
