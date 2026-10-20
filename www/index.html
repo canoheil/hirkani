@@ -26,7 +26,7 @@
     #world { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
     #hud { position: absolute; inset: 0; pointer-events: none; }
     .glass { background: linear-gradient(145deg, rgba(31, 46, 36, .94), rgba(16, 25, 21, .84)); border: 1px solid var(--line); box-shadow: 0 8px 26px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.05); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); }
-    .topbar { position: absolute; top: calc(8px + var(--safe-top)); left: 50%; transform: translateX(-50%); width: min(1040px, calc(100% - 20px)); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; z-index: 4; }
+    .topbar { position: absolute; top: calc(8px + var(--safe-top)); left: 50%; transform: translateX(-50%); width: min(1040px, calc(100% - 20px)); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; z-index: 9; }
     .top-group { min-height: 48px; border-radius: 15px; display: flex; align-items: center; gap: 10px; padding: 7px 11px; pointer-events: auto; }
     .brand-mini { display: flex; align-items: center; gap: 7px; font-weight: 900; white-space: nowrap; color: #f4dfb4; font-size: 13px; }
     .brand-mark { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 10px; color: #e8ba67; background: linear-gradient(150deg,#435d40,#26382d); border: 1px solid rgba(232,186,103,.4); font-size: 18px; }
@@ -82,6 +82,21 @@
     #bunkerArrow { flex: 0 0 auto; color: #f0c676; font-size: 20px; font-weight: 900; line-height: 1; transform-origin: center; }
     #raidWarning { display:none; position:absolute; top:calc(101px + var(--safe-top)); right:max(10px,env(safe-area-inset-right,0px)); max-width:min(280px,44vw); align-items:center; gap:7px; padding:6px 9px; border-radius:11px; color:#f6e8d1; background:rgba(37,23,22,.88); border:1px solid rgba(201,93,74,.52); box-shadow:0 5px 16px rgba(0,0,0,.28); font-size:9px; line-height:1.45; pointer-events:none; z-index:7; }
     #raidWarningArrow { display:grid; place-items:center; flex:0 0 24px; width:24px; height:24px; border-radius:50%; color:#f1b071; background:rgba(139,50,44,.25); border:1px solid rgba(222,129,90,.42); font-size:13px; transform-origin:center; }
+    #minimapWrap { position:absolute; left:max(12px,env(safe-area-inset-left,0px)); bottom:calc(154px + var(--safe-bottom)); width:142px; height:96px; padding:0; overflow:hidden; border:1px solid rgba(223,206,166,.52); border-radius:12px; background:rgba(14,23,19,.9); box-shadow:0 5px 17px rgba(0,0,0,.34); pointer-events:auto; z-index:4; }
+    #minimapCanvas { display:block; width:100%; height:100%; }
+    #minimapLabel { position:absolute; left:5px; bottom:4px; padding:2px 5px; border-radius:6px; color:#f1e7cf; background:rgba(10,16,13,.68); font-size:8px; pointer-events:none; }
+    #mapOverlay { display:none; position:absolute; inset:0; overflow:hidden; background:rgba(8,14,11,.98); pointer-events:auto; z-index:8; }
+    #mapOverlay.show { display:block; }
+    #mapCanvas { position:absolute; inset:0; display:block; width:100%; height:100%; touch-action:none; }
+    #mapHeader { position:absolute; top:calc(66px + var(--safe-top)); left:50%; transform:translateX(-50%); width:min(1000px,calc(100% - 24px)); display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; border:1px solid rgba(224,202,151,.24); border-radius:14px; background:rgba(17,27,22,.9); box-shadow:0 7px 24px rgba(0,0,0,.3); pointer-events:auto; z-index:1; }
+    .map-title-group { display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .map-title-group strong { color:#f1d59b; font-size:13px; }
+    #mapLegend { color:#c5cebd; font-size:9px; white-space:nowrap; }
+    .map-buttons { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+    .map-control { min-height:34px; padding:0 10px; border:1px solid rgba(226,203,150,.3); border-radius:10px; color:#f2e8d3; background:rgba(255,255,255,.07); font-size:10px; font-weight:800; }
+    .map-control:active { transform:scale(.96); }
+    .close-map { width:34px; padding:0; font-size:20px; color:#f4c97d; }
+    #mapFooter { position:absolute; left:50%; bottom:calc(12px + var(--safe-bottom)); transform:translateX(-50%); max-width:calc(100% - 24px); padding:7px 11px; border:1px solid rgba(224,202,151,.2); border-radius:10px; color:#d9dfd1; background:rgba(16,25,21,.88); font-size:9px; text-align:center; pointer-events:none; }
 
     #toast { position: absolute; top: 76px; left: 50%; transform: translate(-50%,-8px); opacity: 0; transition: opacity .18s, transform .18s; max-width: 88vw; padding: 9px 15px; border-radius: 13px; color: #fff5df; background: rgba(21,31,24,.92); border: 1px solid rgba(227,174,84,.42); box-shadow: 0 8px 20px rgba(0,0,0,.24); font-size: 11px; line-height: 1.55; text-align: center; z-index: 18; pointer-events: none; }
     #toast.show { opacity: 1; transform: translate(-50%,0); }
@@ -140,6 +155,11 @@
       #tutorialText { font-size: 8.5px; }
       #duskBanner { top: calc(58px + var(--safe-top)); max-width: min(220px, 34vw); padding: 5px 7px; font-size: 8.5px; }
       #toast { top: 64px; }
+      #minimapWrap { width:118px; height:80px; bottom:calc(145px + var(--safe-bottom)); }
+      #mapHeader { top:calc(62px + var(--safe-top)); padding:7px 9px; }
+      .map-title-group strong { font-size:11px; }
+      #mapLegend { font-size:8px; }
+      #mapFooter { font-size:8px; }
       .card-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
       .data-card { min-height: 88px; padding: 8px; }
     }
@@ -158,6 +178,13 @@
       .tool-button { min-width: 48px; }
       #tutorialBox { width: min(190px, 38vw); }
       #duskBanner { max-width: min(205px, 44vw); }
+      #minimapWrap { width:102px; height:70px; bottom:calc(137px + var(--safe-bottom)); }
+      #mapHeader { top:calc(58px + var(--safe-top)); width:calc(100% - 14px); padding:6px 7px; }
+      #mapLegend { display:none; }
+      .map-title-group strong { font-size:10px; }
+      .map-control { min-height:30px; padding:0 7px; font-size:8px; }
+      .close-map { width:30px; padding:0; font-size:18px; }
+      #mapFooter { bottom:calc(7px + var(--safe-bottom)); font-size:7.5px; }
       .card-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .modal-card { max-height: 78vh; padding: 12px; }
       .data-card { min-height: 82px; }
@@ -189,6 +216,7 @@
         <div class="resource" title="سنگ"><i>◆</i><b id="stoneValue">۰</b><span class="resource-label">سنگ</span></div>
         <div class="resource" title="خوراک"><i>●</i><b id="foodValue">۰</b><span class="resource-label">خوراک</span></div>
         <div class="resource" title="گیاه دارویی"><i>✿</i><b id="herbsValue">۰</b><span class="resource-label">گیاه</span></div>
+        <button class="icon-button" id="mapButton" aria-label="بازکردن نقشه" title="نقشهٔ جهان">⌖</button>
         <button class="icon-button" id="torchButton" aria-label="مشعل" title="روشن/خاموش کردن مشعل" style="display:none">☼</button>
         <button class="icon-button" id="soundButton" aria-label="صدا">♫</button>
       </div>
@@ -196,6 +224,7 @@
     <div id="tutorialBox" aria-live="polite"><div id="tutorialText"></div><div id="tutorialFooter"><span id="tutorialCount">۱/۶</span><button class="tiny-link" id="skipTutorial">رد آموزش</button></div></div>
     <div id="duskBanner" role="status" aria-live="polite"><span id="bunkerArrow" aria-hidden="true">↑</span><span id="duskText">غروب نزدیکه، برگرد به بانکر</span></div>
     <div id="raidWarning" role="status" aria-live="polite"><span id="raidWarningArrow" aria-hidden="true">▲</span><span id="raidWarningText">زوزه از لبهٔ جنگل</span></div>
+    <button id="minimapWrap" aria-label="بازکردن نقشهٔ کامل" title="برای دیدن نقشهٔ کامل لمس کن"><canvas id="minimapCanvas"></canvas><span id="minimapLabel">نقشه</span></button>
     <div class="controls" id="controls" style="display:none">
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
@@ -214,6 +243,14 @@
         <button class="tool-button" id="bunkerCraftButton"><b>⚒</b>ساخت</button>
         <button class="tool-button" id="exitButton"><b>↗</b>بیرون</button>
       </div>
+    </div>
+    <div id="mapOverlay" role="dialog" aria-modal="true" aria-label="نقشهٔ جنگل هیرکانی">
+      <canvas id="mapCanvas" aria-label="نقشهٔ کاوش‌شدهٔ هیرکانی"></canvas>
+      <div id="mapHeader">
+        <div class="map-title-group"><strong>نقشهٔ هیرکانی</strong><span id="mapLegend"><i style="color:#7eaa83">●</i> جنگل　<i style="color:#c5c779">●</i> دشت　<i style="color:#c0a77e">●</i> تپه　<i style="color:#79a989">●</i> تالاب　<i style="color:#87c3c1">━ رودخانه</i></span></div>
+        <div class="map-buttons"><button class="map-control" id="dropMarkerButton" title="نشان‌گذاری موقعیت فعلی">📍 نشانِ من</button><button class="map-control close-map" id="closeMapButton" aria-label="بستن نقشه">×</button></div>
+      </div>
+      <div id="mapFooter">روی نقشه لمس کن تا نشان بگذاری؛ نشانِ موجود را لمس کن تا پاک شود. بخش‌های تاریک هنوز کشف نشده‌اند.</div>
     </div>
     <div id="toast" role="status"></div>
   </div>
@@ -291,6 +328,8 @@
   const $ = id => document.getElementById(id);
   const canvas = $('world');
   const ctx = canvas.getContext('2d', { alpha:false });
+  const mapCanvas=$('mapCanvas'),mapCtx=mapCanvas.getContext?.('2d')||ctx;
+  const minimapCanvas=$('minimapCanvas'),minimapCtx=minimapCanvas.getContext?.('2d')||ctx;
   const MAP = { w:6400, h:4300, cx:3200, cy:2150 };
   const CHUNK_SIZE=512,CHUNK_COLS=Math.ceil(MAP.w/CHUNK_SIZE),CHUNK_ROWS=Math.ceil(MAP.h/CHUNK_SIZE),GROUND_TILE=64,WORLD_EDGE=160;
   const BIOME_NAMES={forest:'جنگل انبوه',clearing:'دشت باز',hill:'تپهٔ سنگی',swamp:'باتلاق',river:'رودخانه'};
@@ -317,7 +356,7 @@
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
   let joystick={x:0,y:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools';
-  let gameTime=0;
+  let gameTime=0,mapDiscovered=new Set(),mapOpen=false,mapDirty=true,minimapDirty=true,mapViewport=null,mapMarkerSequence=0,lastMinimapX=null,lastMinimapY=null;
 
   function seeded(seed) {
     return function() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -413,6 +452,11 @@
     return result;
   }
   function chunksAround(x,y,radius=1) { return chunksInRect(x-radius*CHUNK_SIZE,y-radius*CHUNK_SIZE,CHUNK_SIZE*(radius*2+1),CHUNK_SIZE*(radius*2+1)); }
+  function recordMapDiscovery() {
+    if(!game||!game.player)return;const cx=clamp(Math.floor(game.player.x/CHUNK_SIZE),0,CHUNK_COLS-1),cy=clamp(Math.floor(game.player.y/CHUNK_SIZE),0,CHUNK_ROWS-1);let changed=false;
+    for(let y=Math.max(0,cy-1);y<=Math.min(CHUNK_ROWS-1,cy+1);y++)for(let x=Math.max(0,cx-1);x<=Math.min(CHUNK_COLS-1,cx+1);x++){const key=chunkKey(x,y);if(!mapDiscovered.has(key)){mapDiscovered.add(key);changed=true;}}
+    if(changed){game.mapDiscovery=[...mapDiscovered];mapDirty=true;minimapDirty=true;}
+  }
   function ensureChunksAround(x,y,radius=1) { return chunksAround(x,y,radius); }
   function nodesNear(x,y,radius) {
     const found=[];for(const chunk of chunksInRect(x-radius,y-radius,radius*2,radius*2))for(const n of chunk.nodes)if(Math.hypot(n.x-x,n.y-y)<=radius)found.push(n);return found;
@@ -435,7 +479,7 @@
       {id:'jackal-range-river',kind:'jackal',x:3960,y:2290,radius:430,count:1},
       {id:'jackal-range-south',kind:'jackal',x:2870,y:3620,radius:430,count:1}
     ]),residents=[];let residentId=0;
-    for(const den of dens){den.biome=biomeAt(den.x,den.y);if(!territories.some(t=>t.id===den.id))territories.push(den);if(!['bear','boar','jackal'].includes(den.kind))continue;
+    for(const den of dens){den.biome=biomeAt(den.x,den.y);den.denType=den.denType||ANIMAL_TRAITS[den.kind]?.den||'territory';if(!territories.some(t=>t.id===den.id))territories.push(den);if(!['bear','boar','jackal'].includes(den.kind))continue;
       if(den.kind==='bear'){
         const bear=makeWildlife(`resident-${residentId++}`,'bear',den.x,den.y,r);Object.assign(bear,{territoryId:den.id,territoryX:den.x,territoryY:den.y,territoryRadius:den.radius,withCubs:!!den.withCubs,defendingKill:!!den.defendingKill,killSite:{x:den.x+36,y:den.y+18},denId:den.id,denX:den.x,denY:den.y,denType:den.denType});residents.push(bear);
       } else if(den.kind==='boar'){
@@ -458,7 +502,7 @@
   }
   function freshGame() {
     return {
-      worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0, noiseTrail:0,
+      worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0, noiseTrail:0, mapDiscovery:[], mapMarkers:[],
       player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,torchLit:false,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
       stats:{health:100,hunger:82,warmth:76,stamina:100,sanity:100}, resources:{wood:12,stone:8,food:4,herbs:2}, inventory:{hatchets:0,torches:0,snares:0,fireKits:0},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
@@ -472,7 +516,7 @@
     W=innerWidth; H=innerHeight; dpr=Math.min(window.devicePixelRatio||1,1.8);
     canvas.width=Math.floor(W*dpr); canvas.height=Math.floor(H*dpr);
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.setTransform(dpr,0,0,dpr,0,0);mapDirty=true;minimapDirty=true;
   }
   window.addEventListener('resize',configureCanvas,{passive:true}); configureCanvas();
 
@@ -518,15 +562,15 @@
     $('menuScreen').classList.toggle('show',name==='menu');
     $('gameOverScreen').classList.toggle('show',name==='gameover');
     $('topbar').style.display=name==='game'?'flex':'none';
-    $('controls').style.display=name==='game'?'block':'none';
-    if(name!=='game') closeModal();
+    $('controls').style.display=name==='game'?'block':'none';$('minimapWrap').style.display=name==='game'?'block':'none';
+    if(name!=='game'){mapOpen=false;$('mapOverlay').classList.remove('show');closeModal();}
   }
   function saveGame() {
     if(!game||!active||game.gameOver) return;
     try {
       const chunkState=[];
       for(const chunk of world.chunks.values())if(chunk.nodes.some(n=>n.remaining!==n.maxRemaining))chunkState.push({cx:chunk.cx,cy:chunk.cy,remaining:chunk.nodes.map(n=>n.remaining)});
-      const data={...game,muted,chunkState,foodDrops:(world.foodDrops||[]).map(drop=>({id:drop.id,x:drop.x,y:drop.y,amount:drop.amount,timer:drop.timer,source:drop.source})),raidWarning:world.raidWarning?{angle:world.raidWarning.angle,timer:world.raidWarning.timer,likelihood:world.raidWarning.likelihood,primary:world.raidWarning.primary}:null,raidTracks:(world.raidTracks||[]).map(track=>({x:track.x,y:track.y,angle:track.angle,life:track.life,maxLife:track.maxLife}))};delete data.nodes;
+      const data={...game,muted,chunkState,mapDiscovery:[...mapDiscovered],mapMarkers:(game.mapMarkers||[]).map(marker=>({id:marker.id,x:marker.x,y:marker.y,label:marker.label})),foodDrops:(world.foodDrops||[]).map(drop=>({id:drop.id,x:drop.x,y:drop.y,amount:drop.amount,timer:drop.timer,source:drop.source})),raidWarning:world.raidWarning?{angle:world.raidWarning.angle,timer:world.raidWarning.timer,likelihood:world.raidWarning.likelihood,primary:world.raidWarning.primary}:null,raidTracks:(world.raidTracks||[]).map(track=>({x:track.x,y:track.y,angle:track.angle,life:track.life,maxLife:track.maxLife}))};delete data.nodes;
       localStorage.setItem(SAVE_KEY,JSON.stringify(data));
       game.lastSave=Date.now();
     } catch(e) { /* storage can be disabled */ }
@@ -536,8 +580,8 @@
   }
   function loadSaved() {
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
-    game=freshGame();Object.assign(game,data);muted=!!data.muted;
-    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.inventory={hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
+    game=freshGame();Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');muted=!!data.muted;
+    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.mapDiscovery=Array.isArray(data.mapDiscovery)?[...new Set(data.mapDiscovery.map(String).filter(key=>{const match=/^(\d+),(\d+)$/.exec(key);return match&&Number(match[1])<CHUNK_COLS&&Number(match[2])<CHUNK_ROWS;}))]:[];mapDiscovered=new Set(game.mapDiscovery);game.mapMarkers=Array.isArray(data.mapMarkers)?data.mapMarkers.filter(marker=>marker&&Number.isFinite(Number(marker.x))&&Number.isFinite(Number(marker.y))).slice(-12).map((marker,index)=>({id:String(marker.id||`marker-${index}`),x:clamp(Number(marker.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(marker.y),WORLD_EDGE,MAP.h-WORLD_EDGE),label:String(marker.label||'نشان').slice(0,14)})):[];mapDirty=true;minimapDirty=true;game.inventory={hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
     const oldWorldVersion=data.worldVersion||1;
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
     game.player.x=clamp(game.player.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.y=clamp(game.player.y,WORLD_EDGE,MAP.h-WORLD_EDGE);
@@ -550,7 +594,7 @@
     if(game.phase==='night'&&!world.raidWarning)refreshRaidWarning();
     if(Array.isArray(data.chunkState))for(const state of data.chunkState){const chunk=getChunk(state.cx,state.cy);if(chunk&&Array.isArray(state.remaining))state.remaining.forEach((amount,i)=>{if(chunk.nodes[i])chunk.nodes[i].remaining=clamp(amount,0,chunk.nodes[i].maxRemaining);});}
     if(game.mode==='bunker'&&game.phase==='day') game.mode='bunker';
-    ensureChunksAround(game.player.x,game.player.y,1);
+    ensureChunksAround(game.player.x,game.player.y,1);recordMapDiscovery();
     active=true;game.gameOver=false;setScreen('game');updateUI(true);showToast('سفرت از آخرین پناهگاه ادامه پیدا کرد.',1800);return true;
   }
   async function requestImmersive() {
@@ -558,7 +602,7 @@
     try { if(screen.orientation&&screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(e) {}
   }
   function startNew() {
-    game=freshGame();world=makeWorld();ensureChunksAround(game.player.x,game.player.y,1);active=true;gameTime=0;muted=false;
+    game=freshGame();mapDiscovered=new Set();mapMarkerSequence=0;mapOpen=false;$('mapOverlay').classList.remove('show');mapDirty=true;minimapDirty=true;world=makeWorld();ensureChunksAround(game.player.x,game.player.y,1);recordMapDiscovery();active=true;gameTime=0;muted=false;
     try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
     setScreen('game'); requestImmersive(); beep('build'); updateUI(true);
     showToast('راهت را با دستهٔ حرکت پیدا کن؛ نزدیک منابع، دکمهٔ برداشت را بزن.',3300);
@@ -1015,8 +1059,59 @@
     for(let i=0;i<5;i++){const y=((i*113+gameTime*26)%(H+24))-12;ctx.beginPath();for(let x=0;x<=W;x+=24){const dy=Math.sin(x*.018+gameTime*2.1+i)*3.2*power;if(x===0)ctx.moveTo(x,y+dy);else ctx.lineTo(x,y+dy);}ctx.stroke();}
     ctx.restore();
   }
+  const MAP_BIOME_COLORS={forest:'#355741',clearing:'#82905d',hill:'#7e7158',swamp:'#4c7058',river:'#4c7d83'};
+  const DEN_LABELS={wolf:'گرگ',leopard:'پلنگ',bear:'خرس',boar:'گراز',jackal:'شغال'};
+  function mapPoint(view,x,y) { return {x:view.x+x*view.scale,y:view.y+y*view.scale}; }
+  function drawMapTerrain(c,view,step=220) {
+    c.save();c.translate(view.x,view.y);c.scale(view.scale,view.scale);c.fillStyle='#243a2d';c.fillRect(0,0,MAP.w,MAP.h);
+    for(let y=0;y<MAP.h;y+=step)for(let x=0;x<MAP.w;x+=step){c.fillStyle=MAP_BIOME_COLORS[biomeAt(x+step*.5,y+step*.5)]||MAP_BIOME_COLORS.forest;c.fillRect(x,y,Math.min(step+1,MAP.w-x),Math.min(step+1,MAP.h-y));}
+    c.lineCap='round';c.lineJoin='round';c.beginPath();for(let y=0;y<=MAP.h;y+=30){const x=riverX(y);if(y===0)c.moveTo(x,y);else c.lineTo(x,y);}c.strokeStyle='rgba(25,45,52,.82)';c.lineWidth=118;c.stroke();c.strokeStyle='rgba(98,160,162,.82)';c.lineWidth=78;c.stroke();c.strokeStyle='rgba(183,207,186,.25)';c.lineWidth=3;c.stroke();
+    c.strokeStyle='rgba(229,217,173,.13)';c.lineWidth=7;c.strokeRect(WORLD_EDGE,WORLD_EDGE,MAP.w-WORLD_EDGE*2,MAP.h-WORLD_EDGE*2);c.restore();
+  }
+  function drawMapFog(c,view,mini=false) {
+    c.save();c.font=mini?'6px Tahoma':'9px Tahoma';c.textAlign='center';c.textBaseline='middle';
+    for(let cy=0;cy<CHUNK_ROWS;cy++)for(let cx=0;cx<CHUNK_COLS;cx++){
+      const x=view.x+cx*CHUNK_SIZE*view.scale,y=view.y+cy*CHUNK_SIZE*view.scale,w=Math.min(CHUNK_SIZE,MAP.w-cx*CHUNK_SIZE)*view.scale,h=Math.min(CHUNK_SIZE,MAP.h-cy*CHUNK_SIZE)*view.scale;
+      if(!mapDiscovered.has(chunkKey(cx,cy))){c.fillStyle='rgba(5,10,8,.82)';c.fillRect(x,y,w+1,h+1);if(!mini){c.strokeStyle='rgba(183,195,173,.055)';c.lineWidth=1;c.beginPath();c.moveTo(x+5,y+h-5);c.lineTo(x+w-5,y+5);c.stroke();}}
+      else{c.strokeStyle=mini?'rgba(211,224,199,.12)':'rgba(220,226,205,.17)';c.lineWidth=mini ? .55 : 1;c.strokeRect(x,y,w,h);}
+    }
+    if(!mini){const shown=new Set();for(let cy=0;cy<CHUNK_ROWS;cy++)for(let cx=0;cx<CHUNK_COLS;cx++){const key=chunkKey(cx,cy);if(!mapDiscovered.has(key))continue;const wx=(cx+.5)*CHUNK_SIZE,wy=(cy+.5)*CHUNK_SIZE,biome=biomeAt(wx,wy);if(shown.has(biome))continue;shown.add(biome);const point=mapPoint(view,wx,wy);c.fillStyle='rgba(236,235,215,.72)';c.fillText(BIOME_NAMES[biome]||biome,point.x,point.y);}}
+    c.restore();
+  }
+  function drawMapLandmarks(c,view,mini=false) {
+    const discoveredPath=()=>{c.beginPath();for(let cy=0;cy<CHUNK_ROWS;cy++)for(let cx=0;cx<CHUNK_COLS;cx++)if(mapDiscovered.has(chunkKey(cx,cy)))c.rect(view.x+cx*CHUNK_SIZE*view.scale,view.y+cy*CHUNK_SIZE*view.scale,Math.min(CHUNK_SIZE,MAP.w-cx*CHUNK_SIZE)*view.scale,Math.min(CHUNK_SIZE,MAP.h-cy*CHUNK_SIZE)*view.scale);c.clip();};
+    c.save();discoveredPath();
+    for(const den of world?.dens||[]){const cx=Math.floor(den.x/CHUNK_SIZE),cy=Math.floor(den.y/CHUNK_SIZE);if(!mapDiscovered.has(chunkKey(cx,cy)))continue;const p=mapPoint(view,den.x,den.y),color={wolf:'#ce9072',leopard:'#e3c978',bear:'#d19a69',boar:'#9dc17f',jackal:'#baa0d1'}[den.kind]||'#d0c497',radius=clamp((den.radius||220)*view.scale,mini?2.5:9,mini?7:54);c.globalAlpha=mini ? .7 : .72;c.strokeStyle=color;c.lineWidth=mini ? 1 : 1.4;c.setLineDash(mini?[]:[4,4]);c.beginPath();c.arc(p.x,p.y,radius,0,Math.PI*2);c.stroke();c.setLineDash([]);c.globalAlpha=1;c.fillStyle=color;c.beginPath();c.arc(p.x,p.y,mini?2.1:4,0,Math.PI*2);c.fill();if(!mini&&radius>18){c.font='bold 8px Tahoma';c.textAlign='left';c.textBaseline='bottom';c.fillStyle='#f2ead3';c.fillText(DEN_LABELS[den.kind]||'پناهگاه',p.x+6,p.y-5);}}
+    c.restore();
+    const home=mapPoint(view,BUNKER_ENTRANCE.x,BUNKER_ENTRANCE.y);c.save();c.fillStyle='rgba(11,17,13,.8)';c.beginPath();c.arc(home.x,home.y,mini?5.2:10,0,Math.PI*2);c.fill();c.fillStyle='#f0c36d';c.beginPath();c.moveTo(home.x,home.y-(mini?4:8));c.lineTo(home.x+(mini?4:8),home.y);c.lineTo(home.x,home.y+(mini?4:8));c.lineTo(home.x-(mini?4:8),home.y);c.closePath();c.fill();if(!mini){c.font='bold 10px Tahoma';c.textAlign='left';c.textBaseline='middle';c.fillStyle='#f7e4b7';c.fillText('بانکر',home.x+11,home.y-8);}c.restore();
+    for(let i=0;i<(game.mapMarkers||[]).length;i++){const marker=game.mapMarkers[i],point=mapPoint(view,marker.x,marker.y),r=mini?3.2:6.4;c.save();c.fillStyle='rgba(13,19,15,.8)';c.beginPath();c.arc(point.x,point.y,r+2,0,Math.PI*2);c.fill();c.fillStyle='#ee856e';c.strokeStyle='#ffe0ad';c.lineWidth=mini ? .8 : 1.3;c.beginPath();c.arc(point.x,point.y,r,0,Math.PI*2);c.fill();c.stroke();if(!mini){c.font='bold 9px Tahoma';c.textAlign='left';c.textBaseline='bottom';c.fillStyle='#fff0d8';c.fillText(marker.label||`نشان ${fa(i+1)}`,point.x+8,point.y-4);}c.restore();}
+    const player=mapPoint(view,game.player.x,game.player.y),radius=mini?3.4:5.5;c.save();c.fillStyle='#f7f3df';c.strokeStyle='#142019';c.lineWidth=mini?1:2;c.beginPath();c.arc(player.x,player.y,radius,0,Math.PI*2);c.fill();c.stroke();const fx=game.player.faceX||1,fy=game.player.faceY||0;c.strokeStyle='#fff0bb';c.lineWidth=mini?1:2;c.beginPath();c.moveTo(player.x,player.y);c.lineTo(player.x+fx*(mini?7:12),player.y+fy*(mini?7:12));c.stroke();c.restore();
+  }
+  function drawMinimap(force=false) {
+    if(!game||!active)return;const rect=$('minimapWrap').getBoundingClientRect(),width=rect.width||142,height=rect.height||96,ratio=Math.min(window.devicePixelRatio||1,1.6),pixelW=Math.max(1,Math.floor(width*ratio)),pixelH=Math.max(1,Math.floor(height*ratio));
+    if(minimapCanvas.width!==pixelW||minimapCanvas.height!==pixelH){minimapCanvas.width=pixelW;minimapCanvas.height=pixelH;minimapDirty=true;}
+    if(!force&&!minimapDirty&&lastMinimapX===game.player.x&&lastMinimapY===game.player.y)return;minimapCtx.setTransform(ratio,0,0,ratio,0,0);minimapCtx.clearRect(0,0,width,height);minimapCtx.fillStyle='#132019';minimapCtx.fillRect(0,0,width,height);
+    const scale=Math.min((width-8)/MAP.w,(height-8)/MAP.h),view={x:(width-MAP.w*scale)/2,y:(height-MAP.h*scale)/2,scale};drawMapTerrain(minimapCtx,view,380);drawMapFog(minimapCtx,view,true);drawMapLandmarks(minimapCtx,view,true);minimapCtx.strokeStyle='rgba(237,224,185,.5)';minimapCtx.lineWidth=1;minimapCtx.strokeRect(view.x,view.y,MAP.w*scale,MAP.h*scale);minimapDirty=false;lastMinimapX=game.player.x;lastMinimapY=game.player.y;
+  }
+  function drawFullMap() {
+    const pixelW=Math.max(1,Math.floor(W*dpr)),pixelH=Math.max(1,Math.floor(H*dpr));if(mapCanvas.width!==pixelW||mapCanvas.height!==pixelH){mapCanvas.width=pixelW;mapCanvas.height=pixelH;mapDirty=true;}
+    mapCtx.setTransform(dpr,0,0,dpr,0,0);if(!mapDirty)return;mapCtx.fillStyle='#0c1510';mapCtx.fillRect(0,0,W,H);
+    const area={x:14,y:112,w:W-28,h:Math.max(120,H-166)},scale=Math.min(area.w/MAP.w,area.h/MAP.h),view={x:area.x+(area.w-MAP.w*scale)/2,y:area.y+(area.h-MAP.h*scale)/2,scale};mapViewport=view;
+    drawMapTerrain(mapCtx,view,190);drawMapFog(mapCtx,view,false);drawMapLandmarks(mapCtx,view,false);mapCtx.strokeStyle='rgba(226,217,184,.55)';mapCtx.lineWidth=1.3;mapCtx.strokeRect(view.x,view.y,MAP.w*scale,MAP.h*scale);mapDirty=false;
+  }
+  function addMapMarker(x=game.player.x,y=game.player.y,label='') {
+    if(!game)return;game.mapMarkers=game.mapMarkers||[];const number=game.mapMarkers.length+1,marker={id:`map-${Date.now().toString(36)}-${++mapMarkerSequence}`,x:clamp(x,WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(y,WORLD_EDGE,MAP.h-WORLD_EDGE),label:label||`نشان ${fa(number)}`};game.mapMarkers.push(marker);if(game.mapMarkers.length>12)game.mapMarkers.shift();mapDirty=true;minimapDirty=true;saveGame();showToast('نشان روی نقشه ذخیره شد؛ برای پاک‌کردنش دوباره لمس کن.',1900);updateUI(true);
+  }
+  function removeMapMarker(marker) {
+    game.mapMarkers=game.mapMarkers.filter(item=>item.id!==marker.id);mapDirty=true;minimapDirty=true;saveGame();showToast('نشان نقشه برداشته شد.',1400);updateUI(true);
+  }
+  function setMapOpen(open) {
+    if(!active||!game)return;mapOpen=!!open;$('mapOverlay').classList.toggle('show',mapOpen);mapDirty=true;
+    if(mapOpen){recordMapDiscovery();saveGame();drawFullMap();}else mapViewport=null;updateUI(true);
+  }
   function draw() {
     if(!game||!active){ctx.fillStyle='#17221b';ctx.fillRect(0,0,W,H);drawMenuBackdrop();return;}
+    if(mapOpen){drawFullMap();return;}
     if(game.mode==='forest')drawForest();else drawBunker();drawSanityDistortion();
   }
   function drawMenuBackdrop() {
@@ -1562,8 +1657,8 @@
     return lines.length?`تولید روزانه: ${lines.join(' · ')}.`:'';
   }
   function update(dt) {
-    if(!active||!game)return;
-    gameTime+=dt;updateMovement(dt);updateNoiseTrail(dt);updateHazards(dt);updateParticles(dt);
+    if(!active||!game)return;if(mapOpen)return;
+    gameTime+=dt;updateMovement(dt);recordMapDiscovery();updateNoiseTrail(dt);updateHazards(dt);updateParticles(dt);
     if(game.mode==='forest')updateAnimals(dt);
     updateSanity(dt);updatePlayerEffects(dt);updateSurvival(dt);
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
@@ -1594,8 +1689,8 @@
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
     $('phaseText').textContent=game.phase==='day'?`روز ${fa(game.day)} · روشنایی`:`روز ${fa(game.day)} · یورش شب`;
     const compass=$('compassWidget'),biome=biomeAt(game.player.x,game.player.y),bdx=BUNKER_ENTRANCE.x-game.player.x,bdy=BUNKER_ENTRANCE.y-game.player.y;
-    compass.style.display=game.mode==='forest'?'flex':'none';$('biomeName').textContent=BIOME_NAMES[biome]||BIOME_NAMES.forest;$('compassArrow').style.transform=`rotate(${Math.atan2(bdy,bdx)*180/Math.PI+90}deg)`;
-    $('soundButton').textContent=muted?'♪̸':'♫';const torchButton=$('torchButton');torchButton.style.display=(game.inventory.torches>0||game.player.torchLit)?'grid':'none';torchButton.classList.toggle('active',!!game.player.torchLit);torchButton.textContent=game.player.torchLit?'☼':'♧';torchButton.title=game.player.torchLit?'خاموش‌کردن مشعل':'روشن‌کردن مشعل';
+    compass.style.display='flex';$('biomeName').textContent=BIOME_NAMES[biome]||BIOME_NAMES.forest;$('compassArrow').style.transform=`rotate(${Math.atan2(bdy,bdx)*180/Math.PI+90}deg)`;
+    $('soundButton').textContent=muted?'♪̸':'♫';const mapButton=$('mapButton');mapButton.classList.toggle('active',mapOpen);mapButton.title=mapOpen?'بستن نقشه':'بازکردن نقشهٔ جهان';const torchButton=$('torchButton');torchButton.style.display=(game.inventory.torches>0||game.player.torchLit)?'grid':'none';torchButton.classList.toggle('active',!!game.player.torchLit);torchButton.textContent=game.player.torchLit?'☼':'♧';torchButton.title=game.player.torchLit?'خاموش‌کردن مشعل':'روشن‌کردن مشعل';
     let stepIndex=-1;
     if(game.tutorial?.active){for(let i=0;i<tutorialSteps.length;i++)if(game.tutorial.time>=tutorialSteps[i][0])stepIndex=i;}
     const stepStart=stepIndex>=0?tutorialSteps[stepIndex][0]:0;
@@ -1611,7 +1706,7 @@
       const dx=BUNKER_ENTRANCE.x-game.player.x,dy=BUNKER_ENTRANCE.y-game.player.y;
       $('bunkerArrow').style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI+90}deg)`;
     }
-    updateRaidWarningUI();updateControlsUI();
+    updateRaidWarningUI();updateControlsUI();drawMinimap();
     if(force)draw();
   }
 
@@ -1638,6 +1733,11 @@
   $('basesButton').addEventListener('click',()=>showModal('bunkers'));
   $('repairButton').addEventListener('click',repair);$('exitButton').addEventListener('click',exitBunker);
   $('soundButton').addEventListener('click',()=>{muted=!muted;if(game)game.muted=muted;updateUI(true);if(!muted)beep('gather');});$('torchButton').addEventListener('click',toggleTorch);
+  $('mapButton').addEventListener('click',()=>setMapOpen(!mapOpen));$('minimapWrap').addEventListener('click',()=>setMapOpen(true));$('closeMapButton').addEventListener('click',()=>setMapOpen(false));$('dropMarkerButton').addEventListener('click',()=>addMapMarker(game.player.x,game.player.y,'اینجا'));
+  mapCanvas.addEventListener('pointerdown',e=>{if(!mapOpen||!mapViewport)return;e.preventDefault();const rect=mapCanvas.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,view=mapViewport;if(mx<view.x||mx>view.x+MAP.w*view.scale||my<view.y||my>view.y+MAP.h*view.scale)return;
+    for(const marker of game.mapMarkers||[]){const point=mapPoint(view,marker.x,marker.y);if(Math.hypot(mx-point.x,my-point.y)<15){removeMapMarker(marker);return;}}
+    addMapMarker((mx-view.x)/view.scale,(my-view.y)/view.scale);
+  });
   $('skipTutorial').addEventListener('click',()=>{if(game?.tutorial)game.tutorial.active=false;updateUI(true);});
   canvas.addEventListener('pointerdown',e=>{
     if(!active||!game||$('modal').classList.contains('show'))return;
@@ -1651,7 +1751,7 @@
     }
   });
   window.addEventListener('keydown',e=>{
-    const k=e.key;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k))e.preventDefault();
+    const k=e.key;if(mapOpen&&k==='Escape'){e.preventDefault();setMapOpen(false);return;}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k))e.preventDefault();
     if(k===' '||k==='e'||k==='E'){if(!e.repeat)doAction();return;}keys[k]=true;
   });
   window.addEventListener('keyup',e=>{keys[e.key]=false;});
