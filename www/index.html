@@ -71,7 +71,6 @@
     .soft-button { width: 56px; height: 56px; border-radius: 19px; color: #f3ecd9; background: linear-gradient(145deg, rgba(55,76,58,.96), rgba(24,37,29,.96)); border: 1px solid rgba(226,230,207,.27); font-size: 11px; font-weight: 800; box-shadow: 0 6px 16px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 3px; }
     .soft-button span { font-size: 19px; line-height: 1; }
     .soft-button:disabled { opacity: .48; cursor: default; }
-    #sprintButton { touch-action: none; user-select: none; }
     #bunkerTools { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(19px + var(--safe-bottom)); align-items: center; gap: 6px; padding: 6px; border-radius: 16px; pointer-events: auto; }
     .tool-button { min-width: 58px; height: 42px; border-radius: 11px; padding: 0 9px; border: 1px solid rgba(231,229,204,.2); background: rgba(39,54,42,.93); color: #ece9d9; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; justify-content: center; white-space: nowrap; }
     .tool-button b { font-size: 15px; }
@@ -240,6 +239,8 @@
     #joystickZone { position:absolute; left:0; top:28%; width:45%; height:72%; pointer-events:none; touch-action:none; z-index:1; }
     #joystick { position:absolute; left:18%; top:72%; bottom:auto; width:132px; height:132px; transform:translate(-50%,-50%); opacity:0; pointer-events:none; transition:opacity .12s ease; background:radial-gradient(circle at 43% 38%,rgba(150,178,137,.2),rgba(14,23,18,.67)); border:1px solid rgba(231,239,216,.28); }
     #joystick.active { opacity:.96; pointer-events:auto; }
+    #joystick.running { border-color:rgba(231,191,112,.55); box-shadow:inset 0 0 18px rgba(0,0,0,.25),0 0 0 2px rgba(231,191,112,.2),0 6px 18px rgba(0,0,0,.22); }
+    #joystick.running::after { content:""; position:absolute; inset:-4px; border:1px solid rgba(231,191,112,.48); border-radius:50%; box-shadow:0 0 8px rgba(231,191,112,.16); pointer-events:none; }
     #joyKnob { transition:transform .055s ease-out; }
     .right-controls { right:max(14px,env(safe-area-inset-right,0px)); bottom:calc(14px + var(--safe-bottom)); display:flex; align-items:center; gap:9px; z-index:6; }
     #actionButton { order:-1; width:72px; height:72px; min-width:64px; min-height:64px; border-radius:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5px; background:linear-gradient(150deg,#f0d18d,#c98d41); border:1px solid rgba(255,240,199,.72); box-shadow:0 7px 22px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.5); touch-action:none; }
@@ -383,7 +384,6 @@
       <section class="glass action-sheet" id="actionSheet" aria-label="کنش‌های ثانویه" aria-hidden="true">
         <div class="action-sheet-head"><strong id="actionSheetTitle">ابزارهای جنگل</strong><button class="panel-close" id="closeActionSheet" aria-label="بستن کنش‌ها"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
         <div class="sheet-grid" id="forestSheetActions">
-          <button class="soft-button sheet-action" id="sprintButton" aria-label="دویدن را نگه دار"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><circle cx="15.5" cy="4.5" r="2"/><path d="m12 8 3-1 3 3-2 3-3-1-2 4-4 3m6-7 4 2 3 4m-10-8-3 3-3 1"/></svg></span><b>دویدن</b></button>
           <button class="soft-button sheet-action" id="eatButton" aria-label="خوراک‌خوردن"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 10h14l-2 9H7l-2-9Z"/><path d="M8 10c0-2 2-4 4-4s4 2 4 4M12 6V3m0 0h3"/></svg></span><b>خوراک</b></button>
           <button class="soft-button sheet-action" id="fireButton" aria-label="روشن‌کردن آتش"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 21c-4 0-7-2.7-7-6.5 0-3.1 2.2-5.3 4.4-8.5.1 2.3 1.1 3.4 2.2 4.2.1-3.2 2.2-5.4 4.1-7.2-.2 3.7 3.3 6.2 3.3 11.1 0 4-2.9 6.9-7 6.9Z"/><path d="M12 18c-1.7 0-2.8-1-2.8-2.5 0-1.2 1-2.3 2-3.6.3 1.1 1 1.6 1.7 2 .1-1.2.8-2 1.5-2.5.1 1.8 1.1 2.4 1.1 4 0 1.5-1.2 2.6-3.5 2.6Z"/></svg></span><b>آتش</b></button>
           <button class="soft-button sheet-action" id="trapButton" aria-label="گذاشتن تله"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M4 19h16M6 19l2-8 4 3 4-7 2 12"/><path d="M5 8c2-3 4-3 6 0m2-3c2-2 4-2 6 1"/></svg></span><b>تله</b></button>
@@ -513,7 +513,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
-  let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,actionPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',hapticsEnabled=true;
+  let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},actionPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',hapticsEnabled=true;
   try { hapticsEnabled=localStorage.getItem('hirkani-haptics')!=='off'; } catch(e) {}
   let gameTime=0,mapDiscovered=new Set(),mapOpen=false,mapDirty=true,minimapDirty=true,mapViewport=null,mapMarkerSequence=0,lastMinimapX=null,lastMinimapY=null;
   const UI_GLYPHS={
@@ -879,7 +879,7 @@
       title.textContent='کارگاه ساخت';note.textContent='مواد را از جنگل بردار و دستورهای ساخت را در سه دسته ببین؛ خوراک‌ها هنگام ساخت مصرف می‌شوند.';craftCategory='tools';renderCraftingTabs();renderCraftingCards();
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='نیمهٔ چپ صفحه را لمس کن تا دستهٔ شناور باز شود؛ از دکمهٔ «بیشتر» دویدن را نگه دار (Shift روی رایانه). برای دیدن نوارهای وضعیت و منابع، نشانِ قلب را در بالا لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='نیمهٔ چپ صفحه را لمس کن تا دستهٔ شناور باز شود؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن نوارهای وضعیت و منابع، نشانِ قلب را در بالا لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -1514,28 +1514,32 @@
   function updateMovement(dt) {
     const joystickEase=1-Math.exp(-dt*24);joystick.x+=(joystick.targetX-joystick.x)*joystickEase;joystick.y+=(joystick.targetY-joystick.y)*joystickEase;
     const v=inputVector(),p=game.player,magnitude=Math.hypot(v.x,v.y),inputMoving=magnitude>.035;
+    let motionTarget=0,runBlendTarget=0;
     p.actionTimer=Math.max(0,(p.actionTimer||0)-dt);if(!p.actionTimer)p.actionKind='';
     if(game.mode==='forest') {
-      let dx=0,dy=0,moving=false;
-      if(inputMoving){dx=v.x/magnitude;dy=v.y/magnitude;p.target=null;moving=true;}
-      else if(p.target){const tx=p.target.x-p.x,ty=p.target.y-p.y,d=Math.hypot(tx,ty);if(d<8)p.target=null;else{dx=tx/d;dy=ty/d;moving=true;}}
+      let dx=0,dy=0,moving=false,clickMoving=false,moveMagnitude=0;
+      const keyboardMoving=isDown('ArrowLeft')||isDown('ArrowRight')||isDown('ArrowUp')||isDown('ArrowDown')||isDown('a')||isDown('A')||isDown('d')||isDown('D')||isDown('w')||isDown('W')||isDown('s')||isDown('S'),keyboardSprint=keyboardMoving&&isDown('Shift');
+      if(inputMoving){dx=v.x/magnitude;dy=v.y/magnitude;p.target=null;moving=true;const stickMagnitude=Math.hypot(joystick.x,joystick.y);moveMagnitude=keyboardSprint?1:stickMagnitude>.035?clamp(stickMagnitude,0,1):keyboardMoving ? .60 : magnitude;}
+      else if(p.target){const tx=p.target.x-p.x,ty=p.target.y-p.y,d=Math.hypot(tx,ty);if(d<8)p.target=null;else{dx=tx/d;dy=ty/d;moving=true;clickMoving=true;moveMagnitude=.64;}}
       p.moving=moving;
-      let stamina=clamp(game.stats.stamina??100,0,100);const wantsSprint=moving&&(sprintHeld||keys.Shift);
+      let stamina=clamp(game.stats.stamina??100,0,100);
+      const wantsRun=moving&&!clickMoving&&(keyboardSprint||(p.running?moveMagnitude>=.60:moveMagnitude>=.65));
       if(stamina<=0)p.exhausted=true;
-      if(!wantsSprint&&stamina>=18)p.exhausted=false;
-      if(wantsSprint&&!p.exhausted&&stamina>0){
+      if(p.exhausted&&stamina>20)p.exhausted=false;
+      if(wantsRun&&!p.exhausted&&stamina>0){
         stamina=Math.max(0,stamina-dt*(23+carryWeight()*.07+(p.bleedTimer>0?3:0)));p.running=stamina>0;if(!p.running)p.exhausted=true;
       }else{p.running=false;stamina=Math.min(100,stamina+dt*(moving?9:16));}
       game.stats.stamina=stamina;
       if(moving){
-        p.faceX=dx;p.faceY=dy;p.facing=facing4(dx,dy,p.facing);p.animTime=(p.animTime||0)+dt*(p.running?15:9);
-        const speed=(p.running?236:148)*carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1),nx=clamp(p.x+dx*speed*dt,WORLD_EDGE,MAP.w-WORLD_EDGE),ny=clamp(p.y+dy*speed*dt,WORLD_EDGE,MAP.h-WORLD_EDGE);
+        p.faceX=dx;p.faceY=dy;p.facing=facing4(dx,dy,p.facing);
+        const walkBlend=clamp(moveMagnitude/.65,0,1),runProgress=clamp((moveMagnitude-.65)/.35,0,1);motionTarget=walkBlend;runBlendTarget=p.running?runProgress:0;p.animTime=(p.animTime||0)+dt*(p.running?9+6*runProgress:9*walkBlend);
+        const walkSpeed=148,runSpeed=236,speedFactor=carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1),speed=(p.running&&moveMagnitude>=.65?walkSpeed+(runSpeed-walkSpeed)*runProgress:walkSpeed*walkBlend)*speedFactor,nx=clamp(p.x+dx*speed*dt,WORLD_EDGE,MAP.w-WORLD_EDGE),ny=clamp(p.y+dy*speed*dt,WORLD_EDGE,MAP.h-WORLD_EDGE);
         const blocked=(x,y)=>nodesNear(x,y,58).some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
         if(!blocked(nx,p.y))p.x=nx;if(!blocked(p.x,ny))p.y=ny;
         if(p.running){p.puffTimer=(p.puffTimer||0)-dt;if(p.puffTimer<=0){spawnRunPuff(p.x,p.y);p.puffTimer=.17;}}else p.puffTimer=.08;
       }else{p.running=false;p.puffTimer=0;}
     } else {
-      p.moving=inputMoving;p.running=false;p.exhausted=false;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*20);
+      p.moving=inputMoving;p.running=false;p.exhausted=false;motionTarget=magnitude>.38?1:0;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*20);
       p.stepTimer=Math.max(0,(p.stepTimer||0)-dt);
       if(magnitude>.38&&p.stepTimer<=0){
         let sx=0,sy=0;if(Math.abs(v.x)>Math.abs(v.y)){sx=Math.sign(v.x);}else{sy=Math.sign(v.y);}
@@ -1545,7 +1549,7 @@
         p.stepTimer=.18;
       }
     }
-    const movementEase=1-Math.exp(-dt*11),runEase=1-Math.exp(-dt*9);p.motionBlend+=((p.moving?1:0)-p.motionBlend)*movementEase;p.runBlend+=((p.running?1:0)-p.runBlend)*runEase;
+    $('joystick').classList.toggle('running',p.running);const movementEase=1-Math.exp(-dt*11),runEase=1-Math.exp(-dt*9);p.motionBlend+=(motionTarget-p.motionBlend)*movementEase;p.runBlend+=(runBlendTarget-p.runBlend)*runEase;
   }
   function outsidePlayerView(x,y,margin=90) {
     const sx=x-cam.x,sy=y-cam.y;return sx<-margin||sx>W+margin||sy<-margin||sy>H+margin;
@@ -1790,9 +1794,9 @@
   }
   function updateControlsUI() {
     if(!game||!active)return;
-    const fireButton=$('fireButton'),trapButton=$('trapButton'),sprintButton=$('sprintButton'),hapticsButton=$('hapticsButton');$('forestControls').style.display='flex';hapticsButton.classList.toggle('active',hapticsEnabled);hapticsButton.setAttribute?.('aria-pressed',String(hapticsEnabled));$('hapticsLabel').textContent=hapticsEnabled?'لرزش روشن':'لرزش خاموش';
+    const fireButton=$('fireButton'),trapButton=$('trapButton'),hapticsButton=$('hapticsButton');$('forestControls').style.display='flex';hapticsButton.classList.toggle('active',hapticsEnabled);hapticsButton.setAttribute?.('aria-pressed',String(hapticsEnabled));$('hapticsLabel').textContent=hapticsEnabled?'لرزش روشن':'لرزش خاموش';
     if(game.mode==='forest') {
-      $('forestSheetActions').style.display='grid';$('bunkerTools').style.display='none';$('actionSheetTitle').textContent='ابزارهای جنگل';sprintButton.classList.toggle('active',sprintHeld||!!keys.Shift);
+      $('forestSheetActions').style.display='grid';$('bunkerTools').style.display='none';$('actionSheetTitle').textContent='ابزارهای جنگل';
       fireButton.disabled=(game.inventory.fireKits||0)<1&&game.resources.wood<2;trapButton.disabled=(game.inventory.snares||0)<1&&(game.resources.wood<2||game.resources.herbs<1);
       const n=nearestNode(86),a=nearestAnimal(58),drop=nearestFoodDrop(game.player,58);let label='عمل',icon='action';
       if(atBunkerEntrance()){label='ورود';icon='entry';}
@@ -1801,7 +1805,7 @@
       else if(n){label=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';icon=n.node.type==='tree'?'wood':n.node.type==='rock'?'stone':n.node.herb?'herb':'food';}
       setActionPrompt(label,icon);
     } else {
-      $('forestSheetActions').style.display='none';$('bunkerTools').style.display='flex';$('actionSheetTitle').textContent='ابزارهای پناهگاه';sprintButton.classList.remove('active');
+      $('forestSheetActions').style.display='none';$('bunkerTools').style.display='flex';$('actionSheetTitle').textContent='ابزارهای پناهگاه';
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k],label=room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':'عمل';setActionPrompt(label,room?'upgrade':label==='ساخت'?'build':'action');
     }
   }
@@ -2033,7 +2037,7 @@
     saveTimer+=dt;uiTimer+=dt;if(saveTimer>=5){saveTimer=0;saveGame();}if(uiTimer>=.12){uiTimer=0;updateUI();}
   }
   const tutorialSteps=[
-    [0,'نیمهٔ چپ صفحه را لمس کن تا دستهٔ شناور باز شود؛ از «بیشتر»، دویدن را نگه دار. نوار توان خالی و دوباره پر می‌شود.'],
+    [0,'نیمهٔ چپ صفحه را لمس کن تا دستهٔ شناور باز شود؛ آرام بکش تا آهسته راه بروی و دسته را تا ۶۵٪ ببر تا بدوی. دویدن توان را مصرف می‌کند؛ اگر خالی شد تا رسیدن به ۲۰٪ فقط راه برو.'],
     [9,'کنار منبع بایست؛ دکمهٔ طلاییِ کنش را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
     [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن صدا می‌کند و خوراک، مشعل و دود آتش جانوران را جذب می‌کنند. غذا را بخور، آرام بمان و نور را خاموش کن؛ آتش و تله هم شکارچی را عقب می‌رانند.'],
     [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
@@ -2103,10 +2107,6 @@
   joyZone.addEventListener('pointermove',moveJoy);pad.addEventListener('pointermove',moveJoy);
   function endJoy(e){if(joystick.pointer===e.pointerId){joystick.pointer=null;joystick.targetX=joystick.targetY=joystick.x=joystick.y=0;pad.classList.remove('active');knob.style.transform='translate(0,0)';}}
   for(const target of [joyZone,pad]){target.addEventListener('pointerup',endJoy);target.addEventListener('pointercancel',endJoy);target.addEventListener('lostpointercapture',endJoy);}
-  const sprintButton=$('sprintButton');
-  sprintButton.addEventListener('pointerdown',e=>{e.preventDefault();sprintPointer=e.pointerId;sprintHeld=true;sprintButton.classList.add('active');sprintButton.setPointerCapture(e.pointerId);haptic(8);});
-  function endSprint(e){if(sprintPointer===e.pointerId){sprintPointer=null;sprintHeld=false;sprintButton.classList.remove('active');}}
-  sprintButton.addEventListener('pointerup',endSprint);sprintButton.addEventListener('pointercancel',endSprint);sprintButton.addEventListener('lostpointercapture',endSprint);
   const actionButton=$('actionButton');
   function beginActionPress(e){if(actionPointer!==null){e.preventDefault();return;}e.preventDefault();actionPointer=e.pointerId;actionButton.classList.add('pressed');if(actionButton.setPointerCapture)actionButton.setPointerCapture(e.pointerId);}
   function endActionPress(e){if(actionPointer!==e.pointerId)return;actionPointer=null;actionButton.classList.remove('pressed');if(e.type==='pointerup'){haptic(12);doAction();}}
@@ -2145,7 +2145,7 @@
     if(k===' '||k==='e'||k==='E'){if(!e.repeat)doAction();return;}keys[k]=true;
   });
   window.addEventListener('keyup',e=>{keys[e.key]=false;});
-  window.addEventListener('blur',()=>{keys={};joystick.x=joystick.y=joystick.targetX=joystick.targetY=0;joystick.pointer=null;pad.classList.remove('active');knob.style.transform='translate(0,0)';sprintHeld=false;sprintPointer=null;sprintButton.classList.remove('active');actionPointer=null;actionButton.classList.remove('pressed');setActionSheet(false);setStatusPanel(false);});
+  window.addEventListener('blur',()=>{keys={};joystick.x=joystick.y=joystick.targetX=joystick.targetY=0;joystick.pointer=null;pad.classList.remove('active');knob.style.transform='translate(0,0)';actionPointer=null;actionButton.classList.remove('pressed');setActionSheet(false);setStatusPanel(false);});
 
   $('startButton').addEventListener('click',()=>beginGame(false));
   $('continueButton').addEventListener('click',()=>beginGame(true));
