@@ -413,6 +413,28 @@
     hill:{density:.83,tree:.15,bush:.17,rock:.68,herb:.18},swamp:{density:.88,tree:.31,bush:.56,rock:.13,herb:.72},river:{density:.42,tree:.02,bush:.18,rock:.8,herb:.18}
   };
   function resourceProfile(weights,key) { let value=0;for(const [biome,weight] of Object.entries(weights))value+=weight*RESOURCE_PROFILES[biome][key];return value; }
+  const TREE_DISTRIBUTIONS={
+    forest:{ironwood:.15,hornbeam:.2,beech:.27,oak:.17,box:.1,alder:.11},clearing:{ironwood:.18,hornbeam:.14,beech:.13,oak:.24,box:.09,alder:.22},
+    hill:{ironwood:.13,hornbeam:.15,beech:.2,oak:.3,box:.07,alder:.15},swamp:{ironwood:.11,hornbeam:.13,beech:.08,oak:.12,box:.12,alder:.44},
+    river:{ironwood:.13,hornbeam:.14,beech:.12,oak:.16,box:.14,alder:.31}
+  };
+  const TREE_ART={
+    ironwood:{bark:'#746c57',barkLight:'#b6a681',deep:'#293f30',base:'#3e5d3f',mid:'#59774b',light:'#91a36b',top:'#bbc58b'},
+    hornbeam:{bark:'#756c57',barkLight:'#c0b293',deep:'#294238',base:'#3b6045',mid:'#52734b',light:'#829766',top:'#b0ba7c'},
+    beech:{bark:'#776e62',barkLight:'#c0b9a8',deep:'#263e31',base:'#395d40',mid:'#547649',light:'#84995d',top:'#bcc58a'},
+    oak:{bark:'#69523d',barkLight:'#b18a5f',deep:'#253a2b',base:'#3b5632',mid:'#5d7140',light:'#8c9553',top:'#c2b66e'},
+    box:{bark:'#665b43',barkLight:'#a99465',deep:'#213a2b',base:'#31543a',mid:'#426744',light:'#69814e',top:'#8d9d62'},
+    alder:{bark:'#604e3c',barkLight:'#a98761',deep:'#294238',base:'#3a5943',mid:'#527052',light:'#79916b',top:'#a8b18a'}
+  };
+  const TREE_GEOMETRY={
+    ironwood:{crownTop:36,shadow:35,trunk:8,leafX:29,leafY:18},hornbeam:{crownTop:39,shadow:29,trunk:7,leafX:21,leafY:22},
+    beech:{crownTop:38,shadow:29,trunk:8,leafX:30,leafY:18},oak:{crownTop:36,shadow:35,trunk:10,leafX:35,leafY:17},
+    box:{crownTop:26,shadow:29,trunk:6,leafX:19,leafY:12},alder:{crownTop:39,shadow:29,trunk:7,leafX:22,leafY:23}
+  };
+  function chooseTreeSpecies(weights,rand) {
+    const combined={ironwood:0,hornbeam:0,beech:0,oak:0,box:0,alder:0};for(const [biome,weight] of Object.entries(weights))for(const [species,share] of Object.entries(TREE_DISTRIBUTIONS[biome]||TREE_DISTRIBUTIONS.forest))combined[species]+=weight*share;
+    const total=Object.values(combined).reduce((sum,value)=>sum+value,0)||1;let pick=rand()*total;for(const [species,weight] of Object.entries(combined)){pick-=weight;if(pick<=0)return species;}return 'beech';
+  }
   function chunkKey(cx,cy) { return `${cx},${cy}`; }
   function makeChunk(cx,cy) {
     const x=cx*CHUNK_SIZE,y=cy*CHUNK_SIZE,w=Math.min(CHUNK_SIZE,MAP.w-x),h=Math.min(CHUNK_SIZE,MAP.h-y),chunkBiome=biomeAt(x+w/2,y+h/2);
@@ -428,7 +450,7 @@
       const pick=r(),treeChance=resourceProfile(weights,'tree'),bushChance=resourceProfile(weights,'bush'),type=pick<treeChance?'tree':pick<treeChance+bushChance?'bush':'rock';
       if(nodes.some(n=>Math.hypot(n.x-nx,n.y-ny)<32))continue;
       const remaining=type==='tree'?2:type==='rock'?3:2;
-      nodes.push({id:`${cx}:${cy}:${i}`,chunkX:cx,chunkY:cy,index:i,type,x:nx,y:ny,remaining,maxRemaining:remaining,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),species:r()<.7?'broad':'needle',scale:.76+r()*.5,herb:type==='bush'&&r()<resourceProfile(weights,'herb')});
+      nodes.push({id:`${cx}:${cy}:${i}`,chunkX:cx,chunkY:cy,index:i,type,x:nx,y:ny,remaining,maxRemaining:remaining,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),species:type==='tree'?chooseTreeSpecies(weights,r):null,scale:.76+r()*.5,herb:type==='bush'&&r()<resourceProfile(weights,'herb')});
     }
     const addWild=(kind,count)=>{for(let i=0;i<count;i++){const ax=x+35+r()*Math.max(1,w-70),ay=y+35+r()*Math.max(1,h-70);if(ax<WORLD_EDGE+40||ax>MAP.w-WORLD_EDGE-40||ay<WORLD_EDGE+40||ay>MAP.h-WORLD_EDGE-40||Math.hypot(ax-MAP.cx,ay-MAP.cy)<205)continue;fauna.push(makeWildlife(`${kind}-${cx}-${cy}-${i}`,kind,ax,ay,r));}};
     const roll=r();
@@ -491,8 +513,8 @@
     const edgeRand=seeded(492701),edgeTrees=[],edgeCliffs=[];
     for(let x=18;x<MAP.w;x+=54){
       const nx=clamp(x+(edgeRand()-.5)*28,12,MAP.w-12),top=25+edgeRand()*55,bottom=25+edgeRand()*55;
-      edgeTrees.push({id:`edge-n-${x}`,x:nx,y:top,remaining:1,variant:edgeRand(),species:edgeRand()<.7?'broad':'needle',scale:1.05+edgeRand()*.55});
-      edgeTrees.push({id:`edge-s-${x}`,x:nx,y:MAP.h-bottom,remaining:1,variant:edgeRand(),species:edgeRand()<.7?'broad':'needle',scale:1.05+edgeRand()*.55});
+      edgeTrees.push({id:`edge-n-${x}`,x:nx,y:top,remaining:1,variant:edgeRand(),species:chooseTreeSpecies({forest:1},edgeRand),scale:1.05+edgeRand()*.55});
+      edgeTrees.push({id:`edge-s-${x}`,x:nx,y:MAP.h-bottom,remaining:1,variant:edgeRand(),species:chooseTreeSpecies({forest:1},edgeRand),scale:1.05+edgeRand()*.55});
     }
     for(let y=18;y<MAP.h;y+=48)for(const side of ['west','east'])for(let i=0;i<2;i++){
       const offset=20+edgeRand()*92,x=side==='west'?offset:MAP.w-offset,ry=clamp(y+(edgeRand()-.5)*24,10,MAP.h-10);
@@ -706,28 +728,62 @@
     }
     ctx.restore();
   }
+  function traceTreeCrown(species,wind=0) {
+    ctx.beginPath();
+    if(species==='ironwood'){
+      ctx.moveTo(-33,10);ctx.bezierCurveTo(-44,4,-39,-12,-25,-13);ctx.bezierCurveTo(-22,-26,-7,-25,-2,-17+wind*.12);ctx.bezierCurveTo(7,-31,23,-26,23,-15+wind*.22);ctx.bezierCurveTo(39,-17,43,-4,33,2);ctx.bezierCurveTo(41,14,25,21,11,14);ctx.quadraticCurveTo(-2,24,-14,14);ctx.quadraticCurveTo(-28,20,-33,10);
+    }else if(species==='hornbeam'){
+      ctx.moveTo(-25,20);ctx.bezierCurveTo(-34,10,-27,-2,-20,-7);ctx.bezierCurveTo(-24,-20,-13,-29,0,-31+wind*.12);ctx.bezierCurveTo(13,-29,24,-18,20,-7+wind*.2);ctx.bezierCurveTo(31,2,32,15,21,20);ctx.quadraticCurveTo(0,24,-25,20);
+    }else if(species==='beech'){
+      ctx.moveTo(-34,13);ctx.bezierCurveTo(-43,6,-39,-7,-29,-11);ctx.bezierCurveTo(-27,-23,-15,-28,0,-27+wind*.12);ctx.bezierCurveTo(15,-29,28,-22,29,-11+wind*.2);ctx.bezierCurveTo(40,-5,41,8,31,13);ctx.bezierCurveTo(18,21,-18,21,-34,13);
+    }else if(species==='oak'){
+      ctx.moveTo(-39,12);ctx.quadraticCurveTo(-48,4,-38,-3);ctx.quadraticCurveTo(-44,-16,-30,-14);ctx.quadraticCurveTo(-25,-26,-12,-19);ctx.quadraticCurveTo(-4,-31,7,-22+wind*.12);ctx.quadraticCurveTo(20,-29,23,-17+wind*.18);ctx.quadraticCurveTo(40,-20,37,-6);ctx.quadraticCurveTo(48,2,37,10);ctx.quadraticCurveTo(27,22,14,14);ctx.quadraticCurveTo(2,24,-8,16);ctx.quadraticCurveTo(-26,23,-39,12);
+    }else if(species==='box'){
+      ctx.moveTo(-22,12);ctx.quadraticCurveTo(-31,7,-25,-2);ctx.quadraticCurveTo(-26,-14,-15,-13);ctx.quadraticCurveTo(-9,-22,0,-17+wind*.1);ctx.quadraticCurveTo(11,-22,15,-12+wind*.16);ctx.quadraticCurveTo(28,-11,25,0);ctx.quadraticCurveTo(32,9,21,14);ctx.quadraticCurveTo(0,21,-22,12);
+    }else{
+      ctx.moveTo(-22,21);ctx.quadraticCurveTo(-31,12,-22,3);ctx.quadraticCurveTo(-31,-6,-20,-10);ctx.quadraticCurveTo(-26,-23,-12,-23);ctx.quadraticCurveTo(-7,-37,4,-32+wind*.12);ctx.quadraticCurveTo(19,-31,20,-18+wind*.2);ctx.quadraticCurveTo(31,-11,22,-1);ctx.quadraticCurveTo(31,10,19,20);ctx.quadraticCurveTo(0,27,-22,21);
+    }
+    ctx.closePath();
+  }
   function drawTree(n) {
-    const x=n.x+Math.sin(gameTime*1.05+(n.variant||0)*7)*1.25,y=n.y,s=n.scale||1;
+    const species=TREE_ART[n.species]?n.species:'beech',art=TREE_ART[species],shape=TREE_GEOMETRY[species],s=n.scale||1,phase=(n.variant||0)*6.283;
+    const sway=Math.sin(gameTime*.72+phase)*1.65*s,x=n.x+Math.sin(gameTime*.55+phase)*.35*s,y=n.y;
     if(n.remaining<=0) {
-      drawSoftShadow(x,y+6*s,14*s,9*s,.2);ctx.fillStyle='#554536';ctx.beginPath();ctx.ellipse(x,y+4,11*s,7*s,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#28271f';ctx.lineWidth=1.5*s;ctx.stroke();
-      ctx.fillStyle='#967348';roundedRect(ctx,x-7*s,y-7*s,14*s,13*s,4);ctx.fill();ctx.strokeStyle='#30291f';ctx.lineWidth=1.5*s;ctx.stroke();ctx.fillStyle='#c49a5e';ctx.fillRect(x-2*s,y-5*s,4*s,5*s);return;
+      drawDynamicShadow(x,y+6*s,14*s,9*s,.2);ctx.fillStyle='#554536';ctx.beginPath();ctx.ellipse(x,y+4,11*s,7*s,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#28271f';ctx.lineWidth=1.5*s;ctx.stroke();
+      ctx.fillStyle=art.bark;ctx.beginPath();ctx.moveTo(x-7*s,y+1);ctx.quadraticCurveTo(x-6*s,y-9*s,x-3*s,y-8*s);ctx.lineTo(x+5*s,y-6*s);ctx.quadraticCurveTo(x+8*s,y-3*s,x+7*s,y+3*s);ctx.closePath();ctx.fill();ctx.strokeStyle='#30291f';ctx.lineWidth=1.2*s;ctx.stroke();ctx.fillStyle=art.barkLight;ctx.fillRect(x-1*s,y-6*s,2.5*s,5*s);return;
     }
-    drawDynamicShadow(x+3*s,y+10*s,32*s,18*s,.24);
-    ctx.fillStyle='#644c33';roundedRect(ctx,x-5*s,y-12*s,10*s,23*s,4);ctx.fill();ctx.strokeStyle='#28251e';ctx.lineWidth=1.6*s;ctx.stroke();
-    ctx.strokeStyle='#1e2b20';ctx.lineWidth=4*s;ctx.beginPath();ctx.moveTo(x,y-6*s);ctx.lineTo(x-13*s,y-24*s);ctx.moveTo(x+1*s,y-3*s);ctx.lineTo(x+13*s,y-25*s);ctx.stroke();
-    ctx.strokeStyle='rgba(177,141,91,.55)';ctx.lineWidth=1.6*s;ctx.beginPath();ctx.moveTo(x,y-6*s);ctx.lineTo(x-13*s,y-24*s);ctx.moveTo(x+1*s,y-3*s);ctx.lineTo(x+13*s,y-25*s);ctx.stroke();
-    const pal=n.species==='needle'?['#1c3c2c','#31553a','#426442']:['#244a32','#34603b','#47734a'];
-    const rg=ctx.createRadialGradient(x-12*s,y-28*s,2*s,x,y-18*s,36*s); rg.addColorStop(0,pal[2]);rg.addColorStop(.6,pal[1]);rg.addColorStop(1,pal[0]);
-    ctx.fillStyle=rg;
-    ctx.strokeStyle='#17271d';ctx.lineWidth=2.1*s;ctx.lineJoin='round';
-    if(n.species==='needle') {
-      ctx.beginPath();ctx.moveTo(x,y-75*s);ctx.lineTo(x+29*s,y-12*s);ctx.quadraticCurveTo(x,y-3*s,x-28*s,y-12*s);ctx.closePath();ctx.fill();ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x,y-58*s);ctx.lineTo(x+26*s,y-3*s);ctx.quadraticCurveTo(x,y+4*s,x-25*s,y-3*s);ctx.closePath();ctx.fill();ctx.stroke();
-    } else {
-      ctx.beginPath();ctx.ellipse(x,y-27*s,34*s,31*s,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-      ctx.fillStyle=pal[1];ctx.beginPath();ctx.arc(x-21*s,y-18*s,17*s,0,Math.PI*2);ctx.arc(x+19*s,y-19*s,20*s,0,Math.PI*2);ctx.arc(x+2*s,y-44*s,22*s,0,Math.PI*2);ctx.fill();ctx.stroke();
+    const crownTop=shape.crownTop*s,crownX=x+sway*.62,crownY=y-crownTop;
+    drawDynamicShadow(x+sway*.12,y+10*s,shape.shadow*s,16*s,.24);
+    const trunkWidth=shape.trunk*s,branchSway=sway*.45;
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+    // Trunk and species-specific boughs are separate inked layers.
+    ctx.fillStyle='#2c2c24';ctx.beginPath();ctx.moveTo(x-trunkWidth*.54,y+5*s);ctx.quadraticCurveTo(x-trunkWidth*.68,y-8*s,x-3*s,y-24*s);ctx.lineTo(x+4*s,y-24*s);ctx.quadraticCurveTo(x+trunkWidth*.56,y-8*s,x+trunkWidth*.52,y+5*s);ctx.closePath();ctx.fill();
+    ctx.fillStyle=art.bark;ctx.beginPath();ctx.moveTo(x-trunkWidth*.35,y+3*s);ctx.quadraticCurveTo(x-trunkWidth*.45,y-9*s,x-2*s,y-23*s);ctx.lineTo(x+2*s,y-23*s);ctx.quadraticCurveTo(x+trunkWidth*.38,y-9*s,x+trunkWidth*.34,y+3*s);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=art.barkLight;ctx.lineWidth=Math.max(.8,1.15*s);ctx.beginPath();ctx.moveTo(x-1*s,y+1*s);ctx.quadraticCurveTo(x-2*s,y-11*s,x+1*s,y-21*s);ctx.stroke();
+    ctx.strokeStyle=art.bark;ctx.lineWidth=Math.max(1.4,trunkWidth*.42);ctx.beginPath();
+    if(species==='ironwood'||species==='box'){
+      ctx.moveTo(x,y-8*s);ctx.quadraticCurveTo(x-8*s,y-19*s,x-22*s+branchSway,y-27*s);ctx.moveTo(x+1*s,y-10*s);ctx.quadraticCurveTo(x+9*s,y-20*s,x+23*s+branchSway,y-26*s);
+    }else if(species==='oak'){
+      ctx.moveTo(x,y-10*s);ctx.quadraticCurveTo(x-10*s,y-17*s,x-30*s+branchSway,y-18*s);ctx.moveTo(x+1*s,y-10*s);ctx.quadraticCurveTo(x+12*s,y-19*s,x+31*s+branchSway,y-18*s);ctx.moveTo(x,y-18*s);ctx.lineTo(x+branchSway,y-34*s);
+    }else if(species==='alder'){
+      ctx.moveTo(x,y-8*s);ctx.quadraticCurveTo(x-6*s,y-22*s,x-15*s+branchSway,y-34*s);ctx.moveTo(x,y-18*s);ctx.quadraticCurveTo(x+5*s,y-26*s,x+17*s+branchSway,y-31*s);
+    }else{
+      ctx.moveTo(x,y-10*s);ctx.quadraticCurveTo(x-7*s,y-21*s,x-21*s+branchSway,y-30*s);ctx.moveTo(x+1*s,y-13*s);ctx.quadraticCurveTo(x+9*s,y-23*s,x+21*s+branchSway,y-31*s);
     }
-    ctx.fillStyle='rgba(169,192,121,.22)';ctx.beginPath();ctx.arc(x-14*s,y-43*s,5*s,0,Math.PI*2);ctx.arc(x+12*s,y-29*s,4*s,0,Math.PI*2);ctx.fill();
+    ctx.stroke();ctx.strokeStyle=art.barkLight;ctx.lineWidth=Math.max(.65,.8*s);ctx.stroke();
+    // One connected, unoutlined crown per species; shading is clipped inside it, not stacked circle outlines.
+    ctx.save();ctx.translate(crownX,crownY);ctx.scale(s,s);traceTreeCrown(species,sway*.32);ctx.fillStyle=art.deep;ctx.fill();ctx.save();traceTreeCrown(species,sway*.32);ctx.clip();
+    ctx.fillStyle=art.base;ctx.beginPath();ctx.moveTo(-40,-10);ctx.bezierCurveTo(-27,-27,-11,-27,4,-22);ctx.bezierCurveTo(19,-24,33,-13,40,-2);ctx.lineTo(31,7);ctx.quadraticCurveTo(2,15,-29,7);ctx.closePath();ctx.fill();
+    ctx.fillStyle=art.mid;ctx.beginPath();ctx.moveTo(-29,-12);ctx.quadraticCurveTo(-24,-27,-5,-26);ctx.quadraticCurveTo(13,-29,25,-17);ctx.quadraticCurveTo(12,-12,-4,-13);ctx.quadraticCurveTo(-18,-8,-29,-12);ctx.fill();
+    ctx.fillStyle=art.light;ctx.beginPath();ctx.moveTo(-22,-15);ctx.quadraticCurveTo(-16,-24,-4,-22);ctx.quadraticCurveTo(6,-23,12,-18);ctx.quadraticCurveTo(2,-15,-7,-17);ctx.quadraticCurveTo(-15,-13,-22,-15);ctx.fill();
+    ctx.fillStyle=art.top;ctx.beginPath();ctx.moveTo(-14,-19);ctx.quadraticCurveTo(-9,-23,-3,-21);ctx.quadraticCurveTo(2,-22,5,-19);ctx.quadraticCurveTo(-2,-17,-8,-18);ctx.closePath();ctx.fill();
+    // Small tapered leaf glints add volume while remaining one clustered, efficient path fill.
+    ctx.fillStyle='rgba(193,207,137,.48)';ctx.beginPath();for(let i=0;i<8;i++){const a=phase+i*2.399,lx=Math.cos(a)*shape.leafX*.68,ly=Math.sin(a)*shape.leafY*.55-5,tipX=lx+Math.cos(a)*2.4,tipY=ly+Math.sin(a)*1.8;ctx.moveTo(lx-1.7,ly);ctx.quadraticCurveTo(lx,ly-2.3,tipX,tipY);ctx.quadraticCurveTo(lx+1.7,ly+1.6,lx-1.7,ly);}ctx.fill();
+    ctx.strokeStyle='rgba(219,219,164,.27)';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-17,-13);ctx.quadraticCurveTo(-9,-18,-2,-18);ctx.moveTo(2,-12);ctx.quadraticCurveTo(12,-17,19,-13);if(species==='ironwood'){ctx.moveTo(-18,2);ctx.quadraticCurveTo(-3,7,11,3);}if(species==='alder'){ctx.moveTo(-11,8);ctx.quadraticCurveTo(-3,15,4,16);}ctx.stroke();
+    ctx.restore();ctx.restore();
+    // A few split bough tips remain visible through the lower foliage edge.
+    ctx.strokeStyle='rgba(115,85,55,.78)';ctx.lineWidth=Math.max(.8,1.2*s);ctx.beginPath();ctx.moveTo(x,y-10*s);ctx.lineTo(crownX-13*s,y-20*s);ctx.moveTo(x,y-12*s);ctx.lineTo(crownX+12*s,y-18*s);ctx.stroke();
+    ctx.restore();
   }
   function drawRock(n) {
     const x=n.x,y=n.y;drawDynamicShadow(x+3,y+8,22,13,.24);
