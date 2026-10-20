@@ -43,6 +43,8 @@
     #healthFill { background: linear-gradient(90deg,#ad5043,#ed8570); }
     #hungerFill { background: linear-gradient(90deg,#b67b37,#e7bd5c); }
     #warmthFill { background: linear-gradient(90deg,#527b76,#e6a260); }
+    #staminaFill { background: linear-gradient(90deg,#658456,#c8d77b); }
+    #staminaFill.low { background: linear-gradient(90deg,#a84d3f,#ef916a); }
     .resources { display: flex; align-items: center; gap: 8px; padding-inline: 9px; }
     .resource { color: #f4efdf; font-size: 11px; white-space: nowrap; display: flex; gap: 4px; align-items: center; }
     .resource i { font-style: normal; color: #e9bd68; }
@@ -59,6 +61,7 @@
     .soft-button { width: 56px; height: 56px; border-radius: 19px; color: #f3ecd9; background: linear-gradient(145deg, rgba(55,76,58,.96), rgba(24,37,29,.96)); border: 1px solid rgba(226,230,207,.27); font-size: 11px; font-weight: 800; box-shadow: 0 6px 16px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 3px; }
     .soft-button span { font-size: 19px; line-height: 1; }
     .soft-button:disabled { opacity: .48; cursor: default; }
+    #sprintButton { touch-action: none; user-select: none; }
     #bunkerTools { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(19px + var(--safe-bottom)); align-items: center; gap: 6px; padding: 6px; border-radius: 16px; pointer-events: auto; }
     .tool-button { min-width: 58px; height: 42px; border-radius: 11px; padding: 0 9px; border: 1px solid rgba(231,229,204,.2); background: rgba(39,54,42,.93); color: #ece9d9; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; justify-content: center; white-space: nowrap; }
     .tool-button b { font-size: 15px; }
@@ -161,6 +164,7 @@
         <div class="stat"><div class="stat-label"><span>سلامت</span><b id="healthValue">۱۰۰</b></div><div class="stat-track"><div class="stat-fill" id="healthFill"></div></div></div>
         <div class="stat"><div class="stat-label"><span>گرما</span><b id="warmthValue">۸۰</b></div><div class="stat-track"><div class="stat-fill" id="warmthFill"></div></div></div>
         <div class="stat"><div class="stat-label"><span>سیری</span><b id="hungerValue">۸۰</b></div><div class="stat-track"><div class="stat-fill" id="hungerFill"></div></div></div>
+        <div class="stat"><div class="stat-label"><span>توان</span><b id="staminaValue">۱۰۰</b></div><div class="stat-track"><div class="stat-fill" id="staminaFill"></div></div></div>
       </div>
       <div class="top-group glass resources">
         <div class="resource" title="چوب"><i>♧</i><b id="woodValue">۰</b><span class="resource-label">چوب</span></div>
@@ -178,6 +182,7 @@
         <button class="soft-button" id="eatButton"><span>◉</span>خوراک</button>
         <button class="soft-button" id="fireButton" aria-label="روشن‌کردن آتش"><span>♨</span>آتش</button>
         <button class="soft-button" id="trapButton" aria-label="گذاشتن تله"><span>⌁</span>تله</button>
+        <button class="soft-button" id="sprintButton" aria-label="دویدن"><span>»</span>دویدن</button>
         <button class="action-button" id="actionButton"><span class="action-glyph">✦</span><span id="actionLabel">برداشت</span></button>
       </div>
       <div class="glass" id="bunkerTools">
@@ -266,7 +271,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
-  let joystick={x:0,y:0,pointer:null}, keys={}, audioCtx=null, muted=false, modalType='';
+  let joystick={x:0,y:0,pointer:null},keys={},sprintHeld=false,sprintPointer=null,audioCtx=null,muted=false,modalType='';
   let gameTime=0;
 
   function seeded(seed) {
@@ -306,8 +311,8 @@
   function freshGame() {
     return {
       mode:'forest', day:1, phase:'day', phaseTime:0,
-      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
-      stats:{health:100,hunger:82,warmth:76}, resources:{wood:12,stone:8,food:4,herbs:2},
+      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false},
+      stats:{health:100,hunger:82,warmth:76,stamina:100}, resources:{wood:12,stone:8,food:4,herbs:2},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
       dug:{'5,2':true,'4,3':true,'5,3':true,'6,3':true},
       rooms:{'5,3':{type:'bed',level:1,hp:48,maxHp:48},'6,3':{type:'storage',level:1,hp:48,maxHp:48}},
@@ -336,6 +341,17 @@
       osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now+dur+.02);
     } catch(e) { /* Audio is optional on browsers that restrict it. */ }
   }
+  function heavyBreath() {
+    if(muted)return;
+    try {
+      audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();
+      const now=audioCtx.currentTime,length=Math.floor(audioCtx.sampleRate*.42),buffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate),samples=buffer.getChannelData(0);
+      for(let i=0;i<length;i++){const envelope=Math.sin(Math.PI*i/length);samples[i]=(Math.random()*2-1)*envelope*.55;}
+      const source=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();source.buffer=buffer;filter.type='bandpass';filter.frequency.setValueAtTime(510,now);filter.Q.value=.55;
+      gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.045,now+.08);gain.gain.exponentialRampToValueAtTime(.0001,now+.42);
+      source.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);source.start(now);source.stop(now+.44);
+    } catch(e) { beep('hit'); }
+  }
   function showToast(message, duration=2400) {
     const el=$('toast'); el.textContent=message; el.classList.add('show'); toastTimer=duration;
   }
@@ -359,7 +375,8 @@
   }
   function loadSaved() {
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
-    game=freshGame(); Object.assign(game,data); muted=!!data.muted;
+    game=freshGame();Object.assign(game,data);muted=!!data.muted;
+    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
     world=makeWorld();
     if(Array.isArray(data.nodes)) data.nodes.forEach((amount,i)=>{if(world.nodes[i])world.nodes[i].remaining=amount;});
     if(game.mode==='bunker'&&game.phase==='day') game.mode='bunker';
@@ -403,7 +420,7 @@
       }
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ گوزن و خرگوش را برای خوراک شکار کن. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با مشعل آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='با دستهٔ سمت چپ حرکت کن؛ برای دویدن دکمهٔ «دویدن» را نگه دار (Shift روی رایانه). نوار توان بالای صفحه را زیر نظر بگیر: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -745,24 +762,34 @@
       ctx.restore();
     }
   }
+  function carryWeight() {
+    const r=game.resources;return (r.wood||0)+(r.stone||0)*1.6+(r.food||0)*.75+(r.herbs||0)*.7;
+  }
+  function carrySpeedFactor() { return 1-clamp((carryWeight()-26)/210,0,.35); }
   function updateMovement(dt) {
     const v=inputVector(),p=game.player,magnitude=Math.hypot(v.x,v.y),inputMoving=magnitude>.08;
     p.actionTimer=Math.max(0,(p.actionTimer||0)-dt);if(!p.actionTimer)p.actionKind='';
     if(game.mode==='forest') {
       let dx=0,dy=0,moving=false;
-      const useInput=inputMoving;
-      if(useInput){dx=v.x/magnitude;dy=v.y/magnitude;p.target=null;moving=true;}
+      if(inputMoving){dx=v.x/magnitude;dy=v.y/magnitude;p.target=null;moving=true;}
       else if(p.target){const tx=p.target.x-p.x,ty=p.target.y-p.y,d=Math.hypot(tx,ty);if(d<8)p.target=null;else{dx=tx/d;dy=ty/d;moving=true;}}
-      p.moving=moving;p.running=!!(moving&&keys.Shift);
+      p.moving=moving;
+      let stamina=clamp(game.stats.stamina??100,0,100);const wantsSprint=moving&&(sprintHeld||keys.Shift);
+      if(stamina<=0)p.exhausted=true;
+      if(!wantsSprint&&stamina>=18)p.exhausted=false;
+      if(wantsSprint&&!p.exhausted&&stamina>0){
+        stamina=Math.max(0,stamina-dt*(23+carryWeight()*.07+(p.bleedTimer>0?3:0)));p.running=stamina>0;if(!p.running)p.exhausted=true;
+      }else{p.running=false;stamina=Math.min(100,stamina+dt*(moving?9:16));}
+      game.stats.stamina=stamina;
       if(moving){
         p.faceX=dx;p.faceY=dy;p.animTime=(p.animTime||0)+dt*(p.running?15:9);
-        const speed=(p.running?224:148)*(p.bleedTimer>0 ? .78 : 1),nx=clamp(p.x+dx*speed*dt,20,MAP.w-20),ny=clamp(p.y+dy*speed*dt,20,MAP.h-20);
+        const speed=(p.running?236:148)*carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1),nx=clamp(p.x+dx*speed*dt,20,MAP.w-20),ny=clamp(p.y+dy*speed*dt,20,MAP.h-20);
         const blocked=(x,y)=>world.nodes.some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
         if(!blocked(nx,p.y))p.x=nx;if(!blocked(p.x,ny))p.y=ny;
         if(p.running){p.puffTimer=(p.puffTimer||0)-dt;if(p.puffTimer<=0){spawnRunPuff(p.x,p.y);p.puffTimer=.17;}}else p.puffTimer=.08;
       }else{p.running=false;p.puffTimer=0;}
     } else {
-      p.moving=inputMoving;p.running=false;
+      p.moving=inputMoving;p.running=false;p.exhausted=false;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*20);
       p.stepTimer=Math.max(0,(p.stepTimer||0)-dt);
       if(magnitude>.38&&p.stepTimer<=0){
         let sx=0,sy=0;if(Math.abs(v.x)>Math.abs(v.y)){sx=Math.sign(v.x);}else{sy=Math.sign(v.y);}
@@ -878,6 +905,8 @@
   function updatePlayerEffects(dt) {
     const p=game.player;p.noiseBurst=Math.max(0,(p.noiseBurst||0)-dt);p.hitGrace=Math.max(0,(p.hitGrace||0)-dt);p.bleedTimer=Math.max(0,(p.bleedTimer||0)-dt);p.invuln=Math.max(0,(p.invuln||0)-dt);
     if(p.bleedTimer>0){p.bleedTickTimer=(p.bleedTickTimer||0)-dt;if(p.bleedTickTimer<=0){game.stats.health=Math.max(0,game.stats.health-(p.bleedSeverity||.8));p.bleedTickTimer=1.1;}}
+    if(game.mode==='forest'&&(p.exhausted||game.stats.stamina<11)){p.breathTimer=(p.breathTimer||0)-dt;if(p.breathTimer<=0){heavyBreath();p.breathTimer=p.exhausted?1.25:1.8;}}
+    else p.breathTimer=0;
   }
   function nearestNode(max=80) {
     let found=null,best=max;
@@ -894,10 +923,10 @@
   }
   function updateControlsUI() {
     if(!game||!active)return;
-    const label=$('actionLabel'),eatButton=$('eatButton'),fireButton=$('fireButton'),trapButton=$('trapButton');
+    const label=$('actionLabel'),eatButton=$('eatButton'),fireButton=$('fireButton'),trapButton=$('trapButton'),sprintButton=$('sprintButton');
     $('forestControls').style.display='flex';
     if(game.mode==='forest') {
-      eatButton.style.display='flex';fireButton.style.display='flex';trapButton.style.display='flex';$('bunkerTools').style.display='none';
+      eatButton.style.display='flex';fireButton.style.display='flex';trapButton.style.display='flex';sprintButton.style.display='flex';sprintButton.classList.toggle('active',sprintHeld||!!keys.Shift);$('bunkerTools').style.display='none';
       fireButton.disabled=game.resources.wood<2;trapButton.disabled=game.resources.wood<2||game.resources.herbs<1;
       const n=nearestNode(86),a=nearestAnimal(58);
       if(atBunkerEntrance())label.textContent='ورود';
@@ -905,7 +934,7 @@
       else if(n)label.textContent=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';
       else label.textContent='عمل';
     } else {
-      eatButton.style.display='none';fireButton.style.display='none';trapButton.style.display='none';$('bunkerTools').style.display='flex';
+      eatButton.style.display='none';fireButton.style.display='none';trapButton.style.display='none';sprintButton.style.display='none';sprintButton.classList.remove('active');$('bunkerTools').style.display='flex';
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k];
       label.textContent=room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':'عمل';
     }
@@ -1063,7 +1092,7 @@
     saveTimer+=dt;uiTimer+=dt;if(saveTimer>=5){saveTimer=0;saveGame();}if(uiTimer>=.12){uiTimer=0;updateUI();}
   }
   const tutorialSteps=[
-    [0,'با دستهٔ سمت چپ در میان درختان حرکت کن. درخت، سنگ و بوته‌های میوه‌دار را پیدا کن.'],
+    [0,'با دستهٔ چپ راه برو؛ «دویدن» را نگه دار. نوار توان با دویدن خالی و با راه‌رفتن پر می‌شود.'],
     [9,'کنار منبع بایست؛ دکمهٔ طلایی را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
     [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن سروصدا می‌کند. آتش و تله شکارچی را عقب می‌رانند.'],
     [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
@@ -1073,8 +1102,9 @@
   function updateUI(force=false) {
     if(!game||!active)return;
     const s=game.stats;
-    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);
-    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;
+    const stamina=clamp(s.stamina??100,0,100);
+    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);
+    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);
     $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);$('herbsValue').textContent=fa(game.resources.herbs||0);
     const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
@@ -1110,6 +1140,10 @@
   pad.addEventListener('pointermove',e=>{if(joystick.pointer===e.pointerId)setJoy(e);});
   function endJoy(e){if(joystick.pointer===e.pointerId){joystick.pointer=null;joystick.x=0;joystick.y=0;knob.style.transform='translate(0,0)';}}
   pad.addEventListener('pointerup',endJoy);pad.addEventListener('pointercancel',endJoy);pad.addEventListener('lostpointercapture',endJoy);
+  const sprintButton=$('sprintButton');
+  sprintButton.addEventListener('pointerdown',e=>{e.preventDefault();sprintPointer=e.pointerId;sprintHeld=true;sprintButton.classList.add('active');sprintButton.setPointerCapture(e.pointerId);});
+  function endSprint(e){if(sprintPointer===e.pointerId){sprintPointer=null;sprintHeld=false;sprintButton.classList.remove('active');}}
+  sprintButton.addEventListener('pointerup',endSprint);sprintButton.addEventListener('pointercancel',endSprint);sprintButton.addEventListener('lostpointercapture',endSprint);
   $('actionButton').addEventListener('click',doAction);$('eatButton').addEventListener('click',eat);
   $('fireButton').addEventListener('click',lightFire);$('trapButton').addEventListener('click',placeSnare);
   $('digButton').addEventListener('click',()=>{game.selectedRoom=null;showToast('حفر: خانهٔ سنگی کناری را انتخاب کن.',1300);});
@@ -1134,7 +1168,7 @@
     if(k===' '||k==='e'||k==='E'){if(!e.repeat)doAction();return;}keys[k]=true;
   });
   window.addEventListener('keyup',e=>{keys[e.key]=false;});
-  window.addEventListener('blur',()=>{keys={};joystick.x=0;joystick.y=0;});
+  window.addEventListener('blur',()=>{keys={};joystick.x=0;joystick.y=0;sprintHeld=false;sprintPointer=null;sprintButton.classList.remove('active');});
 
   $('startButton').addEventListener('click',()=>beginGame(false));
   $('continueButton').addEventListener('click',()=>beginGame(true));

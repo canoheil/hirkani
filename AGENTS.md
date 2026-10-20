@@ -1,5 +1,5 @@
 ## Status
 
-Feedback round 2 is in progress. Groups A and B are complete in `www/index.html`: procedural player idle/walk/run and gather animations; sparse, territory-based wolves/leopards with alert–stalk–chase–attack–retreat AI; pack hunts, leopard ambushes, bites/bleeding/slowdown, off-screen delayed respawns, fire and snare counterplay, plus deer, rabbits, birds, and butterflies.
+Feedback round 2 is in progress. Groups A–C are complete in `www/index.html`: procedural character animation; territory-based predator AI and ambient wildlife; and a stamina HUD, hold-to-sprint control, exhaustion/breathing, and inventory-weight movement penalties.
 
-Validation passed: inline JavaScript syntax check, `git diff --check`, and temporary VM smoke tests for character animation, off-screen predator spawning, night pack alerts, leopard stalking, bite/bleeding damage, fire/snare retreats, and prey hunting. Groups C–D remain pending. Keep the game self-contained in `www/index.html`; do not change the Android build setup.
+Validation passed: inline JavaScript syntax check, `git diff --check`, and temporary VM smoke tests for animation, predator behaviors/counterplay/hunting, stamina drain and recovery, forced walking, touch sprint, and heavy-load slowdown. Group D (larger biome/chunk world and compass) remains pending. Keep the game self-contained in `www/index.html`; do not change the Android build setup.
