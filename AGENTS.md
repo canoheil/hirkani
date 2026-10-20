@@ -1,6 +1,6 @@
 ## Status
 
-Round 2, Groups A–D, and Round 3, Groups A–E, are complete. Round 3 delivered cardinal sprite facing; blended biomes and natural world edges; hand-drawn art and lighting; sanity; and categorized crafting. Gameplay remains self-contained in `www/index.html`; the Android build setup is unchanged.
+Round 2, Groups A–D, and Round 3, Groups A–E, are complete. Round 4A research is complete and recorded in `docs/REFERENCES.md`; Round 4A implementation is in progress (species behaviors, explainable night raids, and persistent player map discovery/markers). Gameplay remains self-contained in `www/index.html`; the Android build setup is unchanged.
 
 Group A keeps the player upright, selects front/back/side cardinal facing, and mirrors left; animals use discrete cardinal facing rather than movement-angle rotation. Group B adds multi-octave warped biome fields with smooth ground-color and vegetation/resource blending, continuous ground decals, a dense forest/cliff perimeter, safe movement bounds, and world clipping/culling. Group C adds inked cutout outlines, gentle tree/bush sway, soft shadows, strict Y-sorted props, a darker night palette with radial fire/torch lighting, and moving morning fog. Group D adds persistent sanity with night/predator drain, bunker/fire recovery, a HUD meter, low-sanity distortion, and harmless shadow hallucinations. Group E adds a data-driven crafting menu with tools, survival, and defense categories; crafted gear and kits work in gameplay, and inventory migrates/saves with older games.
 
