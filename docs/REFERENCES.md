@@ -40,6 +40,10 @@ Notes prepared before the Round 4B gameplay implementation on 2026-10-20. Refere
 - **Cambridge University Botanic Garden, Persian Ironwood** — [plant profile](https://www.botanic.cam.ac.uk/the-garden/gardens-plantings/trees/persian-ironwood/). The profile describes a flattened, spreading canopy with serpentine branches that self-graft, as well as copper/gold/red autumn leaves. These are cues for a distinctly irregular, fused-branch silhouette, not copied imagery.
 - The remaining requested species will be rendered as simplified, original, species-distinguishable silhouettes, not botanical illustrations. The sources establish regional context; no third-party photographs, illustrations, sprites, or tree meshes will be reused.
 
+## Rock silhouettes and procedural variety
+
+- **Domokos et al., “How River Rocks Round: Resolving the Shape-Size Paradox,” PLOS ONE 9(2), 2014** — [open-access study](https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0088657). Its abstract and introduction describe abrasion rounding river pebbles toward convex, ellipsoidal shapes. This informs a distinct smooth, flattened river-stone silhouette; angular boulders, layered slabs, clustered forms, and mossy accents will remain original game-art abstractions, not copied figures.
+
 ## Typeface, haptics availability, and Canvas performance
 
 - **Vazirmatn project** — [official repository](https://github.com/rastikerdar/vazirmatn) and its [OFL license](https://github.com/rastikerdar/vazirmatn/blob/master/OFL.txt). The project identifies Vazirmatn as a Persian/Arabic font under the SIL Open Font License 1.1. If bundled for the interface, retain the license notice and use an appropriately subsetted webfont; the typeface license does not apply to Hirkani's original artwork.

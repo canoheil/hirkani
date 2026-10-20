@@ -418,6 +418,21 @@
     hill:{ironwood:.13,hornbeam:.15,beech:.2,oak:.3,box:.07,alder:.15},swamp:{ironwood:.11,hornbeam:.13,beech:.08,oak:.12,box:.12,alder:.44},
     river:{ironwood:.13,hornbeam:.14,beech:.12,oak:.16,box:.14,alder:.31}
   };
+  const ROCK_DISTRIBUTIONS={
+    forest:{boulder:.18,slab:.12,cluster:.2,mossy:.4,river:.1},clearing:{boulder:.2,slab:.29,cluster:.22,mossy:.12,river:.17},
+    hill:{boulder:.33,slab:.28,cluster:.24,mossy:.1,river:.05},swamp:{boulder:.08,slab:.08,cluster:.18,mossy:.43,river:.23},
+    river:{boulder:.08,slab:.07,cluster:.16,mossy:.1,river:.59}
+  };
+  const ROCK_MATERIALS=[
+    {base:'#68766e',light:'#aab4a2',shade:'#46534d',edge:'#303a35',moss:'#6e8b4e'},
+    {base:'#777c73',light:'#b6b7a5',shade:'#535a54',edge:'#373c38',moss:'#71834b'},
+    {base:'#616f70',light:'#9ba9a7',shade:'#414d52',edge:'#2c373b',moss:'#648055'},
+    {base:'#827d70',light:'#b8ac91',shade:'#5a554c',edge:'#39372f',moss:'#788454'}
+  ];
+  function chooseRockStyle(weights,rand) {
+    let total=0;for(const [biome,weight] of Object.entries(weights))for(const share of Object.values(ROCK_DISTRIBUTIONS[biome]||ROCK_DISTRIBUTIONS.forest))total+=weight*share;
+    let pick=rand()*total;for(const [biome,weight] of Object.entries(weights))for(const [style,share] of Object.entries(ROCK_DISTRIBUTIONS[biome]||ROCK_DISTRIBUTIONS.forest)){pick-=weight*share;if(pick<=0)return style;}return 'boulder';
+  }
   const TREE_ART={
     ironwood:{bark:'#746c57',barkLight:'#b6a681',deep:'#293f30',base:'#3e5d3f',mid:'#59774b',light:'#91a36b',top:'#bbc58b'},
     hornbeam:{bark:'#756c57',barkLight:'#c0b293',deep:'#294238',base:'#3b6045',mid:'#52734b',light:'#829766',top:'#b0ba7c'},
@@ -450,7 +465,7 @@
       const pick=r(),treeChance=resourceProfile(weights,'tree'),bushChance=resourceProfile(weights,'bush'),type=pick<treeChance?'tree':pick<treeChance+bushChance?'bush':'rock';
       if(nodes.some(n=>Math.hypot(n.x-nx,n.y-ny)<32))continue;
       const remaining=type==='tree'?2:type==='rock'?3:2;
-      nodes.push({id:`${cx}:${cy}:${i}`,chunkX:cx,chunkY:cy,index:i,type,x:nx,y:ny,remaining,maxRemaining:remaining,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),species:type==='tree'?chooseTreeSpecies(weights,r):null,scale:.76+r()*.5,herb:type==='bush'&&r()<resourceProfile(weights,'herb')});
+      nodes.push({id:`${cx}:${cy}:${i}`,chunkX:cx,chunkY:cy,index:i,type,x:nx,y:ny,remaining,maxRemaining:remaining,radius:type==='tree'?21:type==='rock'?17:15,variant:r(),species:type==='tree'?chooseTreeSpecies(weights,r):null,rockStyle:type==='rock'?chooseRockStyle(weights,r):null,scale:.76+r()*.5,herb:type==='bush'&&r()<resourceProfile(weights,'herb')});
     }
     const addWild=(kind,count)=>{for(let i=0;i<count;i++){const ax=x+35+r()*Math.max(1,w-70),ay=y+35+r()*Math.max(1,h-70);if(ax<WORLD_EDGE+40||ax>MAP.w-WORLD_EDGE-40||ay<WORLD_EDGE+40||ay>MAP.h-WORLD_EDGE-40||Math.hypot(ax-MAP.cx,ay-MAP.cy)<205)continue;fauna.push(makeWildlife(`${kind}-${cx}-${cy}-${i}`,kind,ax,ay,r));}};
     const roll=r();
@@ -518,7 +533,7 @@
     }
     for(let y=18;y<MAP.h;y+=48)for(const side of ['west','east'])for(let i=0;i<2;i++){
       const offset=20+edgeRand()*92,x=side==='west'?offset:MAP.w-offset,ry=clamp(y+(edgeRand()-.5)*24,10,MAP.h-10);
-      edgeCliffs.push({id:`cliff-${side}-${y}-${i}`,type:'rock',x,y:ry,remaining:1,radius:20,variant:edgeRand()});
+      edgeCliffs.push({id:`cliff-${side}-${y}-${i}`,type:'rock',x,y:ry,remaining:1,radius:20,variant:edgeRand(),rockStyle:chooseRockStyle({hill:.72,river:.28},edgeRand),scale:.88+edgeRand()*.45});
     }
     return {seed:73129,chunks:new Map(),animals,residents,dens,territories,edgeTrees,edgeCliffs,rand:r,effects:[],fires:[],traps:[],foodDrops:dens.filter(den=>den.kind==='bear'&&den.defendingKill).map(den=>({id:`kill-${den.id}`,x:den.x+36,y:den.y+18,amount:1,timer:DAY_LENGTH+NIGHT_LENGTH,source:'carcass'})),raidWarning:null,raidTracks:[],hallucinations:[]};
   }
@@ -785,12 +800,46 @@
     ctx.strokeStyle='rgba(115,85,55,.78)';ctx.lineWidth=Math.max(.8,1.2*s);ctx.beginPath();ctx.moveTo(x,y-10*s);ctx.lineTo(crownX-13*s,y-20*s);ctx.moveTo(x,y-12*s);ctx.lineTo(crownX+12*s,y-18*s);ctx.stroke();
     ctx.restore();
   }
+  function traceRockShape(shape,rx,ry,variation) {
+    const a=Math.sin(variation*17.13),b=Math.cos(variation*11.71);ctx.beginPath();
+    if(shape==='river'){
+      ctx.moveTo(-rx*.86,ry*.08);ctx.quadraticCurveTo(-rx*.96,-ry*.44,-rx*.43,-ry*.63);ctx.quadraticCurveTo(-rx*.02,-ry*(.89+.05*a),rx*.48,-ry*.62);ctx.quadraticCurveTo(rx*.96,-ry*.42,rx*.88,ry*.12);ctx.quadraticCurveTo(rx*.69,ry*.65,rx*.05,ry*.72);ctx.quadraticCurveTo(-rx*.67,ry*.67,-rx*.86,ry*.08);
+    }else if(shape==='slab'){
+      ctx.moveTo(-rx*.92,ry*.22);ctx.lineTo(-rx*(.8+.04*a),-ry*.32);ctx.lineTo(-rx*.27,-ry*(.51+.04*b));ctx.lineTo(rx*.18,-ry*.43);ctx.lineTo(rx*(.59+.04*b),-ry*.72);ctx.lineTo(rx*.96,-ry*.19);ctx.lineTo(rx*.79,ry*.3);ctx.lineTo(rx*.32,ry*.63);ctx.lineTo(-rx*.58,ry*.57);
+    }else{
+      ctx.moveTo(-rx*.83,ry*.27);ctx.lineTo(-rx*(.79+.04*a),-ry*.22);ctx.lineTo(-rx*(.4+.04*b),-ry*.69);ctx.lineTo(rx*(.13+.06*a),-ry*(.86-.05*b));ctx.lineTo(rx*(.69+.05*b),-ry*.48);ctx.lineTo(rx*.88,ry*.1);ctx.lineTo(rx*.55,ry*.72);ctx.lineTo(-rx*.45,ry*.78);
+    }
+    ctx.closePath();
+  }
+  function drawStoneBody(x,y,rx,ry,form,variation,moss=false) {
+    const material=ROCK_MATERIALS[Math.floor(Math.abs(variation*17.3))%ROCK_MATERIALS.length],outline=form==='river'?'river':form==='slab'?'slab':'boulder';
+    ctx.save();ctx.translate(x,y);ctx.fillStyle=material.base;traceRockShape(outline,rx,ry,variation);ctx.fill();
+    ctx.save();traceRockShape(outline,rx,ry,variation);ctx.clip();
+    if(outline==='river'){
+      ctx.fillStyle=material.light;ctx.beginPath();ctx.moveTo(-rx*.62,-ry*.22);ctx.quadraticCurveTo(-rx*.42,-ry*.72,rx*.03,-ry*.7);ctx.quadraticCurveTo(rx*.44,-ry*.71,rx*.59,-ry*.33);ctx.quadraticCurveTo(rx*.14,-ry*.13,-rx*.62,-ry*.22);ctx.fill();
+      ctx.fillStyle=material.shade;ctx.beginPath();ctx.moveTo(-rx*.9,ry*.1);ctx.quadraticCurveTo(-rx*.37,ry*.45,rx*.14,ry*.36);ctx.quadraticCurveTo(rx*.63,ry*.37,rx*.87,ry*.07);ctx.lineTo(rx*.8,ry*.55);ctx.quadraticCurveTo(0,ry*.88,-rx*.68,ry*.58);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(229,230,205,.4)';ctx.lineWidth=Math.max(.7,rx*.035);ctx.beginPath();ctx.moveTo(-rx*.38,-ry*.03);ctx.quadraticCurveTo(-rx*.04,-ry*.26,rx*.36,-ry*.16);ctx.moveTo(-rx*.16,ry*.06);ctx.quadraticCurveTo(rx*.16,-ry*.04,rx*.48,ry*.03);ctx.stroke();
+    }else{
+      ctx.fillStyle=material.light;ctx.beginPath();ctx.moveTo(-rx*.66,-ry*.11);ctx.lineTo(-rx*.38,-ry*.65);ctx.lineTo(rx*.1,-ry*.76);ctx.lineTo(rx*.45,-ry*.38);ctx.lineTo(rx*.12,-ry*.1);ctx.closePath();ctx.fill();
+      ctx.fillStyle=material.shade;ctx.beginPath();ctx.moveTo(-rx*.78,ry*.06);ctx.lineTo(-rx*.43,ry*.35);ctx.lineTo(rx*.12,ry*.42);ctx.lineTo(rx*.69,ry*.04);ctx.lineTo(rx*.55,ry*.67);ctx.lineTo(-rx*.45,ry*.74);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(35,44,42,.5)';ctx.lineWidth=Math.max(.8,rx*.045);ctx.beginPath();ctx.moveTo(rx*.1,-ry*.19);ctx.lineTo(rx*.27,ry*.02);ctx.lineTo(rx*.16,ry*.25);if(form==='slab'){ctx.moveTo(-rx*.14,-ry*.08);ctx.lineTo(-rx*.02,ry*.16);}ctx.stroke();
+    }
+    if(moss){
+      ctx.fillStyle=material.moss;ctx.beginPath();ctx.moveTo(-rx*.69,-ry*.13);ctx.quadraticCurveTo(-rx*.64,-ry*.52,-rx*.28,-ry*.53);ctx.quadraticCurveTo(-rx*.04,-ry*.75,rx*.13,-ry*.47);ctx.quadraticCurveTo(rx*.48,-ry*.51,rx*.52,-ry*.19);ctx.quadraticCurveTo(rx*.17,-ry*.27,-rx*.06,-ry*.08);ctx.quadraticCurveTo(-rx*.41,-ry*.01,-rx*.69,-ry*.13);ctx.fill();
+      ctx.fillStyle='rgba(180,190,111,.48)';ctx.beginPath();ctx.moveTo(-rx*.48,-ry*.29);ctx.quadraticCurveTo(-rx*.37,-ry*.48,-rx*.2,-ry*.4);ctx.quadraticCurveTo(-rx*.14,-ry*.27,-rx*.31,-ry*.23);ctx.closePath();ctx.fill();
+    }
+    ctx.restore();traceRockShape(outline,rx,ry,variation);ctx.strokeStyle=material.edge;ctx.lineWidth=Math.max(1.05,rx*.055);ctx.lineJoin='round';ctx.stroke();ctx.restore();
+  }
   function drawRock(n) {
-    const x=n.x,y=n.y;drawDynamicShadow(x+3,y+8,22,13,.24);
-    ctx.fillStyle='#707a70';ctx.strokeStyle='#252c28';ctx.lineWidth=2;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x-18,y+5);ctx.lineTo(x-13,y-9);ctx.lineTo(x-2,y-17);ctx.lineTo(x+13,y-12);ctx.lineTo(x+19,y+3);ctx.lineTo(x+11,y+12);ctx.lineTo(x-12,y+12);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.fillStyle='#9ba294';ctx.beginPath();ctx.moveTo(x-13,y-7);ctx.lineTo(x-2,y-16);ctx.lineTo(x+6,y-12);ctx.lineTo(x-5,y-5);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(37,44,40,.8)';ctx.lineWidth=1;ctx.stroke();
-    ctx.strokeStyle='rgba(35,45,39,.65)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x+3,y-5);ctx.lineTo(x+8,y+1);ctx.lineTo(x+3,y+7);ctx.stroke();
-    if(n.remaining<=0){ctx.globalAlpha=.2;ctx.fillStyle='#afb1a3';ctx.fillRect(x-14,y-5,27,10);ctx.globalAlpha=1;}
+    const x=n.x,y=n.y,s=n.scale||1,v=n.variant||0,style=['boulder','slab','cluster','mossy','river'].includes(n.rockStyle)?n.rockStyle:'boulder',r=(n.radius||17)*s;
+    const rx=r*(style==='slab'?1.25:style==='cluster'?1.18:style==='river'?1.14:1.06),ry=r*(style==='slab'?.54:style==='cluster'?.8:style==='river'?.56:style==='mossy'?.77:.82);
+    drawDynamicShadow(x+2*s,y+8*s,rx*1.08,ry*.9,.24);ctx.save();if(n.remaining<=0)ctx.globalAlpha=.42;
+    if(style==='cluster'){
+      drawStoneBody(x-r*.39,y+2*s,r*.67,r*.54,'boulder',v+.17);
+      drawStoneBody(x+r*.39,y+2*s,r*.64,r*.52,'river',v+.43);
+      drawStoneBody(x-r*.02,y-5*s,r*.58,r*.49,'slab',v+.71);
+    }else drawStoneBody(x,y,rx,ry,style,v,style==='mossy');
+    ctx.restore();
   }
   function drawBush(n) {
     const x=n.x+Math.sin(gameTime*1.8+(n.variant||0)*8)*1.15,y=n.y;drawSoftShadow(x,y+9,24,12,.21);
@@ -1541,7 +1590,7 @@
     if(!result){showToast('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;}
     const n=result.node;
     if(n.type==='tree'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2)+(game.inventory.hatchets>0?1:0));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('wood',gain);showToast(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
-    else if(n.type==='rock'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('stone',gain);showToast(`سنگ رودخانه‌ای برداشتی: +${fa(gain)} سنگ.`,1500);}
+    else if(n.type==='rock'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('stone',gain);showToast(`سنگ برداشتی: +${fa(gain)} سنگ.`,1500);}
     else {n.remaining--;if(n.herb){addResource('herbs',1);showToast('گیاه دارویی هیرکانی پیدا کردی: +۱ گیاه.',1600);}else{addResource('food',1);showToast('میوهٔ جنگلی چیدی: +۱ خوراک.',1500);}}
     beep('gather');
   }
