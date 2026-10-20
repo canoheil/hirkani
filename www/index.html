@@ -325,6 +325,52 @@
     @media (orientation: portrait) {
       #rotateHint { display: flex; }
     }
+    /* Round 6: fixed top-left cluster, readable vitality bars, and aligned icon targets. */
+    .top-left-cluster { position:absolute; top:max(12px,env(safe-area-inset-top,0px)); left:max(12px,env(safe-area-inset-left,0px)); display:flex; flex-flow:row nowrap; direction:ltr; align-items:flex-start; gap:10px; z-index:9; pointer-events:none; }
+    #minimapWrap { position:static; left:auto; top:auto; bottom:auto; width:180px; height:120px; flex:0 0 180px; pointer-events:none; z-index:auto; }
+    .hud-tools { display:flex; flex:0 0 auto; flex-flow:row nowrap; align-items:flex-start; gap:8px; min-height:48px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; pointer-events:none; }
+    .hud-tools .status-button,.hud-tools .icon-button { display:grid; flex:0 0 48px; place-items:center; width:48px; min-width:48px; height:48px; min-height:48px; padding:0; gap:0; border:1px solid rgba(239,229,198,.22); border-radius:14px; color:#e8eadb; background:rgba(18,28,23,.88); box-shadow:0 5px 14px rgba(0,0,0,.2); pointer-events:auto; }
+    .hud-tools .status-button>.ui-icon,.hud-tools .icon-button .ui-icon { width:21px; height:21px; color:#ecbd69; stroke-width:1.8; }
+    .hud-tools .status-button[aria-expanded="true"],.hud-tools .icon-button.active { border-color:rgba(244,194,105,.55); color:#f5ce7d; background:rgba(187,129,54,.2); }
+    #topVitals { display:grid; flex:0 0 350px; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center; gap:8px; width:350px; min-width:350px; max-width:350px; min-height:64px; padding:8px 9px; border-radius:14px; direction:rtl; pointer-events:none; }
+    .top-vital { display:flex; min-width:0; flex-direction:column; gap:5px; }
+    .top-vital-label { display:flex; min-width:0; align-items:center; justify-content:space-between; gap:2px; color:#dce0d0; font-size:11px; line-height:1.2; white-space:nowrap; }
+    .top-vital-label span { overflow:hidden; }
+    .top-vital-label b { flex:0 0 auto; color:#f6f0dd; font-size:11px; font-weight:800; }
+    .top-vital-track { height:9px; overflow:hidden; border-radius:6px; background:rgba(0,0,0,.36); box-shadow:inset 0 1px 2px #000; }
+    .top-vital-fill { display:block; width:100%; height:100%; border-radius:inherit; transition:width .25s ease; }
+    .top-vital-fill.health { background:linear-gradient(90deg,#ad5043,#ed8570); }
+    .top-vital-fill.warmth { background:linear-gradient(90deg,#527b76,#e6a260); }
+    .top-vital-fill.hunger { background:linear-gradient(90deg,#b67b37,#e7bd5c); }
+    .top-vital-fill.stamina { background:linear-gradient(90deg,#658456,#c8d77b); }
+    .top-vital-fill.stamina.low { background:linear-gradient(90deg,#a84d3f,#ef916a); }
+    .top-vital-fill.sanity { background:linear-gradient(90deg,#5a7770,#b9c894); }
+    .top-vital-fill.sanity.low { background:linear-gradient(90deg,#704b72,#c78291); }
+    @media (max-width:1100px) and (min-width:761px) {
+      .top-left-cluster { gap:8px; }
+      #minimapWrap { width:150px; height:100px; flex-basis:150px; }
+      .hud-tools { gap:6px; }
+      .hud-tools .status-button,.hud-tools .icon-button { flex-basis:46px; width:46px; min-width:46px; height:46px; min-height:46px; border-radius:13px; }
+      #topVitals { flex-basis:clamp(240px,29vw,300px); width:clamp(240px,29vw,300px); min-width:240px; max-width:300px; gap:6px; }
+      .brand-name,#biomeName { display:none; }
+      .cycle { min-width:88px; }
+    }
+    @media (max-width:760px) {
+      .top-left-cluster { gap:6px; }
+      #minimapWrap { width:150px; height:100px; flex-basis:150px; }
+      .hud-tools { gap:5px; }
+      .hud-tools .status-button,.hud-tools .icon-button { flex-basis:44px; width:44px; min-width:44px; height:44px; min-height:44px; border-radius:12px; }
+      #topVitals { display:none; }
+    }
+    @media (max-width:560px) {
+      .top-left-cluster { gap:4px; }
+      #minimapWrap { width:135px; height:90px; flex-basis:135px; }
+      .hud-tools { gap:4px; }
+      .hud-tools .status-button,.hud-tools .icon-button { flex-basis:44px; width:44px; min-width:44px; height:44px; min-height:44px; }
+    }
+    @media (max-height:420px) and (orientation:landscape) {
+      #minimapWrap { width:min(144px,34vw); height:96px; flex-basis:min(144px,34vw); }
+    }
   </style>
 </head>
 <body>
@@ -337,13 +383,20 @@
         <div class="cycle"><div class="cycle-title" id="phaseText">روز ۱ · روشنایی</div><div class="cycle-track"><div class="cycle-fill" id="cycleFill"></div></div></div>
         <div class="compass-widget" id="compassWidget" aria-label="جهت ورودی بانکر"><div class="compass-ring"><span id="compassArrow" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m12 3 4 13-4-2-4 2 4-13Z"/><path d="M12 14v7"/></svg></span></div><span id="biomeName">جنگل انبوه</span></div>
       </div>
-      <div class="top-group glass hud-tools">
-        <button class="status-button" id="statusButton" aria-label="نمایش وضعیت و منابع" aria-controls="statusPanel" aria-expanded="false" title="وضعیت و منابع">
-          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.2-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.8-7 10-7 10Z"/><path d="M7.5 12h3l1.4-2.5 2.1 5 1.2-2.5h1.3"/></svg>
-          <span class="mini-gauges" aria-hidden="true"><i class="mini-gauge health"><b id="statusHealthMeter"></b></i><i class="mini-gauge stamina"><b id="statusStaminaMeter"></b></i></span>
-        </button>
-        <button class="icon-button" id="mapButton" aria-label="بازکردن نقشه" title="نقشهٔ جهان"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/><circle cx="15" cy="8" r="1.7"/></svg></button>
+    </div>
+    <div class="top-left-cluster" id="topLeftHud" role="group" aria-label="نقشه، وضعیت و صدا" style="display:none">
+      <div id="minimapWrap" aria-hidden="true"><canvas id="minimapCanvas"></canvas><span id="minimapLabel">نقشه</span></div>
+        <div class="hud-tools" role="group" aria-label="دکمه‌های نقشه و صدا">
         <button class="icon-button" id="soundButton" aria-label="صدا" title="روشن/خاموش‌کردن صدا"><span id="soundGlyph"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg></span></button>
+        <button class="icon-button" id="mapButton" aria-label="بازکردن نقشه" title="نقشهٔ جهان"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/><circle cx="15" cy="8" r="1.7"/></svg></button>
+        <button class="status-button icon-button" id="statusButton" aria-label="نمایش وضعیت و منابع" aria-controls="statusPanel" aria-expanded="false" title="وضعیت و منابع"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.2-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.8-7 10-7 10Z"/><path d="M7.5 12h3l1.4-2.5 2.1 5 1.2-2.5h1.3"/></svg></button>
+      </div>
+      <div class="top-vitals glass" id="topVitals" role="group" aria-label="نوارهای وضعیت">
+        <div class="top-vital"><div class="top-vital-label"><span>سلامت</span><b id="topHealthValue">۱۰۰</b></div><div class="top-vital-track"><i class="top-vital-fill health" id="topHealthFill"></i></div></div>
+        <div class="top-vital"><div class="top-vital-label"><span>گرما</span><b id="topWarmthValue">۷۶</b></div><div class="top-vital-track"><i class="top-vital-fill warmth" id="topWarmthFill"></i></div></div>
+        <div class="top-vital"><div class="top-vital-label"><span>خوراک</span><b id="topHungerValue">۸۲</b></div><div class="top-vital-track"><i class="top-vital-fill hunger" id="topHungerFill"></i></div></div>
+        <div class="top-vital"><div class="top-vital-label"><span>توان</span><b id="topStaminaValue">۱۰۰</b></div><div class="top-vital-track"><i class="top-vital-fill stamina" id="topStaminaFill"></i></div></div>
+        <div class="top-vital"><div class="top-vital-label"><span>آرامش</span><b id="topSanityValue">۱۰۰</b></div><div class="top-vital-track"><i class="top-vital-fill sanity" id="topSanityFill"></i></div></div>
       </div>
     </div>
     <section class="glass status-panel" id="statusPanel" aria-label="وضعیت بازمانده و منابع" aria-hidden="true">
@@ -365,7 +418,6 @@
     <div id="tutorialBox" aria-live="polite"><div id="tutorialText"></div><div id="tutorialFooter"><span id="tutorialCount">۱/۶</span><button class="tiny-link" id="skipTutorial">رد آموزش</button></div></div>
     <div id="duskBanner" role="status" aria-live="polite"><span id="bunkerArrow" aria-hidden="true">↑</span><span id="duskText">غروب نزدیکه، برگرد به بانکر</span></div>
     <div id="raidWarning" role="status" aria-live="polite"><span id="raidWarningArrow" aria-hidden="true">▲</span><span id="raidWarningText">زوزه از لبهٔ جنگل</span></div>
-    <div id="minimapWrap" aria-hidden="true"><canvas id="minimapCanvas"></canvas><span id="minimapLabel">نقشه</span></div>
     <div class="controls" id="controls" style="display:none">
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
@@ -771,7 +823,7 @@
   function setScreen(name) {
     $('menuScreen').classList.toggle('show',name==='menu');
     $('gameOverScreen').classList.toggle('show',name==='gameover');
-    $('topbar').style.display=name==='game'?'flex':'none';
+    $('topbar').style.display=name==='game'?'flex':'none';$('topLeftHud').style.display=name==='game'?'flex':'none';
     $('controls').style.display=name==='game'?'block':'none';$('minimapWrap').style.display=name==='game'?'block':'none';
     if(name!=='game'){mapOpen=false;$('mapOverlay').classList.remove('show');setStatusPanel(false);setActionSheet(false);closeModal();}
   }
@@ -2039,8 +2091,8 @@
     if(!game||!active)return;
     const s=game.stats;
     const stamina=clamp(s.stamina??100,0,100),sanity=clamp(s.sanity??100,0,100);
-    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);$('sanityValue').textContent=fa(sanity);
-    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);$('sanityFill').style.width=`${sanity}%`;$('sanityFill').classList.toggle('low',sanity<30);$('statusHealthMeter').style.width=`${s.health}%`;$('statusStaminaMeter').style.width=`${stamina}%`;
+    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);$('sanityValue').textContent=fa(sanity);$('topHealthValue').textContent=fa(s.health);$('topWarmthValue').textContent=fa(s.warmth);$('topHungerValue').textContent=fa(s.hunger);$('topStaminaValue').textContent=fa(stamina);$('topSanityValue').textContent=fa(sanity);
+    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);$('sanityFill').style.width=`${sanity}%`;$('sanityFill').classList.toggle('low',sanity<30);$('topHealthFill').style.width=`${s.health}%`;$('topWarmthFill').style.width=`${s.warmth}%`;$('topHungerFill').style.width=`${s.hunger}%`;$('topStaminaFill').style.width=`${stamina}%`;$('topStaminaFill').classList.toggle('low',stamina<18);$('topSanityFill').style.width=`${sanity}%`;$('topSanityFill').classList.toggle('low',sanity<30);
     $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);$('herbsValue').textContent=fa(game.resources.herbs||0);
     const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
