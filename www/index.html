@@ -76,15 +76,7 @@
     .tool-button { min-width: 58px; height: 42px; border-radius: 11px; padding: 0 9px; border: 1px solid rgba(231,229,204,.2); background: rgba(39,54,42,.93); color: #ece9d9; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; justify-content: center; white-space: nowrap; }
     .tool-button b { font-size: 15px; }
     .tool-button.active { background: linear-gradient(145deg,#b88544,#e1b365); color: #2a2113; border-color: rgba(255,230,170,.55); }
-    #tutorialBox { display: none; position: absolute; top: calc(58px + var(--safe-top)); left: calc(45% + 8px + env(safe-area-inset-left, 0px)); width: min(235px, 31vw); padding: 6px 9px; border-radius: 11px; border: 1px solid rgba(228,190,113,.34); background: rgba(25,35,27,.82); box-shadow: 0 5px 14px rgba(0,0,0,.18); pointer-events: none; text-align: right; z-index: 6; }
-    #tutorialText { font-size: 9px; line-height: 1.55; color: #f0e7d0; }
-    #tutorialFooter { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; color: #d7bf8e; font-size: 8px; }
-    #tutorialCount { opacity: .75; }
     .tiny-link { min-width: 42px; min-height: 22px; color: #ebc577; background: transparent; padding: 2px 4px; font-size: 8px; pointer-events: auto; }
-    #duskBanner { display: none; position: absolute; top: calc(62px + var(--safe-top)); right: max(10px, env(safe-area-inset-right, 0px)); max-width: min(245px, 34vw); align-items: center; gap: 7px; padding: 6px 9px; border-radius: 11px; color: #fff0ce; background: rgba(45,34,20,.87); border: 1px solid rgba(237,184,93,.48); box-shadow: 0 5px 14px rgba(0,0,0,.18); font-size: 9px; line-height: 1.45; pointer-events: none; z-index: 6; }
-    #bunkerArrow { flex: 0 0 auto; color: #f0c676; font-size: 20px; font-weight: 900; line-height: 1; transform-origin: center; }
-    #raidWarning { display:none; position:absolute; top:calc(101px + var(--safe-top)); right:max(10px,env(safe-area-inset-right,0px)); max-width:min(280px,44vw); align-items:center; gap:7px; padding:6px 9px; border-radius:11px; color:#f6e8d1; background:rgba(37,23,22,.88); border:1px solid rgba(201,93,74,.52); box-shadow:0 5px 16px rgba(0,0,0,.28); font-size:9px; line-height:1.45; pointer-events:none; z-index:7; }
-    #raidWarningArrow { display:grid; place-items:center; flex:0 0 24px; width:24px; height:24px; border-radius:50%; color:#f1b071; background:rgba(139,50,44,.25); border:1px solid rgba(222,129,90,.42); font-size:13px; transform-origin:center; }
     #minimapWrap { position:absolute; left:max(12px,env(safe-area-inset-left,0px)); top:max(12px,env(safe-area-inset-top,0px)); bottom:auto; width:180px; height:120px; padding:0; overflow:hidden; border:1px solid rgba(223,206,166,.52); border-radius:12px; background:rgba(14,23,19,.9); box-shadow:0 5px 17px rgba(0,0,0,.34); pointer-events:none; z-index:4; }
     #minimapCanvas { display:block; width:100%; height:100%; }
     #minimapLabel { position:absolute; left:5px; bottom:4px; padding:2px 5px; border-radius:6px; color:#f1e7cf; background:rgba(10,16,13,.68); font-size:8px; pointer-events:none; }
@@ -100,9 +92,24 @@
     .map-control:active { transform:scale(.96); }
     .close-map { width:34px; padding:0; font-size:20px; color:#f4c97d; }
     #mapFooter { position:absolute; left:50%; bottom:calc(12px + var(--safe-bottom)); transform:translateX(-50%); max-width:calc(100% - 24px); padding:7px 11px; border:1px solid rgba(224,202,151,.2); border-radius:10px; color:#d9dfd1; background:rgba(16,25,21,.88); font-size:9px; text-align:center; pointer-events:none; }
+    /* Round 7 item 3: one queued, top-center lane for tutorials and notifications. */
+    #notificationLane { position:absolute; top:calc(66px + var(--safe-top)); left:50%; z-index:12; display:flex; align-items:flex-start; gap:10px; width:min(560px,calc(100vw - 360px)); max-height:min(180px,calc(100vh - 96px)); overflow:hidden; padding:9px 13px 8px; border:1px solid rgba(227,174,84,.42); border-radius:13px; color:#fff5df; background:rgba(21,31,24,.95); box-shadow:0 8px 20px rgba(0,0,0,.28); font-size:11px; line-height:1.55; text-align:right; opacity:0; visibility:hidden; transform:translate(-50%,-8px); transition:opacity .18s ease,transform .18s ease,visibility .18s ease; pointer-events:none; }
+    #notificationLane.show { opacity:1; visibility:visible; transform:translate(-50%,0); }
+    #notificationLane[aria-hidden="true"] { pointer-events:none; }
+    #notificationLane.is-tutorial { border-color:rgba(228,190,113,.42); background:rgba(25,35,27,.96); }
+    #notificationLane.is-dusk { border-color:rgba(237,184,93,.55); background:rgba(45,34,20,.96); }
+    #notificationLane.is-raid { border-color:rgba(201,93,74,.58); background:rgba(37,23,22,.97); }
+    .notification-marker { display:grid; flex:0 0 24px; place-items:center; width:24px; height:24px; margin-top:1px; border:1px solid rgba(232,190,113,.34); border-radius:50%; color:#f1c977; background:rgba(187,129,54,.14); font-size:15px; font-weight:900; line-height:1; transform-origin:center; }
+    #notificationLane.is-raid .notification-marker { color:#f1a17e; border-color:rgba(222,129,90,.44); background:rgba(139,50,44,.25); }
+    .notification-body { flex:1 1 auto; min-width:0; max-height:158px; overflow:hidden; }
+    #notificationText { color:inherit; }
+    #notificationMeta { margin-top:3px; color:#d7bf8e; font-size:8px; line-height:1.3; opacity:.82; }
+    .notification-action { flex:0 0 auto; align-self:center; min-width:58px; min-height:30px; margin-inline-start:2px; border-radius:8px; font-size:9px; white-space:nowrap; }
+    #notificationLane.is-toast { align-items:center; justify-content:center; text-align:center; }
+    #notificationLane.is-toast .notification-body { text-align:center; }
+    #notificationLane.is-toast .notification-marker,#notificationLane.is-toast .notification-action { display:none; }
+    #notificationLane [hidden] { display:none !important; }
 
-    #toast { position: absolute; top: 76px; left: 50%; transform: translate(-50%,-8px); opacity: 0; transition: opacity .18s, transform .18s; max-width: 88vw; padding: 9px 15px; border-radius: 13px; color: #fff5df; background: rgba(21,31,24,.92); border: 1px solid rgba(227,174,84,.42); box-shadow: 0 8px 20px rgba(0,0,0,.24); font-size: 11px; line-height: 1.55; text-align: center; z-index: 18; pointer-events: none; }
-    #toast.show { opacity: 1; transform: translate(-50%,0); }
     .screen { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 20; padding: 20px; background: linear-gradient(120deg, rgba(9,16,12,.78), rgba(11,17,13,.36)); pointer-events: auto; }
     .screen.show { display: flex; }
     .menu-card { width: min(540px, 94vw); padding: clamp(20px,4vw,38px); border-radius: 24px; border: 1px solid rgba(228,190,113,.36); background: linear-gradient(150deg, rgba(34,50,38,.96), rgba(14,23,19,.97)); box-shadow: 0 20px 75px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.08); text-align: center; position: relative; }
@@ -154,10 +161,6 @@
       .soft-button { width: 49px; height: 49px; font-size: 9px; }
       #bunkerTools { bottom: calc(13px + var(--safe-bottom)); gap: 4px; }
       .tool-button { min-width: 52px; padding: 0 6px; font-size: 9px; height: 39px; }
-      #tutorialBox { top: calc(58px + var(--safe-top)); width: min(220px, 34vw); padding: 5px 7px; }
-      #tutorialText { font-size: 8.5px; }
-      #duskBanner { top: calc(58px + var(--safe-top)); max-width: min(220px, 34vw); padding: 5px 7px; font-size: 8.5px; }
-      #toast { top: 64px; }
       #minimapWrap { width:150px; height:100px; }
       #mapHeader { top:calc(62px + var(--safe-top)); padding:7px 9px; }
       .map-title-group strong { font-size:11px; }
@@ -179,8 +182,6 @@
       .resource-label { display: none; }
       #bunkerTools { max-width: calc(100vw - 246px); overflow-x: auto; justify-content: flex-start; }
       .tool-button { min-width: 48px; }
-      #tutorialBox { width: min(190px, 38vw); }
-      #duskBanner { max-width: min(205px, 44vw); }
       #minimapWrap { width:135px; height:90px; }
       #mapHeader { top:calc(58px + var(--safe-top)); width:calc(100% - 14px); padding:6px 7px; }
       #mapLegend { display:none; }
@@ -268,7 +269,6 @@
     .tool-button b { display:grid; place-items:center; font-size:15px; }
     .tool-button b .ui-icon { width:18px; height:18px; }
     #minimapLabel { font-size:9px; }
-    #toast { font-size:12px; }
     .action-sheet.open,.status-panel.open { will-change:transform,opacity; }
     @media (max-width:760px) {
       .hud-topbar { width:calc(100% - 18px); gap:6px; }
@@ -288,10 +288,6 @@
       #actionButton { width:68px; height:68px; }
       .more-button { min-width:50px; min-height:50px; }
       .action-sheet { right:max(10px,env(safe-area-inset-right,0px)); bottom:calc(84px + var(--safe-bottom)); width:min(320px,calc(100vw - 20px)); max-height:52vh; }
-      #tutorialBox { top:calc(58px + var(--safe-top)); }
-      #duskBanner { top:calc(58px + var(--safe-top)); }
-      #raidWarning { top:calc(98px + var(--safe-top)); }
-      #toast { top:calc(60px + var(--safe-top)); }
     }
     @media (max-width:560px) {
       .brand-mini .brand-name { display:none; }
@@ -314,8 +310,6 @@
       .status-panel { top:calc(53px + var(--safe-top)); }
       #minimapWrap { width:min(144px,34vw); height:96px; }
       #minimapLabel { display:none; }
-      #toast { top:calc(28vh - 28px); left:auto; right:max(10px,env(safe-area-inset-right,0px)); max-width:min(38vw,280px); padding:4px 7px; font-size:8px; line-height:1.25; transform:translateY(-6px); }
-      #toast.show { transform:translateY(0); }
       .right-controls { bottom:calc(7px + var(--safe-bottom)); }
       .action-sheet { bottom:calc(80px + var(--safe-bottom)); max-height:54vh; }
     }
@@ -358,7 +352,11 @@
     @keyframes vital-low-pulse { 0%,100% { opacity:.88; box-shadow:0 0 0 rgba(255,74,67,0); } 50% { opacity:1; box-shadow:0 0 5px rgba(255,74,67,.72); } }
     @keyframes vital-critical-pulse { 0%,100% { opacity:.78; box-shadow:0 0 0 rgba(255,55,55,0); } 50% { opacity:1; box-shadow:0 0 9px rgba(255,55,55,.95); } }
     @keyframes vital-icon-shake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-2px); } 60% { transform:translateX(2px); } }
+    @media (max-width:1171px) and (min-width:1101px) {
+      #notificationLane { top:calc(258px + var(--safe-top)); }
+    }
     @media (max-width:1100px) and (min-width:761px) {
+      #notificationLane { top:calc(236px + var(--safe-top)); }
       .top-left-map-row { gap:8px; }
       #minimapWrap { width:150px; height:100px; flex-basis:150px; }
       .hud-tools { gap:6px; }
@@ -367,6 +365,7 @@
       .cycle { min-width:88px; }
     }
     @media (max-width:760px) {
+      #notificationLane { top:calc(236px + var(--safe-top)); width:calc(100vw - 28px); max-height:calc(100vh - 250px); }
       .top-left-cluster { gap:6px; }
       .top-left-map-row { gap:6px; }
       #minimapWrap { width:150px; height:100px; flex-basis:150px; }
@@ -379,7 +378,14 @@
       .hud-tools { gap:4px; }
     }
     @media (max-height:420px) and (orientation:landscape) {
+      #notificationLane { top:calc(54px + var(--safe-top)); max-height:calc(100vh - 64px); }
       #minimapWrap { width:min(144px,34vw); height:96px; flex-basis:min(144px,34vw); }
+    }
+    @media (max-height:420px) and (orientation:landscape) and (min-width:761px) {
+      #notificationLane { top:calc(112px + var(--safe-top)); max-height:calc(100vh - 124px); }
+    }
+    @media (max-height:420px) and (orientation:landscape) and (max-width:760px) {
+      #notificationLane { top:calc(228px + var(--safe-top)); max-height:calc(100vh - 240px); }
     }
     /* Round 7 item 2: centered survivor-details modal and pause backdrop. */
     #statusBackdrop { position:fixed; inset:0; z-index:38; background:rgba(5,10,7,.68); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .18s ease,visibility .18s ease; }
@@ -441,9 +447,11 @@
         <div class="resource" title="گیاه دارویی"><i aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M20 4C10 4 5 8 5 14c0 3 2 5 5 5 6 0 10-5 10-15Z"/><path d="M4 21c3-6 7-9 13-13M9 14l-1-4m5 1 4 1"/></svg></i><b id="herbsValue">۰</b><span class="resource-label">گیاه</span></div>
       </div>
     </section>
-    <div id="tutorialBox" aria-live="polite"><div id="tutorialText"></div><div id="tutorialFooter"><span id="tutorialCount">۱/۶</span><button class="tiny-link" id="skipTutorial">رد آموزش</button></div></div>
-    <div id="duskBanner" role="status" aria-live="polite"><span id="bunkerArrow" aria-hidden="true">↑</span><span id="duskText">غروب نزدیکه، برگرد به بانکر</span></div>
-    <div id="raidWarning" role="status" aria-live="polite"><span id="raidWarningArrow" aria-hidden="true">▲</span><span id="raidWarningText">زوزه از لبهٔ جنگل</span></div>
+    <div id="notificationLane" class="notification-lane" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+      <span class="notification-marker" id="notificationMarker" aria-hidden="true" hidden></span>
+      <div class="notification-body"><div id="notificationText"></div><div id="notificationMeta" hidden></div></div>
+      <button class="tiny-link notification-action" id="skipTutorial" type="button" hidden>رد آموزش</button>
+    </div>
     <div class="controls" id="controls" style="display:none">
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
@@ -478,7 +486,6 @@
       </div>
       <div id="mapFooter">روی نقشه لمس کن تا نشان بگذاری؛ نشانِ موجود را لمس کن تا پاک شود. بخش‌های تاریک هنوز کشف نشده‌اند.</div>
     </div>
-    <div id="toast" role="status"></div>
   </div>
   <section class="screen show" id="menuScreen">
     <div class="menu-card">
@@ -582,6 +589,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
+  let notificationQueue=[],activeNotification=null,tutorialNoticeStep=-1,lastDuskNoticeState='',lastRaidNoticeId=null,raidNoticeSequence=0;
   let vitalSeverity={health:'normal',warmth:'normal',hunger:'normal',stamina:'normal',sanity:'normal'};
   let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},actionPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',hapticsEnabled=true;
   try { hapticsEnabled=localStorage.getItem('hirkani-haptics')!=='off'; } catch(e) {}
@@ -601,10 +609,10 @@
   const SOUND_GLYPHS={on:'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>',off:'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="m17 9 5 6m0-6-5 6"/></svg>'};
   function haptic(duration=10) { if(!hapticsEnabled)return;try { const nav=window.navigator;if(nav&&typeof nav.vibrate==='function')nav.vibrate(duration); } catch(e) {} }
   function setStatusPanel(open) {
-    statusPanelOpen=!!open;if(statusPanelOpen){if(mapOpen){mapOpen=false;$('mapOverlay').classList.remove('show');mapViewport=null;}setActionSheet(false);}const panel=$('statusPanel'),backdrop=$('statusBackdrop');panel.classList.toggle('open',statusPanelOpen);panel.setAttribute?.('aria-hidden',String(!statusPanelOpen));backdrop.classList.toggle('show',statusPanelOpen);backdrop.setAttribute?.('aria-hidden',String(!statusPanelOpen));$('vitalsStack').setAttribute?.('aria-expanded',String(statusPanelOpen));
+    statusPanelOpen=!!open;if(statusPanelOpen){if(mapOpen){mapOpen=false;$('mapOverlay').classList.remove('show');mapViewport=null;}setActionSheet(false);}const panel=$('statusPanel'),backdrop=$('statusBackdrop');panel.classList.toggle('open',statusPanelOpen);panel.setAttribute?.('aria-hidden',String(!statusPanelOpen));backdrop.classList.toggle('show',statusPanelOpen);backdrop.setAttribute?.('aria-hidden',String(!statusPanelOpen));$('vitalsStack').setAttribute?.('aria-expanded',String(statusPanelOpen));syncNotificationLane();
   }
   function setActionSheet(open) {
-    actionSheetOpen=!!open;if(actionSheetOpen)setStatusPanel(false);const sheet=$('actionSheet');sheet.classList.toggle('open',actionSheetOpen);sheet.setAttribute?.('aria-hidden',String(!actionSheetOpen));$('moreButton').setAttribute?.('aria-expanded',String(actionSheetOpen));
+    actionSheetOpen=!!open;if(actionSheetOpen)setStatusPanel(false);const sheet=$('actionSheet');sheet.classList.toggle('open',actionSheetOpen);sheet.setAttribute?.('aria-hidden',String(!actionSheetOpen));$('moreButton').setAttribute?.('aria-expanded',String(actionSheetOpen));syncNotificationLane();
   }
   function setActionPrompt(label,icon) {
     $('actionLabel').textContent=label;const button=$('actionButton');button.title=label;button.setAttribute?.('aria-label',label);if(currentActionGlyph!==icon){$('actionGlyph').innerHTML=UI_GLYPHS[icon]||UI_GLYPHS.action;currentActionGlyph=icon;}
@@ -844,15 +852,56 @@
       source.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);source.start(now);source.stop(now+.44);
     } catch(e) { beep('hit'); }
   }
-  function showToast(message, duration=2400) {
-    const el=$('toast'); el.textContent=message; el.classList.add('show'); toastTimer=duration;
+  function notificationSuppressed() {
+    return !active||!game||statusPanelOpen||actionSheetOpen||mapOpen||$('modal').classList.contains('show')||$('menuScreen').classList.contains('show')||$('gameOverScreen').classList.contains('show');
+  }
+  function syncNotificationLane() {
+    const lane=$('notificationLane'),visible=!!activeNotification&&!notificationSuppressed();lane.classList.toggle('show',visible);lane.setAttribute('aria-hidden',String(!visible));
+  }
+  function notificationIsValid(item) {
+    if(item.type==='tutorial')return !!game?.tutorial?.active&&Number(game.tutorial.time)<Number(item.expiresAt);
+    if(item.type==='dusk')return game?.day===item.day&&game.mode==='forest'&&(item.state==='night'?game.phase==='night':game.phase==='day'&&game.phaseTime>=DAY_LENGTH-30);
+    if(item.type==='raid')return game?.phase==='night'&&world?.raidWarning?.notificationId===item.notificationId&&world.raidWarning.timer>0;
+    return true;
+  }
+  function renderNotification(item) {
+    const lane=$('notificationLane'),marker=$('notificationMarker'),text=$('notificationText'),meta=$('notificationMeta'),skip=$('skipTutorial');
+    lane.className=`notification-lane is-${item.type}`;lane.dataset.notificationType=item.type;text.textContent=item.text||'';marker.textContent=item.marker||'';marker.hidden=!item.marker;marker.style.transform=Number.isFinite(item.markerRotation)?`rotate(${item.markerRotation}deg)`:'';meta.textContent=item.meta||'';meta.hidden=!item.meta;skip.hidden=item.type!=='tutorial';
+  }
+  function activateNextNotification() {
+    activeNotification=null;toastTimer=0;
+    while(notificationQueue.length){const item=notificationQueue.shift();if(!notificationIsValid(item))continue;activeNotification=item;toastTimer=clamp(Number(item.duration)||2400,650,12000);renderNotification(item);break;}
+    syncNotificationLane();
+  }
+  function enqueueNotification(notification) {
+    const item={type:'toast',duration:2400,...notification};
+    if(item.key&&(activeNotification?.key===item.key||notificationQueue.some(queued=>queued.key===item.key)))return false;
+    if(notificationQueue.length>=20){const discard=notificationQueue.findIndex(queued=>queued.type==='toast');if(discard>=0)notificationQueue.splice(discard,1);else return false;}
+    notificationQueue.push(item);if(!activeNotification)activateNextNotification();else syncNotificationLane();return true;
+  }
+  function dismissActiveNotification() { activeNotification=null;toastTimer=0;activateNextNotification(); }
+  function updateNotificationLane(dt) {
+    if(activeNotification&&!notificationIsValid(activeNotification))dismissActiveNotification();
+    if(!activeNotification)activateNextNotification();
+    if(activeNotification&&!notificationSuppressed()){toastTimer-=dt*1000;if(toastTimer<=0)dismissActiveNotification();}
+    syncNotificationLane();
+  }
+  function resetNotifications() {
+    notificationQueue=[];activeNotification=null;toastTimer=0;tutorialNoticeStep=-1;lastDuskNoticeState='';lastRaidNoticeId=null;
+    const lane=$('notificationLane');lane.className='notification-lane';lane.removeAttribute('data-notification-type');$('notificationMarker').textContent='';$('notificationMarker').hidden=true;$('notificationText').textContent='';$('notificationMeta').textContent='';$('notificationMeta').hidden=true;$('skipTutorial').hidden=true;syncNotificationLane();
+  }
+  function showToast(message,duration=2400) { enqueueNotification({type:'toast',text:String(message),duration}); }
+  function queueDuskNotification(state) {
+    if(state===lastDuskNoticeState)return;lastDuskNoticeState=state;if(!state||!game)return;
+    const dx=BUNKER_ENTRANCE.x-game.player.x,dy=BUNKER_ENTRANCE.y-game.player.y;
+    enqueueNotification({type:'dusk',text:state==='night'?'شب بیرونه؛ به بانکر برگرد!':'غروب نزدیکه، برگرد به بانکر',marker:'↑',markerRotation:Math.atan2(dy,dx)*180/Math.PI+90,duration:3900,day:game.day,state,key:`dusk:${game.day}:${state}`});
   }
   function setScreen(name) {
     $('menuScreen').classList.toggle('show',name==='menu');
     $('gameOverScreen').classList.toggle('show',name==='gameover');
     $('topbar').style.display=name==='game'?'flex':'none';$('topLeftHud').style.display=name==='game'?'flex':'none';
     $('controls').style.display=name==='game'?'block':'none';$('minimapWrap').style.display=name==='game'?'block':'none';
-    if(name!=='game'){mapOpen=false;$('mapOverlay').classList.remove('show');setStatusPanel(false);setActionSheet(false);closeModal();}
+    if(name!=='game'){mapOpen=false;$('mapOverlay').classList.remove('show');setStatusPanel(false);setActionSheet(false);closeModal();}syncNotificationLane();
   }
   function saveGame() {
     if(!game||!active||game.gameOver) return;
@@ -869,7 +918,7 @@
   }
   function loadSaved() {
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
-    game=freshGame();Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');muted=!!data.muted;
+    resetNotifications();game=freshGame();Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');muted=!!data.muted;
     game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.mapDiscovery=Array.isArray(data.mapDiscovery)?[...new Set(data.mapDiscovery.map(String).filter(key=>{const match=/^(\d+),(\d+)$/.exec(key);return match&&Number(match[1])<CHUNK_COLS&&Number(match[2])<CHUNK_ROWS;}))]:[];mapDiscovered=new Set(game.mapDiscovery);game.mapMarkers=Array.isArray(data.mapMarkers)?data.mapMarkers.filter(marker=>marker&&Number.isFinite(Number(marker.x))&&Number.isFinite(Number(marker.y))).slice(-12).map((marker,index)=>({id:String(marker.id||`marker-${index}`),x:clamp(Number(marker.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(marker.y),WORLD_EDGE,MAP.h-WORLD_EDGE),label:String(marker.label||'نشان').slice(0,14)})):[];mapDirty=true;minimapDirty=true;game.inventory={hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.motionBlend=clamp(Number(game.player.motionBlend)||0,0,1);game.player.runBlend=clamp(Number(game.player.runBlend)||0,0,1);game.player.hurtTimer=clamp(Number(game.player.hurtTimer)||0,0,.55);game.player.deathTimer=0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
     const oldWorldVersion=data.worldVersion||1;
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
@@ -891,7 +940,7 @@
     try { if(screen.orientation&&screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(e) {}
   }
   function startNew() {
-    game=freshGame();mapDiscovered=new Set();mapMarkerSequence=0;mapOpen=false;$('mapOverlay').classList.remove('show');mapDirty=true;minimapDirty=true;world=makeWorld();ensureChunksAround(game.player.x,game.player.y,1);recordMapDiscovery();active=true;gameTime=0;muted=false;
+    resetNotifications();game=freshGame();mapDiscovered=new Set();mapMarkerSequence=0;mapOpen=false;$('mapOverlay').classList.remove('show');mapDirty=true;minimapDirty=true;world=makeWorld();ensureChunksAround(game.player.x,game.player.y,1);recordMapDiscovery();active=true;gameTime=0;muted=false;
     try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
     setScreen('game'); requestImmersive(); beep('build'); updateUI(true);
     showToast('راهت را با دستهٔ حرکت پیدا کن؛ نزدیک منابع، دکمهٔ برداشت را بزن.',3300);
@@ -952,9 +1001,9 @@
       note.innerHTML='دستهٔ ثابتِ پایینِ چپ را لمس کن؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن وضعیت و منابع، نوارهای کوچکِ زیر نقشه را لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
-    $('modal').classList.add('show');
+    $('modal').classList.add('show');syncNotificationLane();
   }
-  function closeModal() { $('modal').classList.remove('show'); modalType=''; }
+  function closeModal() { $('modal').classList.remove('show');modalType='';syncNotificationLane(); }
   $('closeModal').addEventListener('click',closeModal); $('modal').addEventListener('pointerdown',e=>{if(e.target===$('modal'))closeModal();});
   function costText(cost) { return Object.entries(cost).filter(([,v])=>v>0).map(([k,v])=>`${{wood:'چوب',stone:'سنگ',food:'خوراک',herbs:'گیاه'}[k]||k} ${fa(v)}`).join(' · ')||'رایگان'; }
   function canPay(cost) { return Object.entries(cost).every(([k,v])=>(game.resources[k]||0)>=v); }
@@ -1535,7 +1584,7 @@
   }
   function setMapOpen(open) {
     if(!active||!game)return;mapOpen=!!open;$('mapOverlay').classList.toggle('show',mapOpen);mapDirty=true;
-    if(mapOpen){setStatusPanel(false);setActionSheet(false);recordMapDiscovery();saveGame();drawFullMap();}else mapViewport=null;updateUI(true);
+    if(mapOpen){setStatusPanel(false);setActionSheet(false);recordMapDiscovery();saveGame();drawFullMap();}else mapViewport=null;updateUI(true);syncNotificationLane();
   }
   function draw() {
     if(!game||!active){ctx.fillStyle='#17221b';ctx.fillRect(0,0,W,H);drawMenuBackdrop();return;}
@@ -2003,16 +2052,18 @@
     return {storedFood,groundFood,drops,food,noise,light,likelihood,causes,primary,target,nearbyFire:!!fireTarget};
   }
   function refreshRaidWarning(profile=raidAttractionProfile()) {
-    const p=game.player,target=profile.target||BUNKER_ENTRANCE,dx=target.x-p.x,dy=target.y-p.y,random=world.rand||Math.random,angle=Math.hypot(dx,dy)>90?Math.atan2(dy,dx):random()*Math.PI*2,warning={angle,timer:5.8,likelihood:profile.likelihood,primary:profile.primary};
+    const p=game.player,target=profile.target||BUNKER_ENTRANCE,dx=target.x-p.x,dy=target.y-p.y,random=world.rand||Math.random,angle=Math.hypot(dx,dy)>90?Math.atan2(dy,dx):random()*Math.PI*2,warning={angle,timer:5.8,likelihood:profile.likelihood,primary:profile.primary,notificationId:++raidNoticeSequence};
     world.raidWarning=warning;const origin=target===BUNKER_ENTRANCE?BUNKER_ENTRANCE:target;
     for(let i=0;i<5;i++){const along=42+i*37,side=(i%2?1:-1)*13,x=clamp(origin.x+Math.cos(angle)*along-Math.sin(angle)*side,WORLD_EDGE,MAP.w-WORLD_EDGE),y=clamp(origin.y+Math.sin(angle)*along+Math.cos(angle)*side,WORLD_EDGE,MAP.h-WORLD_EDGE);world.raidTracks.push({x,y,angle:angle+(i%2?Math.PI:0),life:25,maxLife:25});}
     if(world.raidTracks.length>60)world.raidTracks.splice(0,world.raidTracks.length-60);return warning;
   }
   function updateRaidWarningUI() {
-    const box=$('raidWarning'),warning=world?.raidWarning,visible=game?.phase==='night'&&warning&&warning.timer>0;
-    box.style.display=visible?'flex':'none';if(!visible)return;
-    const profile=raidAttractionProfile(),arrow=$('raidWarningArrow');arrow.style.transform=`rotate(${warning.angle*180/Math.PI+90}deg)`;
-    const why=profile.causes.length?profile.causes.join(' · '):'بویی، صدایی یا نوری نمانده؛ خطر کمتر است';$('raidWarningText').textContent=`زوزه از لبهٔ جنگل · ${fa(Math.round(profile.likelihood*100))}٪ خطر · ${why}`;
+    const warning=world?.raidWarning,visible=game?.phase==='night'&&warning&&warning.timer>0;
+    if(!visible){lastRaidNoticeId=null;return;}
+    if(!warning.notificationId)warning.notificationId=++raidNoticeSequence;
+    if(warning.notificationId===lastRaidNoticeId)return;lastRaidNoticeId=warning.notificationId;
+    const profile=raidAttractionProfile(),why=profile.causes.length?profile.causes.join(' · '):'بویی، صدایی یا نوری نمانده؛ خطر کمتر است';
+    enqueueNotification({type:'raid',text:`زوزه از لبهٔ جنگل · ${fa(Math.round(profile.likelihood*100))}٪ خطر · ${why}`,marker:'▲',markerRotation:warning.angle*180/Math.PI+90,duration:Math.min(4800,Math.max(1800,warning.timer*1000)),notificationId:warning.notificationId,key:`raid:${warning.notificationId}`});
   }
   function drawRaidTrack(track) {
     ctx.save();ctx.translate(track.x,track.y);ctx.rotate(track.angle||0);ctx.globalAlpha=clamp(track.life/track.maxLife,0,1)*.47;ctx.fillStyle='#332d24';
@@ -2144,16 +2195,12 @@
     const stepStart=stepIndex>=0?tutorialSteps[stepIndex][0]:0;
     const stepEnd=stepIndex>=0?Math.min(60,stepStart+6):0;
     const showStep=stepIndex>=0&&game.tutorial.active&&game.tutorial.time<stepEnd;
-    $('tutorialBox').style.display=showStep?'block':'none';
-    if(showStep){$('tutorialText').textContent=tutorialSteps[stepIndex][1];$('tutorialCount').textContent=`${fa(stepIndex+1)} / ${fa(tutorialSteps.length)}`;}
-    const outside=game.mode==='forest',lateDay=game.phase==='day'&&game.phaseTime>=DAY_LENGTH-30,coldNight=game.phase==='night'&&outside;
-    const showDusk=outside&&(lateDay||coldNight);
-    $('duskBanner').style.display=showDusk?'flex':'none';
-    if(showDusk){
-      $('duskText').textContent=coldNight?'شب بیرونه؛ به بانکر برگرد!':'غروب نزدیکه، برگرد به بانکر';
-      const dx=BUNKER_ENTRANCE.x-game.player.x,dy=BUNKER_ENTRANCE.y-game.player.y;
-      $('bunkerArrow').style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI+90}deg)`;
+    if(showStep&&stepIndex!==tutorialNoticeStep){
+      tutorialNoticeStep=stepIndex;notificationQueue=notificationQueue.filter(item=>item.type!=='tutorial');
+      enqueueNotification({type:'tutorial',text:tutorialSteps[stepIndex][1],meta:`${fa(stepIndex+1)} / ${fa(tutorialSteps.length)}`,marker:'❧',duration:Math.max(650,(stepEnd-game.tutorial.time)*1000),expiresAt:stepEnd,key:`tutorial:${stepIndex}`});
     }
+    const outside=game.mode==='forest',lateDay=game.phase==='day'&&game.phaseTime>=DAY_LENGTH-30,coldNight=game.phase==='night'&&outside;
+    queueDuskNotification(outside?(coldNight?'night':lateDay?'dusk':''):'');
     updateRaidWarningUI();updateControlsUI();drawMinimap();
     if(force)draw();
   }
@@ -2194,7 +2241,7 @@
     for(const marker of game.mapMarkers||[]){const point=mapPoint(view,marker.x,marker.y);if(Math.hypot(mx-point.x,my-point.y)<15){removeMapMarker(marker);return;}}
     addMapMarker((mx-view.x)/view.scale,(my-view.y)/view.scale);
   });
-  $('skipTutorial').addEventListener('click',()=>{if(game?.tutorial)game.tutorial.active=false;updateUI(true);});
+  $('skipTutorial').addEventListener('click',()=>{if(game?.tutorial)game.tutorial.active=false;notificationQueue=notificationQueue.filter(item=>item.type!=='tutorial');if(activeNotification?.type==='tutorial')dismissActiveNotification();tutorialNoticeStep=-1;updateUI(true);});
   canvas.addEventListener('pointerdown',e=>{
     if(!active||!game||$('modal').classList.contains('show'))return;
     const mini=$('minimapWrap').getBoundingClientRect();if(mini.width&&mini.height&&e.clientX>=mini.left&&e.clientX<=mini.right&&e.clientY>=mini.top&&e.clientY<=mini.bottom)return;
@@ -2228,7 +2275,7 @@
     if(characterSheetMode){gameTime+=dt;drawCharacterContactSheet();requestAnimationFrame(frame);return;}
     if(active)update(dt);else gameTime+=dt;
     draw();
-    if(toastTimer>0){toastTimer-=dt*1000;if(toastTimer<=0)$('toast').classList.remove('show');}
+    updateNotificationLane(dt);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
