@@ -327,48 +327,56 @@
     }
     /* Round 6 item 4: pin the day/time context to the safe-area right edge. */
     .hud-topbar { left:auto; right:max(12px,env(safe-area-inset-right,0px)); transform:none; width:max-content; max-width:calc(100% - 24px); justify-content:flex-end; }
-    /* Round 6: fixed top-left cluster, readable vitality bars, and aligned icon targets. */
-    .top-left-cluster { position:absolute; top:max(12px,env(safe-area-inset-top,0px)); left:max(12px,env(safe-area-inset-left,0px)); display:flex; flex-flow:row nowrap; direction:ltr; align-items:flex-start; gap:10px; z-index:9; pointer-events:none; }
+    /* Round 7 item 1: compact, tappable vitals under the minimap. */
+    .top-left-cluster { position:absolute; top:max(12px,env(safe-area-inset-top,0px)); left:max(12px,env(safe-area-inset-left,0px)); display:flex; flex-direction:column; align-items:flex-start; gap:8px; z-index:9; pointer-events:none; direction:ltr; }
+    .top-left-map-row { display:flex; flex-flow:row nowrap; align-items:flex-start; gap:10px; direction:ltr; }
     #minimapWrap { position:static; left:auto; top:auto; bottom:auto; width:180px; height:120px; flex:0 0 180px; pointer-events:none; z-index:auto; }
     .hud-tools { display:flex; flex:0 0 auto; flex-flow:row nowrap; align-items:flex-start; gap:8px; min-height:48px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; pointer-events:none; }
-    .hud-tools .status-button,.hud-tools .icon-button { display:grid; flex:0 0 48px; place-items:center; width:48px; min-width:48px; height:48px; min-height:48px; padding:0; gap:0; border:1px solid rgba(239,229,198,.22); border-radius:14px; color:#e8eadb; background:rgba(18,28,23,.88); box-shadow:0 5px 14px rgba(0,0,0,.2); pointer-events:auto; }
-    .hud-tools .status-button>.ui-icon,.hud-tools .icon-button .ui-icon { width:21px; height:21px; color:#ecbd69; stroke-width:1.8; }
-    .hud-tools .status-button[aria-expanded="true"],.hud-tools .icon-button.active { border-color:rgba(244,194,105,.55); color:#f5ce7d; background:rgba(187,129,54,.2); }
-    #topVitals { display:grid; flex:0 0 350px; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center; gap:8px; width:350px; min-width:350px; max-width:350px; min-height:64px; padding:8px 9px; border-radius:14px; direction:rtl; pointer-events:none; }
-    .top-vital { display:flex; min-width:0; flex-direction:column; gap:5px; }
-    .top-vital-label { display:flex; min-width:0; align-items:center; justify-content:space-between; gap:2px; color:#dce0d0; font-size:11px; line-height:1.2; white-space:nowrap; }
-    .top-vital-label span { overflow:hidden; }
-    .top-vital-label b { flex:0 0 auto; color:#f6f0dd; font-size:11px; font-weight:800; }
-    .top-vital-track { height:9px; overflow:hidden; border-radius:6px; background:rgba(0,0,0,.36); box-shadow:inset 0 1px 2px #000; }
-    .top-vital-fill { display:block; width:100%; height:100%; border-radius:inherit; transition:width .25s ease; }
-    .top-vital-fill.health { background:linear-gradient(90deg,#ad5043,#ed8570); }
-    .top-vital-fill.warmth { background:linear-gradient(90deg,#527b76,#e6a260); }
-    .top-vital-fill.hunger { background:linear-gradient(90deg,#b67b37,#e7bd5c); }
-    .top-vital-fill.stamina { background:linear-gradient(90deg,#658456,#c8d77b); }
-    .top-vital-fill.stamina.low { background:linear-gradient(90deg,#a84d3f,#ef916a); }
-    .top-vital-fill.sanity { background:linear-gradient(90deg,#5a7770,#b9c894); }
-    .top-vital-fill.sanity.low { background:linear-gradient(90deg,#704b72,#c78291); }
+    .hud-tools .icon-button { display:grid; flex:0 0 48px; place-items:center; width:48px; min-width:48px; height:48px; min-height:48px; padding:0; border:1px solid rgba(239,229,198,.22); border-radius:14px; color:#e8eadb; background:rgba(18,28,23,.88); box-shadow:0 5px 14px rgba(0,0,0,.2); pointer-events:auto; }
+    .hud-tools .icon-button .ui-icon { width:21px; height:21px; color:#ecbd69; stroke-width:1.8; }
+    .hud-tools .icon-button.active { border-color:rgba(244,194,105,.55); color:#f5ce7d; background:rgba(187,129,54,.2); }
+    .vitals-stack { display:flex; flex:0 0 110px; flex-direction:column; justify-content:center; gap:4px; width:110px; min-height:100px; padding:7px 9px; border:1px solid var(--line); border-radius:12px; color:#edf0df; text-align:left; cursor:pointer; touch-action:manipulation; pointer-events:auto; }
+    .vitals-stack:focus-visible { outline:2px solid #e7bd70; outline-offset:2px; }
+    .mini-vital-row { display:flex; flex:0 0 14px; align-items:center; gap:8px; width:100%; height:14px; direction:ltr; }
+    .mini-vital-icon { display:grid; flex:0 0 14px; place-items:center; width:14px; height:14px; color:#e6c578; transform-origin:center; }
+    .mini-vital-icon .ui-icon { width:14px; height:14px; stroke-width:1.8; }
+    .mini-vital-icon.health { color:#e47b68; }
+    .mini-vital-icon.warmth { color:#e8a767; }
+    .mini-vital-icon.hunger { color:#e5c36b; }
+    .mini-vital-icon.stamina { color:#bed17d; }
+    .mini-vital-icon.sanity { color:#a5c2ad; }
+    .mini-vital-track { display:block; flex:1 1 auto; height:5px; overflow:hidden; border-radius:999px; background:rgba(0,0,0,.4); box-shadow:inset 0 1px 2px rgba(0,0,0,.75); }
+    .mini-vital-fill { display:block; width:100%; height:100%; border-radius:inherit; transition:width .24s ease; }
+    .mini-vital-fill.health { background:linear-gradient(90deg,#ad5043,#ed8570); }
+    .mini-vital-fill.warmth { background:linear-gradient(90deg,#527b76,#e6a260); }
+    .mini-vital-fill.hunger { background:linear-gradient(90deg,#b67b37,#e7bd5c); }
+    .mini-vital-fill.stamina { background:linear-gradient(90deg,#658456,#c8d77b); }
+    .mini-vital-fill.sanity { background:linear-gradient(90deg,#5a7770,#b9c894); }
+    .mini-vital-row.is-low .mini-vital-fill { background:linear-gradient(90deg,#9e3536,#ec5d58); animation:vital-low-pulse 1.8s ease-in-out infinite; }
+    .mini-vital-row.is-critical .mini-vital-fill { background:linear-gradient(90deg,#7f171d,#ff4945); animation:vital-critical-pulse .88s ease-in-out infinite; }
+    .mini-vital-icon.shake { animation:vital-icon-shake .38s ease-in-out 1; }
+    @keyframes vital-low-pulse { 0%,100% { opacity:.88; box-shadow:0 0 0 rgba(255,74,67,0); } 50% { opacity:1; box-shadow:0 0 5px rgba(255,74,67,.72); } }
+    @keyframes vital-critical-pulse { 0%,100% { opacity:.78; box-shadow:0 0 0 rgba(255,55,55,0); } 50% { opacity:1; box-shadow:0 0 9px rgba(255,55,55,.95); } }
+    @keyframes vital-icon-shake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-2px); } 60% { transform:translateX(2px); } }
     @media (max-width:1100px) and (min-width:761px) {
-      .top-left-cluster { gap:8px; }
+      .top-left-map-row { gap:8px; }
       #minimapWrap { width:150px; height:100px; flex-basis:150px; }
       .hud-tools { gap:6px; }
-      .hud-tools .status-button,.hud-tools .icon-button { flex-basis:46px; width:46px; min-width:46px; height:46px; min-height:46px; border-radius:13px; }
-      #topVitals { flex-basis:clamp(240px,29vw,300px); width:clamp(240px,29vw,300px); min-width:240px; max-width:300px; gap:6px; }
+      .hud-tools .icon-button { flex-basis:46px; width:46px; min-width:46px; height:46px; min-height:46px; border-radius:13px; }
       .brand-name,#biomeName { display:none; }
       .cycle { min-width:88px; }
     }
     @media (max-width:760px) {
       .top-left-cluster { gap:6px; }
+      .top-left-map-row { gap:6px; }
       #minimapWrap { width:150px; height:100px; flex-basis:150px; }
       .hud-tools { gap:5px; }
-      .hud-tools .status-button,.hud-tools .icon-button { flex-basis:44px; width:44px; min-width:44px; height:44px; min-height:44px; border-radius:12px; }
-      #topVitals { display:none; }
+      .hud-tools .icon-button { flex-basis:44px; width:44px; min-width:44px; height:44px; min-height:44px; border-radius:12px; }
     }
     @media (max-width:560px) {
-      .top-left-cluster { gap:4px; }
+      .top-left-map-row { gap:4px; }
       #minimapWrap { width:135px; height:90px; flex-basis:135px; }
       .hud-tools { gap:4px; }
-      .hud-tools .status-button,.hud-tools .icon-button { flex-basis:44px; width:44px; min-width:44px; height:44px; min-height:44px; }
     }
     @media (max-height:420px) and (orientation:landscape) {
       #minimapWrap { width:min(144px,34vw); height:96px; flex-basis:min(144px,34vw); }
@@ -386,20 +394,21 @@
         <div class="compass-widget" id="compassWidget" aria-label="جهت ورودی بانکر"><div class="compass-ring"><span id="compassArrow" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m12 3 4 13-4-2-4 2 4-13Z"/><path d="M12 14v7"/></svg></span></div><span id="biomeName">جنگل انبوه</span></div>
       </div>
     </div>
-    <div class="top-left-cluster" id="topLeftHud" role="group" aria-label="نقشه، وضعیت و صدا" style="display:none">
-      <div id="minimapWrap" aria-hidden="true"><canvas id="minimapCanvas"></canvas><span id="minimapLabel">نقشه</span></div>
-        <div class="hud-tools" role="group" aria-label="دکمه‌های نقشه و صدا">
-        <button class="icon-button" id="soundButton" aria-label="صدا" title="روشن/خاموش‌کردن صدا"><span id="soundGlyph"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg></span></button>
-        <button class="icon-button" id="mapButton" aria-label="بازکردن نقشه" title="نقشهٔ جهان"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/><circle cx="15" cy="8" r="1.7"/></svg></button>
-        <button class="status-button icon-button" id="statusButton" aria-label="نمایش وضعیت و منابع" aria-controls="statusPanel" aria-expanded="false" title="وضعیت و منابع"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.2-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.8-7 10-7 10Z"/><path d="M7.5 12h3l1.4-2.5 2.1 5 1.2-2.5h1.3"/></svg></button>
+    <div class="top-left-cluster" id="topLeftHud" role="group" aria-label="نقشه، نوارهای وضعیت و صدا" style="display:none">
+      <div class="top-left-map-row">
+        <div id="minimapWrap" aria-hidden="true"><canvas id="minimapCanvas"></canvas><span id="minimapLabel">نقشه</span></div>
+        <div class="hud-tools" role="group" aria-label="دکمه‌های صدا و نقشه">
+          <button class="icon-button" id="soundButton" aria-label="صدا" title="روشن/خاموش‌کردن صدا"><span id="soundGlyph"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg></span></button>
+          <button class="icon-button" id="mapButton" aria-label="بازکردن نقشه" title="نقشهٔ جهان"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/><circle cx="15" cy="8" r="1.7"/></svg></button>
+        </div>
       </div>
-      <div class="top-vitals glass" id="topVitals" role="group" aria-label="نوارهای وضعیت">
-        <div class="top-vital"><div class="top-vital-label"><span>سلامت</span><b id="topHealthValue">۱۰۰</b></div><div class="top-vital-track"><i class="top-vital-fill health" id="topHealthFill"></i></div></div>
-        <div class="top-vital"><div class="top-vital-label"><span>گرما</span><b id="topWarmthValue">۷۶</b></div><div class="top-vital-track"><i class="top-vital-fill warmth" id="topWarmthFill"></i></div></div>
-        <div class="top-vital"><div class="top-vital-label"><span>خوراک</span><b id="topHungerValue">۸۲</b></div><div class="top-vital-track"><i class="top-vital-fill hunger" id="topHungerFill"></i></div></div>
-        <div class="top-vital"><div class="top-vital-label"><span>توان</span><b id="topStaminaValue">۱۰۰</b></div><div class="top-vital-track"><i class="top-vital-fill stamina" id="topStaminaFill"></i></div></div>
-        <div class="top-vital"><div class="top-vital-label"><span>آرامش</span><b id="topSanityValue">۱۰۰</b></div><div class="top-vital-track"><i class="top-vital-fill sanity" id="topSanityFill"></i></div></div>
-      </div>
+      <button class="vitals-stack glass" id="vitalsStack" type="button" aria-label="نمایش وضعیت و منابع: سلامت، گرما، خوراک، توان، آرامش" aria-controls="statusPanel" aria-expanded="false" title="نمایش وضعیت و منابع">
+        <span class="mini-vital-row" aria-hidden="true"><span class="mini-vital-icon health"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 20s-7-4.2-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.8-7 10-7 10Z"/></svg></span><span class="mini-vital-track"><i class="mini-vital-fill health" id="miniHealthFill"></i></span></span>
+        <span class="mini-vital-row" aria-hidden="true"><span class="mini-vital-icon warmth"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-10-2 2-2 4-2 6-2-1-3-3-3-5-3 3-5 6-5 9a7 7 0 0 0 7 7Z"/><path d="M12 19a3 3 0 0 0 3-3c0-1.5-1-2.5-2-4-.5 1.5-2 2-2 4a3 3 0 0 0 1 3Z"/></svg></span><span class="mini-vital-track"><i class="mini-vital-fill warmth" id="miniWarmthFill"></i></span></span>
+        <span class="mini-vital-row" aria-hidden="true"><span class="mini-vital-icon hunger"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 10h14l-2 9H7l-2-9Z"/><path d="M8 10c0-2 2-4 4-4s4 2 4 4M12 6V3m0 0h3"/></svg></span><span class="mini-vital-track"><i class="mini-vital-fill hunger" id="miniHungerFill"></i></span></span>
+        <span class="mini-vital-row" aria-hidden="true"><span class="mini-vital-icon stamina"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"/></svg></span><span class="mini-vital-track"><i class="mini-vital-fill stamina" id="miniStaminaFill"></i></span></span>
+        <span class="mini-vital-row" aria-hidden="true"><span class="mini-vital-icon sanity"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3c-4 0-7 3-7 7v4a3 3 0 0 0 3 3h1v3h6v-3h1a3 3 0 0 0 3-3v-4c0-4-3-7-7-7Z"/><path d="M9 10h.1M15 10h.1M9 14c2 2 4 2 6 0M12 3v4"/></svg></span><span class="mini-vital-track"><i class="mini-vital-fill sanity" id="miniSanityFill"></i></span></span>
+      </button>
     </div>
     <section class="glass status-panel" id="statusPanel" aria-label="وضعیت بازمانده و منابع" aria-hidden="true">
       <div class="status-panel-head"><strong>وضعیت و منابع</strong><button class="panel-close" id="statusClose" aria-label="بستن وضعیت"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
@@ -558,6 +567,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
+  let vitalSeverity={health:'normal',warmth:'normal',hunger:'normal',stamina:'normal',sanity:'normal'};
   let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},actionPointer=null,audioCtx=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',hapticsEnabled=true;
   try { hapticsEnabled=localStorage.getItem('hirkani-haptics')!=='off'; } catch(e) {}
   let gameTime=0,mapDiscovered=new Set(),mapOpen=false,mapDirty=true,minimapDirty=true,mapViewport=null,mapMarkerSequence=0,lastMinimapX=null,lastMinimapY=null;
@@ -576,7 +586,7 @@
   const SOUND_GLYPHS={on:'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>',off:'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="m17 9 5 6m0-6-5 6"/></svg>'};
   function haptic(duration=10) { if(!hapticsEnabled)return;try { const nav=window.navigator;if(nav&&typeof nav.vibrate==='function')nav.vibrate(duration); } catch(e) {} }
   function setStatusPanel(open) {
-    statusPanelOpen=!!open;if(statusPanelOpen)setActionSheet(false);const panel=$('statusPanel');panel.classList.toggle('open',statusPanelOpen);panel.setAttribute?.('aria-hidden',String(!statusPanelOpen));$('statusButton').setAttribute?.('aria-expanded',String(statusPanelOpen));
+    statusPanelOpen=!!open;if(statusPanelOpen)setActionSheet(false);const panel=$('statusPanel');panel.classList.toggle('open',statusPanelOpen);panel.setAttribute?.('aria-hidden',String(!statusPanelOpen));$('vitalsStack').setAttribute?.('aria-expanded',String(statusPanelOpen));
   }
   function setActionSheet(open) {
     actionSheetOpen=!!open;if(actionSheetOpen)setStatusPanel(false);const sheet=$('actionSheet');sheet.classList.toggle('open',actionSheetOpen);sheet.setAttribute?.('aria-hidden',String(!actionSheetOpen));$('moreButton').setAttribute?.('aria-expanded',String(actionSheetOpen));
@@ -924,7 +934,7 @@
       title.textContent='کارگاه ساخت';note.textContent='مواد را از جنگل بردار و دستورهای ساخت را در سه دسته ببین؛ خوراک‌ها هنگام ساخت مصرف می‌شوند.';craftCategory='tools';renderCraftingTabs();renderCraftingCards();
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='دستهٔ ثابتِ پایینِ چپ را لمس کن؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن نوارهای وضعیت و منابع، نشانِ قلب را در بالا لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='دستهٔ ثابتِ پایینِ چپ را لمس کن؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن وضعیت و منابع، نوارهای کوچکِ زیر نقشه را لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     $('modal').classList.add('show');
@@ -2089,12 +2099,22 @@
     [40,'در زیرزمین خانهٔ سنگی را لمس کن، «کندن» را انتخاب کن و دکمهٔ عمل را بزن؛ فضای اتاق باز می‌شود.'],
     [50,'«اتاق» را انتخاب کن، خانهٔ خالی را لمس کن و دکمهٔ طلایی را بزن. «تعمیر» آسیب‌های شبانه را برمی‌گرداند.']
   ];
+  function updateVitalsStack(stats,stamina=stats.stamina??100,sanity=stats.sanity??100) {
+    const values=[['health',stats.health,'miniHealthFill'],['warmth',stats.warmth,'miniWarmthFill'],['hunger',stats.hunger,'miniHungerFill'],['stamina',stamina,'miniStaminaFill'],['sanity',sanity,'miniSanityFill']];
+    for(const [key,value,id] of values){
+      const amount=clamp(Number(value)||0,0,100),fill=$(id),row=fill.closest('.mini-vital-row'),icon=row.querySelector('.mini-vital-icon'),severity=amount<10?'critical':amount<30?'low':'normal',previous=vitalSeverity[key]||'normal';
+      fill.style.width=`${amount}%`;row.classList.toggle('is-low',severity!=='normal');row.classList.toggle('is-critical',severity==='critical');
+      if(severity!=='normal'&&severity!==previous){icon.classList.remove('shake');void icon.offsetWidth;icon.classList.add('shake');}
+      if(severity==='critical'&&previous!=='critical')haptic(48);
+      vitalSeverity[key]=severity;
+    }
+  }
   function updateUI(force=false) {
     if(!game||!active)return;
     const s=game.stats;
     const stamina=clamp(s.stamina??100,0,100),sanity=clamp(s.sanity??100,0,100);
-    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);$('sanityValue').textContent=fa(sanity);$('topHealthValue').textContent=fa(s.health);$('topWarmthValue').textContent=fa(s.warmth);$('topHungerValue').textContent=fa(s.hunger);$('topStaminaValue').textContent=fa(stamina);$('topSanityValue').textContent=fa(sanity);
-    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);$('sanityFill').style.width=`${sanity}%`;$('sanityFill').classList.toggle('low',sanity<30);$('topHealthFill').style.width=`${s.health}%`;$('topWarmthFill').style.width=`${s.warmth}%`;$('topHungerFill').style.width=`${s.hunger}%`;$('topStaminaFill').style.width=`${stamina}%`;$('topStaminaFill').classList.toggle('low',stamina<18);$('topSanityFill').style.width=`${sanity}%`;$('topSanityFill').classList.toggle('low',sanity<30);
+    $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);$('sanityValue').textContent=fa(sanity);
+    $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);$('sanityFill').style.width=`${sanity}%`;$('sanityFill').classList.toggle('low',sanity<30);updateVitalsStack(s,stamina,sanity);
     $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);$('herbsValue').textContent=fa(game.resources.herbs||0);
     const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
@@ -2145,7 +2165,7 @@
   actionButton.addEventListener('pointerdown',beginActionPress);actionButton.addEventListener('pointerup',endActionPress);actionButton.addEventListener('pointercancel',endActionPress);actionButton.addEventListener('lostpointercapture',endActionPress);
   actionButton.addEventListener('click',e=>{if(e.detail===0){haptic(12);doAction();}});
   $('moreButton').addEventListener('click',()=>{haptic(8);setActionSheet(!actionSheetOpen);});$('closeActionSheet').addEventListener('click',()=>setActionSheet(false));
-  $('statusButton').addEventListener('click',()=>{haptic(8);setStatusPanel(!statusPanelOpen);});$('statusClose').addEventListener('click',()=>setStatusPanel(false));
+  $('vitalsStack').addEventListener('click',()=>{haptic(8);setStatusPanel(!statusPanelOpen);});$('statusClose').addEventListener('click',()=>setStatusPanel(false));
   $('hapticsButton').addEventListener('click',()=>{hapticsEnabled=!hapticsEnabled;try{localStorage.setItem('hirkani-haptics',hapticsEnabled?'on':'off');}catch(e){}updateControlsUI();if(hapticsEnabled)haptic(8);});
   $('eatButton').addEventListener('click',()=>{eat();setActionSheet(false);});$('craftButton').addEventListener('click',()=>showModal('crafting'));$('bunkerCraftButton').addEventListener('click',()=>showModal('crafting'));
   $('fireButton').addEventListener('click',()=>{lightFire();setActionSheet(false);});$('trapButton').addEventListener('click',()=>{placeSnare();setActionSheet(false);});
