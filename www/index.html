@@ -381,6 +381,20 @@
     @media (max-height:420px) and (orientation:landscape) {
       #minimapWrap { width:min(144px,34vw); height:96px; flex-basis:min(144px,34vw); }
     }
+    /* Round 7 item 2: centered survivor-details modal and pause backdrop. */
+    #statusBackdrop { position:fixed; inset:0; z-index:38; background:rgba(5,10,7,.68); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .18s ease,visibility .18s ease; }
+    #statusBackdrop.show { opacity:1; visibility:visible; pointer-events:auto; }
+    .status-panel { display:block; position:fixed; top:50%; left:50%; right:auto; z-index:39; width:min(520px,70vw); max-width:70vw; max-height:70vh; overflow:auto; padding:18px clamp(16px,2.2vw,24px) 16px; border-radius:20px; pointer-events:none; transform:translate(-50%,-47%) scale(.985); opacity:0; visibility:hidden; transition:opacity .2s ease,transform .2s ease,visibility .2s ease; scrollbar-width:thin; }
+    .status-panel.open { display:block; visibility:visible; pointer-events:auto; transform:translate(-50%,-50%) scale(1); opacity:1; }
+    .status-panel-head { position:sticky; top:-18px; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:54px; margin:-2px 0 13px; padding:4px 0 10px; border-bottom:1px solid rgba(239,229,198,.18); background:linear-gradient(145deg,rgba(31,46,36,.99),rgba(16,25,21,.99)); }
+    #statusPanelTitle { display:block; flex:1 1 auto; min-width:0; color:#f0d49b; font-size:16px; font-weight:900; line-height:1.35; white-space:nowrap; }
+    #statusClose { flex:0 0 50px; width:50px; min-width:50px; height:50px; min-height:50px; border-radius:14px; }
+    #statusClose .ui-icon { width:20px; height:20px; }
+    @media (max-width:560px) {
+      .status-panel { width:70vw; max-width:70vw; padding:14px 13px 12px; }
+      .status-panel-head { top:-14px; }
+      #statusPanelTitle { font-size:15px; }
+    }
   </style>
 </head>
 <body>
@@ -410,8 +424,9 @@
         <span class="mini-vital-row" aria-hidden="true"><span class="mini-vital-icon sanity"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3c-4 0-7 3-7 7v4a3 3 0 0 0 3 3h1v3h6v-3h1a3 3 0 0 0 3-3v-4c0-4-3-7-7-7Z"/><path d="M9 10h.1M15 10h.1M9 14c2 2 4 2 6 0M12 3v4"/></svg></span><span class="mini-vital-track"><i class="mini-vital-fill sanity" id="miniSanityFill"></i></span></span>
       </button>
     </div>
-    <section class="glass status-panel" id="statusPanel" aria-label="وضعیت بازمانده و منابع" aria-hidden="true">
-      <div class="status-panel-head"><strong>وضعیت و منابع</strong><button class="panel-close" id="statusClose" aria-label="بستن وضعیت"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+    <div id="statusBackdrop" aria-hidden="true"></div>
+    <section class="glass status-panel" id="statusPanel" role="dialog" aria-modal="true" aria-labelledby="statusPanelTitle" aria-hidden="true">
+      <div class="status-panel-head"><strong id="statusPanelTitle">وضعیت و منابع</strong><button class="panel-close" id="statusClose" aria-label="بستن وضعیت" title="بستن وضعیت"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
       <div class="vitals" id="vitalsPanel">
         <div class="stat"><div class="stat-label"><span>سلامت</span><b id="healthValue">۱۰۰</b></div><div class="stat-track"><div class="stat-fill" id="healthFill"></div></div></div>
         <div class="stat"><div class="stat-label"><span>گرما</span><b id="warmthValue">۸۰</b></div><div class="stat-track"><div class="stat-fill" id="warmthFill"></div></div></div>
@@ -586,7 +601,7 @@
   const SOUND_GLYPHS={on:'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>',off:'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="m17 9 5 6m0-6-5 6"/></svg>'};
   function haptic(duration=10) { if(!hapticsEnabled)return;try { const nav=window.navigator;if(nav&&typeof nav.vibrate==='function')nav.vibrate(duration); } catch(e) {} }
   function setStatusPanel(open) {
-    statusPanelOpen=!!open;if(statusPanelOpen)setActionSheet(false);const panel=$('statusPanel');panel.classList.toggle('open',statusPanelOpen);panel.setAttribute?.('aria-hidden',String(!statusPanelOpen));$('vitalsStack').setAttribute?.('aria-expanded',String(statusPanelOpen));
+    statusPanelOpen=!!open;if(statusPanelOpen){if(mapOpen){mapOpen=false;$('mapOverlay').classList.remove('show');mapViewport=null;}setActionSheet(false);}const panel=$('statusPanel'),backdrop=$('statusBackdrop');panel.classList.toggle('open',statusPanelOpen);panel.setAttribute?.('aria-hidden',String(!statusPanelOpen));backdrop.classList.toggle('show',statusPanelOpen);backdrop.setAttribute?.('aria-hidden',String(!statusPanelOpen));$('vitalsStack').setAttribute?.('aria-expanded',String(statusPanelOpen));
   }
   function setActionSheet(open) {
     actionSheetOpen=!!open;if(actionSheetOpen)setStatusPanel(false);const sheet=$('actionSheet');sheet.classList.toggle('open',actionSheetOpen);sheet.setAttribute?.('aria-hidden',String(!actionSheetOpen));$('moreButton').setAttribute?.('aria-expanded',String(actionSheetOpen));
@@ -1922,7 +1937,7 @@
     setActionSheet(false);game.mode='forest';game.player.x=MAP.cx+80;game.player.y=MAP.cy+5;game.player.target=null;game.selectedCell=null;haptic(10);showToast('به جنگل برگشتی؛ غروب نزدیک است.',1700);
   }
   function doAction() {
-    if(!active||game.gameOver)return;
+    if(!active||game.gameOver||statusPanelOpen)return;
     if(game.mode==='forest')gather();else bunkerAction();updateUI(true);
   }
   function currentTarget() {
@@ -2077,7 +2092,7 @@
     if(!game||game.gameOver)return;game.stats.health=0;game.gameOver=true;game.player.deathTimer=.9;game.player.hurtTimer=0;game.player.target=null;game.player.moving=false;game.player.running=false;$('gameOverReason').textContent=reason;try{localStorage.removeItem(SAVE_KEY);}catch(e){}
   }
   function update(dt) {
-    if(!active||!game)return;if(mapOpen)return;
+    if(!active||!game)return;if(mapOpen||statusPanelOpen)return;
     if(game.gameOver){game.player.deathTimer=Math.max(0,(game.player.deathTimer||0)-dt);if(game.player.deathTimer<=0){active=false;setScreen('gameover');}return;}
     gameTime+=dt;updateMovement(dt);recordMapDiscovery();updateNoiseTrail(dt);updateHazards(dt);updateParticles(dt);
     if(game.mode==='forest')updateAnimals(dt);
@@ -2165,7 +2180,7 @@
   actionButton.addEventListener('pointerdown',beginActionPress);actionButton.addEventListener('pointerup',endActionPress);actionButton.addEventListener('pointercancel',endActionPress);actionButton.addEventListener('lostpointercapture',endActionPress);
   actionButton.addEventListener('click',e=>{if(e.detail===0){haptic(12);doAction();}});
   $('moreButton').addEventListener('click',()=>{haptic(8);setActionSheet(!actionSheetOpen);});$('closeActionSheet').addEventListener('click',()=>setActionSheet(false));
-  $('vitalsStack').addEventListener('click',()=>{haptic(8);setStatusPanel(!statusPanelOpen);});$('statusClose').addEventListener('click',()=>setStatusPanel(false));
+  $('vitalsStack').addEventListener('click',()=>{haptic(8);setStatusPanel(!statusPanelOpen);});$('statusClose').addEventListener('click',()=>setStatusPanel(false));$('statusBackdrop').addEventListener('click',()=>setStatusPanel(false));
   $('hapticsButton').addEventListener('click',()=>{hapticsEnabled=!hapticsEnabled;try{localStorage.setItem('hirkani-haptics',hapticsEnabled?'on':'off');}catch(e){}updateControlsUI();if(hapticsEnabled)haptic(8);});
   $('eatButton').addEventListener('click',()=>{eat();setActionSheet(false);});$('craftButton').addEventListener('click',()=>showModal('crafting'));$('bunkerCraftButton').addEventListener('click',()=>showModal('crafting'));
   $('fireButton').addEventListener('click',()=>{lightFire();setActionSheet(false);});$('trapButton').addEventListener('click',()=>{placeSnare();setActionSheet(false);});
@@ -2193,7 +2208,7 @@
     }
   });
   window.addEventListener('keydown',e=>{
-    const k=e.key;if(k==='Escape'){if(mapOpen){e.preventDefault();setMapOpen(false);return;}if(actionSheetOpen){e.preventDefault();setActionSheet(false);return;}if(statusPanelOpen){e.preventDefault();setStatusPanel(false);return;}if($('modal').classList.contains('show')){e.preventDefault();closeModal();return;}}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k))e.preventDefault();
+    const k=e.key;if(k==='Escape'){if(mapOpen){e.preventDefault();setMapOpen(false);return;}if(actionSheetOpen){e.preventDefault();setActionSheet(false);return;}if(statusPanelOpen){e.preventDefault();setStatusPanel(false);return;}if($('modal').classList.contains('show')){e.preventDefault();closeModal();return;}}if(statusPanelOpen&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k)){e.preventDefault();return;}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k))e.preventDefault();
     if(k===' '||k==='e'||k==='E'){if(!e.repeat)doAction();return;}keys[k]=true;
   });
   window.addEventListener('keyup',e=>{keys[e.key]=false;});
