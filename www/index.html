@@ -472,6 +472,8 @@
           <button class="tool-button" id="roomButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M4 20V5h16v15H4Z"/><path d="M9 20v-8h6v8M8 8h2m4 0h2"/></svg></b>اتاق</button>
           <button class="tool-button" id="basesButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m3 11 9-7 9 7v9H3v-9Z"/><path d="M9 20v-6h6v6"/></svg></b>پناهگاه</button>
           <button class="tool-button" id="repairButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></b>تعمیر</button>
+          <button class="tool-button" id="supportButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 20V5m14 15V5M5 9h14"/><path d="M8 6h2m4 0h2"/></svg></b>تیرک</button>
+          <button class="tool-button" id="lampButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 21v-3m-3 3h6m-5-6c-1.7-1.1-3-2.9-3-5a5 5 0 0 1 10 0c0 2.1-1.3 3.9-3 5l-.5 2h-4L9.5 15Z"/><path d="M12 3V1"/></svg></b>چراغ</button>
           <button class="tool-button" id="bunkerCraftButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m14 4 6 6M11 7l6 6-8 8-6-6 8-8Z"/></svg></b>ساخت</button>
           <button class="tool-button" id="exitButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 19h14M8 19V8l4-4 4 4v11M12 4v9"/></svg></b>بیرون</button>
         </div>
@@ -561,6 +563,7 @@
   const $ = id => document.getElementById(id);
   const canvas = $('world');
   const characterSheetMode=/(?:^|[?&])charsheet=1(?:&|$)/.test(window.location?.search||'');
+  const raidTestMode=/(?:^|[?&])raidtest=1(?:&|$)/.test(window.location?.search||'');
   const ctx = canvas.getContext('2d', { alpha:false });
   const mapCanvas=$('mapCanvas'),mapCtx=mapCanvas.getContext?.('2d')||ctx;
   const minimapCanvas=$('minimapCanvas'),minimapCtx=minimapCanvas.getContext?.('2d')||ctx;
@@ -580,6 +583,17 @@
   };
   const BUNKER_ENTRANCE = { x:MAP.cx+34, y:MAP.cy };
   const GRID = { cols:12, rows:4 };
+  const BUNKER_SOIL = {
+    topsoil:{label:'خاک سطحی',color:'#62503b',hits:1,stone:0},
+    roots:{label:'ریشه‌دار',color:'#554533',hits:2,stone:0},
+    clay:{label:'رس فشرده',color:'#56483b',hits:3,stone:1},
+    rock:{label:'سنگ سخت',color:'#4d514d',hits:4,stone:2}
+  };
+  const BUNKER_FINDS = [
+    {id:'amber',name:'کهربای کهن',reward:{herbs:2}},
+    {id:'fossil',name:'فسیل کوچک',reward:{stone:3}},
+    {id:'spring',name:'چشمهٔ زیرزمینی',reward:{food:2},health:6}
+  ];
   const DAY_LENGTH = 86;
   const NIGHT_LENGTH = 31;
   const SAVE_KEY = 'hirkani-save-v1';
@@ -800,12 +814,13 @@
   function freshGame() {
     return {
       worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0, noiseTrail:0, mapDiscovery:[], mapMarkers:[],
-      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,torchLit:false,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false,motionBlend:0,runBlend:0,hurtTimer:0,hurtDirX:0,hurtDirY:0,deathTimer:0},
+      player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,bX:5,bY:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,torchLit:false,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false,motionBlend:0,runBlend:0,hurtTimer:0,hurtDirX:0,hurtDirY:0,deathTimer:0},
       stats:{health:100,hunger:82,warmth:76,stamina:100,sanity:100}, resources:{wood:12,stone:8,food:4,herbs:2}, inventory:{hatchets:0,torches:0,snares:0,fireKits:0},
-      bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}},
-      dug:{'5,2':true,'4,3':true,'5,3':true,'6,3':true},
+      bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}}, bunkerMode:'dig',
+      dug:{'5,1':true,'5,2':true,'4,3':true,'5,3':true,'6,3':true},
       rooms:{'5,3':{type:'bed',level:1,hp:48,maxHp:48},'6,3':{type:'storage',level:1,hp:48,maxHp:48}},
-      selectedRoom:null, selectedCell:null, tutorial:{active:true,time:0}, raidTimer:4,
+      digging:{},supports:{},integrity:{},ladders:{'5,1':true,'5,2':true},lamps:{'5,3':true},bunkerEffects:[],finds:{},
+      selectedRoom:null, selectedCell:null, tutorial:{active:true,time:0}, raidTimer:4,bunkerDripTimer:12,structureWarning:null,
       gameOver:false, muted:false, lastSave:Date.now()
     };
   }
@@ -823,10 +838,10 @@
       audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
       if(audioCtx.state==='suspended') audioCtx.resume();
       const now=audioCtx.currentTime, osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
-      const settings={gather:[510,760,.12,'sine'],dig:[180,110,.17,'triangle'],hit:[140,75,.16,'sawtooth'],raid:[85,52,.45,'triangle'],build:[330,620,.22,'sine'],eat:[260,410,.2,'sine']};
+      const settings={gather:[510,760,.12,'sine'],dig:[180,110,.17,'triangle'],hit:[140,75,.16,'sawtooth'],raid:[85,52,.45,'triangle'],collapse:[72,38,.38,'sawtooth'],drip:[540,330,.2,'sine'],build:[330,620,.22,'sine'],eat:[260,410,.2,'sine']};
       const [f1,f2,dur,wave]=settings[kind]||settings.gather;
       osc.type=wave; osc.frequency.setValueAtTime(f1,now); osc.frequency.exponentialRampToValueAtTime(Math.max(30,f2),now+dur);
-      gain.gain.setValueAtTime(.0001,now); gain.gain.exponentialRampToValueAtTime(kind==='raid'?.13:.075,now+.012); gain.gain.exponentialRampToValueAtTime(.0001,now+dur);
+      const peak=kind==='raid'?.13:kind==='collapse'?.1:kind==='drip'?.024:.075;gain.gain.setValueAtTime(.0001,now); gain.gain.exponentialRampToValueAtTime(peak,now+.012); gain.gain.exponentialRampToValueAtTime(.0001,now+dur);
       osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now+dur+.02);
     } catch(e) { /* Audio is optional on browsers that restrict it. */ }
   }
@@ -904,7 +919,7 @@
     if(name!=='game'){mapOpen=false;$('mapOverlay').classList.remove('show');setStatusPanel(false);setActionSheet(false);closeModal();}syncNotificationLane();
   }
   function saveGame() {
-    if(!game||!active||game.gameOver) return;
+    if(raidTestMode||!game||!active||game.gameOver) return;
     try {
       const chunkState=[];
       for(const chunk of world.chunks.values())if(chunk.nodes.some(n=>n.remaining!==n.maxRemaining))chunkState.push({cx:chunk.cx,cy:chunk.cy,remaining:chunk.nodes.map(n=>n.remaining)});
@@ -919,6 +934,8 @@
   function loadSaved() {
     const data=savedGame(); if(!data||!data.player||!data.resources) return false;
     resetNotifications();game=freshGame();Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');muted=!!data.muted;
+    game.dug=game.dug&&typeof game.dug==='object'?game.dug:{};game.dug['5,1']=true;game.digging=data.digging&&typeof data.digging==='object'?data.digging:{};game.supports=data.supports&&typeof data.supports==='object'?data.supports:{};game.integrity=data.integrity&&typeof data.integrity==='object'?data.integrity:{};game.ladders=data.ladders&&typeof data.ladders==='object'?data.ladders:{};if(game.ladders['5,1']===undefined)game.ladders['5,1']=true;if(game.ladders['5,2']===undefined)game.ladders['5,2']=true;game.lamps=data.lamps&&typeof data.lamps==='object'?data.lamps:{'5,3':true};game.bunkerEffects=[];game.finds=data.finds&&typeof data.finds==='object'?data.finds:{};game.bunkerMode=['dig','build','repair','support','lamp'].includes(data.bunkerMode)?data.bunkerMode:'dig';
+    const savedBX=Number(data.player.bX??data.player.bCol??5),savedBY=Number(data.player.bY??data.player.bRow??3);game.player.bX=clamp(Number.isFinite(savedBX)?savedBX:5,0,GRID.cols-1);game.player.bY=clamp(Number.isFinite(savedBY)?savedBY:3,0,GRID.rows-1);game.player.bCol=Math.round(game.player.bX);game.player.bRow=Math.round(game.player.bY);game.bunkerDripTimer=clamp(Number(data.bunkerDripTimer)||12,1,40);game.structureWarning=null;
     game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.mapDiscovery=Array.isArray(data.mapDiscovery)?[...new Set(data.mapDiscovery.map(String).filter(key=>{const match=/^(\d+),(\d+)$/.exec(key);return match&&Number(match[1])<CHUNK_COLS&&Number(match[2])<CHUNK_ROWS;}))]:[];mapDiscovered=new Set(game.mapDiscovery);game.mapMarkers=Array.isArray(data.mapMarkers)?data.mapMarkers.filter(marker=>marker&&Number.isFinite(Number(marker.x))&&Number.isFinite(Number(marker.y))).slice(-12).map((marker,index)=>({id:String(marker.id||`marker-${index}`),x:clamp(Number(marker.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(marker.y),WORLD_EDGE,MAP.h-WORLD_EDGE),label:String(marker.label||'نشان').slice(0,14)})):[];mapDirty=true;minimapDirty=true;game.inventory={hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.motionBlend=clamp(Number(game.player.motionBlend)||0,0,1);game.player.runBlend=clamp(Number(game.player.runBlend)||0,0,1);game.player.hurtTimer=clamp(Number(game.player.hurtTimer)||0,0,.55);game.player.deathTimer=0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
     const oldWorldVersion=data.worldVersion||1;
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
@@ -992,7 +1009,7 @@
       for(const [id,r] of Object.entries(ROOMS)) {
         const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'+(game.selectedRoom===id?' selected':'');
         btn.innerHTML=`<span class="data-title">${r.name}</span><span class="data-desc">${r.desc}${r.effect.defense?` · دفاع +${r.effect.defense}`:''}</span><span class="data-meta"><span class="cost">${costText(r.cost)}</span><span>انتخاب</span></span>`;
-        btn.addEventListener('click',()=>{game.selectedRoom=id; closeModal(); showToast(`${r.name} انتخاب شد؛ خانهٔ خالی را نشانه بگیر.`,2100); updateUI(true);}); cards.appendChild(btn);
+        btn.addEventListener('click',()=>{game.selectedRoom=id;game.bunkerMode='build';closeModal();showToast(`${r.name} انتخاب شد؛ خانهٔ خالی را نشانه بگیر.`,2100);updateControlsUI();updateUI(true);}); cards.appendChild(btn);
       }
     } else if(type==='crafting') {
       title.textContent='کارگاه ساخت';note.textContent='مواد را از جنگل بردار و دستورهای ساخت را در سه دسته ببین؛ خوراک‌ها هنگام ساخت مصرف می‌شوند.';craftCategory='tools';renderCraftingTabs();renderCraftingCards();
@@ -1272,6 +1289,7 @@
     // The near arm is dimension-identical to the far arm and stays in front of the clothing.
     const hand=arm(1,step*.42,false);
     if(p.actionTimer>0&&p.actionKind==='swing'){const toolX=hand.x+X(.16)+swing*8,toolY=hand.y-X(.27)-swing*5;bone(hand.x,hand.y,toolX,toolY,X(.041),'#9b7449','#473a2b');ctx.strokeStyle='rgba(229,196,132,.72)';ctx.lineWidth=X(.028);ctx.beginPath();ctx.arc(hand.x+1,hand.y-3,X(.295),-.95,.25);ctx.stroke();}
+    if(p.actionTimer>0&&p.actionKind==='pickaxe'){const lift=Math.sin(Math.PI*actionProgress),toolX=hand.x+X(.17)+lift*X(.16),toolY=hand.y-X(.27)-lift*X(.22);bone(hand.x,hand.y,toolX,toolY,X(.042),'#9b7449','#473a2b');ctx.strokeStyle='#30302a';ctx.lineWidth=X(.105);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(toolX-X(.105),toolY-X(.025));ctx.lineTo(toolX+X(.14),toolY-X(.095));ctx.stroke();ctx.strokeStyle='#c6a875';ctx.lineWidth=X(.033);ctx.beginPath();ctx.moveTo(toolX-X(.10),toolY-X(.055));ctx.lineTo(toolX+X(.13),toolY-X(.125));ctx.stroke();}
     if(p.torchLit){const tx=hand.x+X(.045),ty=hand.y-X(.16);bone(hand.x,hand.y,tx+3,ty-X(.25),X(.041),'#88603b','#443324');ctx.fillStyle='#d96f37';ctx.beginPath();ctx.moveTo(tx,ty-X(.25));ctx.quadraticCurveTo(tx-4,ty-X(.43),tx+3,ty-X(.52));ctx.quadraticCurveTo(tx+11,ty-X(.38),tx+4,ty-X(.25));ctx.fill();ctx.fillStyle='#f3ca74';ctx.beginPath();ctx.moveTo(tx+3,ty-X(.27));ctx.quadraticCurveTo(tx+1,ty-X(.40),tx+4,ty-X(.43));ctx.quadraticCurveTo(tx+7,ty-X(.36),tx+3,ty-X(.27));ctx.fill();}
     // Head size and placement share the same baseline proportions in all four cardinal facings.
     const H=R.head,headX=sideFacing?X(.045):0,headY=Y(H.centerY+H.faceOffsetY)+reach*.7+death*3.6,rx=X(H.faceHalfWidth),ry=X(H.faceHalfHeight),crownTop=headY+Y(H.crownY-(H.centerY+H.faceOffsetY));
@@ -1435,6 +1453,80 @@
     const width=cell*GRID.cols,left=Math.max((W-width)/2,joystickClearance);
     return {cell,left,ground,top,width,height:cell*GRID.rows};
   }
+  function bunkerCellOpen(c,r) {
+    if(!game||c<0||c>=GRID.cols||r<0||r>=GRID.rows)return false;const key=keyOf(c,r);return !!game.dug?.[key]||!!game.rooms?.[key];
+  }
+  function bunkerHasLadder(c,upperRow) {
+    return !!game?.ladders?.[keyOf(c,upperRow)]&&bunkerCellOpen(c,upperRow)&&bunkerCellOpen(c,upperRow+1);
+  }
+  function bunkerCellHash(c,r,salt=0) {
+    const id=String(game?.bunkerId||'hut'),idSeed=[...id].reduce((sum,ch)=>Math.imul(sum^ch.charCodeAt(0),16777619),2166136261),n=Math.imul(c+19+salt,374761393)^Math.imul(r+31-salt,668265263)^idSeed;
+    return ((Math.imul(n^(n>>>13),1274126177)^(n>>>16))>>>0)/4294967295;
+  }
+  function soilLayerAt(c,r) {
+    const n=bunkerCellHash(c,r,17);
+    if(r===0)return n<.26?'roots':'topsoil';
+    if(r===1)return n<.3?'roots':n>.91?'rock':'clay';
+    if(r===2)return n<.16?'roots':n>.82?'rock':'clay';
+    return n<.12?'clay':'rock';
+  }
+  function hiddenFindAt(c,r) {
+    const roll=bunkerCellHash(c,r,73);if(roll<.978)return null;return BUNKER_FINDS[Math.floor(bunkerCellHash(c,r,91)*BUNKER_FINDS.length)];
+  }
+  function drawSoilTile(x,y,cell,c,r) {
+    const layerId=soilLayerAt(c,r),layer=BUNKER_SOIL[layerId],seed=bunkerCellHash(c,r,39),shade=Math.round(seed*7);
+    ctx.fillStyle=layer.color;ctx.fillRect(x+1,y+1,cell-2,cell-2);ctx.save();ctx.beginPath();ctx.rect(x+1,y+1,cell-2,cell-2);ctx.clip();
+    if(layerId==='topsoil'){
+      ctx.fillStyle='rgba(103,126,74,.42)';ctx.fillRect(x+2,y+2,cell-4,Math.max(4,cell*.12));
+      for(let i=0;i<4;i++){const px=x+cell*(.18+((seed+i*.237)%1)*.67),py=y+cell*(.25+((seed*.7+i*.31)%1)*.62);ctx.fillStyle=i%2?'rgba(192,165,119,.28)':'rgba(33,34,26,.3)';ctx.beginPath();ctx.ellipse(px,py,1.5+(i%2),1.1,seed*3,0,Math.PI*2);ctx.fill();}
+      ctx.strokeStyle='rgba(122,105,73,.48)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+cell*.12,y+cell*.34);ctx.quadraticCurveTo(x+cell*.3,y+cell*.24,x+cell*.43,y+cell*.41);ctx.stroke();
+    } else if(layerId==='roots'){
+      ctx.strokeStyle='#8b6940';ctx.lineWidth=Math.max(1,cell*.035);ctx.beginPath();ctx.moveTo(x+cell*.14,y+cell*.06);ctx.quadraticCurveTo(x+cell*.24,y+cell*.39,x+cell*.5,y+cell*.55);ctx.quadraticCurveTo(x+cell*.7,y+cell*.68,x+cell*.86,y+cell*.95);ctx.moveTo(x+cell*.55,y+cell*.52);ctx.quadraticCurveTo(x+cell*.38,y+cell*.7,x+cell*.27,y+cell*.91);ctx.moveTo(x+cell*.55,y+cell*.52);ctx.quadraticCurveTo(x+cell*.7,y+cell*.41,x+cell*.82,y+cell*.27);ctx.stroke();
+      ctx.strokeStyle='rgba(196,153,89,.32)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+cell*.18,y+cell*.07);ctx.lineTo(x+cell*.23,y+cell*.29);ctx.moveTo(x+cell*.82,y+cell*.33);ctx.lineTo(x+cell*.73,y+cell*.43);ctx.stroke();
+    } else if(layerId==='clay'){
+      ctx.strokeStyle='rgba(188,143,102,.32)';ctx.lineWidth=1;for(let i=0;i<4;i++){const yy=y+cell*(.18+i*.2);ctx.beginPath();ctx.moveTo(x+cell*.06,yy);ctx.quadraticCurveTo(x+cell*.42,yy+(i%2?2:-2),x+cell*.94,yy+((i+1)%2?2:-2));ctx.stroke();}
+      ctx.fillStyle='rgba(36,31,28,.2)';ctx.fillRect(x+cell*.2,y+cell*.73,cell*.24,cell*.06);ctx.fillRect(x+cell*.59,y+cell*.36,cell*.16,cell*.045);
+    } else {
+      ctx.fillStyle='rgba(153,161,148,.23)';ctx.beginPath();ctx.moveTo(x+cell*.08,y+cell*.34);ctx.lineTo(x+cell*.29,y+cell*.12);ctx.lineTo(x+cell*.48,y+cell*.24);ctx.lineTo(x+cell*.42,y+cell*.48);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(26,30,28,.26)';ctx.beginPath();ctx.moveTo(x+cell*.55,y+cell*.58);ctx.lineTo(x+cell*.67,y+cell*.32);ctx.lineTo(x+cell*.91,y+cell*.45);ctx.lineTo(x+cell*.82,y+cell*.78);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(203,206,184,.3)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+cell*.3,y+cell*.13);ctx.lineTo(x+cell*.44,y+cell*.23);ctx.moveTo(x+cell*.55,y+cell*.59);ctx.lineTo(x+cell*.68,y+cell*.35);ctx.stroke();
+    }
+    ctx.fillStyle=`rgba(15,18,16,${.035+shade*.003})`;ctx.fillRect(x+1,y+1,cell-2,cell-2);ctx.restore();
+  }
+  function drawDigCracks(x,y,cell,state) {
+    if(!state||state.hits<=0)return;const progress=clamp(state.hits/(state.maxHits||1),0,1),count=Math.min(5,Math.ceil(progress*5));
+    ctx.save();ctx.strokeStyle=`rgba(25,24,20,${.58+progress*.22})`;ctx.lineWidth=Math.max(1,cell*.018);ctx.beginPath();
+    for(let i=0;i<count;i++){const seed=bunkerCellHash(state.c??0,state.r??0,61+i),sx=x+cell*(.25+seed*.5),sy=y+cell*(.2+((seed*3.7)%1)*.56);ctx.moveTo(sx,sy);ctx.lineTo(sx+cell*(seed<.5?-.13:.14),sy+cell*.12);ctx.lineTo(sx+cell*(seed<.5?-.08:.08),sy+cell*.27);}
+    ctx.stroke();const barW=cell*.66,bx=x+(cell-barW)/2,by=y+cell-5;ctx.fillStyle='rgba(7,9,8,.72)';ctx.fillRect(bx,by,barW,3);ctx.fillStyle=progress>.72?'#e1aa62':'#c2a267';ctx.fillRect(bx,by,barW*progress,3);ctx.restore();
+  }
+  function spawnBunkerParticles(c,r,kind='dust',count=7) {
+    if(!game.bunkerEffects)game.bunkerEffects=[];for(let i=0;i<count;i++){const angle=Math.random()*Math.PI*2,speed=.35+Math.random()*1.25;game.bunkerEffects.push({kind,x:c+.5+(Math.random()-.5)*.42,y:r+.42+(Math.random()-.5)*.22,vx:Math.cos(angle)*speed,vy:-.35-Math.random()*.85,gravity:kind==='pebble'?2.8:1.4,life:.45+Math.random()*.42,maxLife:.87,size:kind==='pebble'?1.5+Math.random()*2:2+Math.random()*3,color:kind==='pebble'?'#aaa18a':'#c3ad84',rotation:Math.random()*6.28});}
+    if(game.bunkerEffects.length>90)game.bunkerEffects.splice(0,game.bunkerEffects.length-90);
+  }
+  function drawBunkerEffects(g) {
+    for(const fx of game.bunkerEffects||[]){const alpha=clamp(fx.life/fx.maxLife,0,1),x=g.left+fx.x*g.cell,y=g.top+fx.y*g.cell;ctx.save();ctx.globalAlpha=alpha*.8;ctx.translate(x,y);ctx.rotate(fx.rotation+(1-alpha)*2);ctx.fillStyle=fx.color;if(fx.kind==='pebble'){ctx.beginPath();ctx.moveTo(-fx.size,fx.size*.2);ctx.lineTo(-fx.size*.25,-fx.size);ctx.lineTo(fx.size,fx.size*.15);ctx.lineTo(fx.size*.2,fx.size*.8);ctx.closePath();ctx.fill();}else{ctx.beginPath();ctx.ellipse(0,0,fx.size*1.3,fx.size*.75,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
+  }
+  function drawSupportBeam(x,y,cell) {
+    const postW=Math.max(3,cell*.065),left=x+cell*.22,right=x+cell*.78,top=y+cell*.12,bottom=y+cell*.9;
+    ctx.save();ctx.lineCap='round';ctx.strokeStyle='#2c241b';ctx.lineWidth=postW+2;ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.moveTo(right,top);ctx.lineTo(right,bottom);ctx.moveTo(left,top+cell*.08);ctx.lineTo(right,top+cell*.08);ctx.stroke();
+    ctx.strokeStyle='#987448';ctx.lineWidth=postW;ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.moveTo(right,top);ctx.lineTo(right,bottom);ctx.moveTo(left,top+cell*.08);ctx.lineTo(right,top+cell*.08);ctx.stroke();
+    ctx.strokeStyle='rgba(225,190,126,.68)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left+2,top+4);ctx.lineTo(left+2,bottom-4);ctx.moveTo(right+2,top+4);ctx.lineTo(right+2,bottom-4);ctx.stroke();ctx.restore();
+  }
+  function drawBunkerLanterns(g) {
+    for(const key of Object.keys(game.lamps||{})){const [c,r]=key.split(',').map(Number);if(!bunkerCellOpen(c,r))continue;const x=g.left+(c+.77)*g.cell,y=g.top+r*g.cell+g.cell*.16,flicker=Math.sin(gameTime*12+c*4+r)*1.3;
+      ctx.strokeStyle='#634a2d';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-4,y+7);ctx.lineTo(x+2,y+1);ctx.lineTo(x+2,y+4);ctx.stroke();ctx.fillStyle='#4a3927';ctx.fillRect(x-1,y+1,7,3);ctx.fillStyle='#e58c48';ctx.beginPath();ctx.moveTo(x+1,y);ctx.quadraticCurveTo(x-2,y-5-flicker,x+2,y-8-flicker);ctx.quadraticCurveTo(x+7,y-3-flicker,x+4,y);ctx.fill();ctx.fillStyle='#f8d187';ctx.beginPath();ctx.ellipse(x+3,y-2,1.4,3,0,0,Math.PI*2);ctx.fill();}
+  }
+  function drawBunkerLighting(g,px,py) {
+    ctx.save();ctx.globalCompositeOperation='screen';
+    for(const key of Object.keys(game.lamps||{})){const [c,r]=key.split(',').map(Number);if(!bunkerCellOpen(c,r))continue;const x=g.left+(c+.5)*g.cell,y=g.top+(r+.48)*g.cell,radius=g.cell*(2.35+Math.sin(gameTime*9+c*3+r)*.08),glow=ctx.createRadialGradient(x,y,3,x,y,radius);glow.addColorStop(0,'rgba(255,202,119,.34)');glow.addColorStop(.3,'rgba(231,163,83,.2)');glow.addColorStop(.74,'rgba(196,125,63,.055)');glow.addColorStop(1,'rgba(196,125,63,0)');ctx.fillStyle=glow;ctx.fillRect(x-radius,y-radius,radius*2,radius*2);}
+    if(game.player.torchLit){const radius=g.cell*2.4,glow=ctx.createRadialGradient(px,py,2,px,py,radius);glow.addColorStop(0,'rgba(255,213,135,.38)');glow.addColorStop(.32,'rgba(241,160,74,.19)');glow.addColorStop(1,'rgba(241,160,74,0)');ctx.fillStyle=glow;ctx.fillRect(px-radius,py-radius,radius*2,radius*2);}
+    ctx.restore();
+    for(let i=0;i<17;i++){const phase=(gameTime*.09+i*.173)%1,x=g.left+((i*83+Math.sin(gameTime*.27+i)*21)%g.width),y=g.top+((i*41+phase*g.height)%g.height);ctx.fillStyle=`rgba(235,216,171,${.1+.16*Math.sin(phase*Math.PI)})`;ctx.beginPath();ctx.arc(x,y,1+(i%3)*.35,0,Math.PI*2);ctx.fill();}
+    for(let i=0;i<3;i++){const phase=(gameTime*.32+i*.37)%1,x=g.left+g.width*(.18+i*.31),y=g.top+g.cell*(1.1+i*.7)+phase*g.cell*.72;ctx.fillStyle=`rgba(177,193,179,${.2*(1-phase)})`;ctx.beginPath();ctx.ellipse(x,y,1.7,2.4,0,0,Math.PI*2);ctx.fill();}
+  }
+  function drawStructureWarning(g) {
+    const warning=game.structureWarning;if(!warning||warning.remaining<=0)return;const x=g.left+(warning.mid+.5)*g.cell,y=g.top+warning.row*g.cell+5,width=Math.min(230,g.cell*Math.max(2,warning.end-warning.start+1));ctx.save();ctx.fillStyle='rgba(28,21,16,.84)';roundedRect(ctx,x-width/2,y-2,width,20,7);ctx.fill();ctx.strokeStyle='rgba(223,166,92,.58)';ctx.lineWidth=1;roundedRect(ctx,x-width/2,y-2,width,20,7);ctx.stroke();ctx.fillStyle='#efc779';ctx.font='bold 9px Tahoma';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`سقف سست · تیرک لازم است · ${fa(Math.ceil(warning.remaining))}ث`,x,y+8,width-10);ctx.restore();
+  }
   function drawSurfaceShelter(x,y,bunker) {
     const base=bunker||BUNKERS[0], style=base.style||'hut';
     drawSoftShadow(x,y+15,77,17,.24);
@@ -1502,17 +1594,21 @@
     ctx.strokeStyle='#aa8754';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(entranceX-9,g.ground+3);ctx.lineTo(entranceX-9,g.top+g.cell*1.4);ctx.moveTo(entranceX+9,g.ground+3);ctx.lineTo(entranceX+9,g.top+g.cell*1.4);ctx.stroke();
     for(let yy=g.ground+15;yy<g.top+g.cell*1.4;yy+=13){ctx.beginPath();ctx.moveTo(entranceX-9,yy);ctx.lineTo(entranceX+9,yy);ctx.stroke();}
     for(let r=0;r<GRID.rows;r++) for(let c=0;c<GRID.cols;c++) {
-      const x=g.left+c*g.cell,y=g.top+r*g.cell,k=keyOf(c,r),dug=!!game.dug[k],room=game.rooms[k];
-      ctx.fillStyle=dug?'#202a25':((c+r)%2?'#504538':'#594c3a');ctx.fillRect(x+1,y+1,g.cell-2,g.cell-2);
-      if(!dug){ctx.fillStyle='rgba(174,149,108,.15)';ctx.beginPath();ctx.arc(x+g.cell*.28,y+g.cell*.36,2,0,Math.PI*2);ctx.arc(x+g.cell*.72,y+g.cell*.68,1.6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(18,22,19,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+g.cell*.45,y+g.cell*.2);ctx.lineTo(x+g.cell*.58,y+g.cell*.34);ctx.stroke();}
-      else {ctx.fillStyle='rgba(144,164,137,.12)';ctx.fillRect(x+4,y+g.cell-7,g.cell-8,3);}
-      ctx.strokeStyle='rgba(213,195,160,.15)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,g.cell-1,g.cell-1);
+      const x=g.left+c*g.cell,y=g.top+r*g.cell,k=keyOf(c,r),dug=!!game.dug[k],room=game.rooms[k],dig=game.digging?.[k];
+      if(!dug&&!room)drawSoilTile(x,y,g.cell,c,r);else{ctx.fillStyle='#202a25';ctx.fillRect(x+1,y+1,g.cell-2,g.cell-2);ctx.fillStyle='rgba(144,164,137,.12)';ctx.fillRect(x+4,y+g.cell-7,g.cell-8,3);ctx.strokeStyle='rgba(158,157,128,.1)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+g.cell*.14,y+g.cell*.27);ctx.lineTo(x+g.cell*.37,y+g.cell*.3);ctx.moveTo(x+g.cell*.64,y+g.cell*.73);ctx.lineTo(x+g.cell*.87,y+g.cell*.68);ctx.stroke();}
+      ctx.strokeStyle='rgba(213,195,160,.2)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,g.cell-1,g.cell-1);
+      if(game.supports?.[k])drawSupportBeam(x,y,g.cell);
       if(room)drawRoom(x,y,g.cell,room);
+      if(!dug&&!room&&dig)drawDigCracks(x,y,g.cell,dig);
       if(game.selectedCell&&game.selectedCell.c===c&&game.selectedCell.r===r){ctx.strokeStyle='#f0c676';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,g.cell-6,g.cell-6);ctx.setLineDash([]);}
     }
-    // tunnel light from a warm oil lamp
-    const pc=game.player.bCol,pr=game.player.bRow,px=g.left+(pc+.5)*g.cell,py=g.top+(pr+.55)*g.cell;
-    const light=ctx.createRadialGradient(px,py,5,px,py,g.cell*2.7);light.addColorStop(0,'rgba(210,164,91,.18)');light.addColorStop(1,'rgba(210,164,91,0)');ctx.fillStyle=light;ctx.fillRect(px-g.cell*3,py-g.cell*3,g.cell*6,g.cell*6);
+    // Only deliberate vertical links get a ladder, keeping wide rooms readable.
+    for(const key of Object.keys(game.ladders||{})){
+      const [c,r]=key.split(',').map(Number);if(!Number.isInteger(c)||!Number.isInteger(r)||!bunkerHasLadder(c,r))continue;
+      const cx=g.left+(c+.5)*g.cell,upper=g.top+(r+.68)*g.cell,lower=g.top+(r+1.34)*g.cell;ctx.strokeStyle='rgba(37,30,22,.86)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(cx-8,upper);ctx.lineTo(cx-8,lower);ctx.moveTo(cx+8,upper);ctx.lineTo(cx+8,lower);ctx.stroke();ctx.strokeStyle='#bd975e';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(cx-8,upper);ctx.lineTo(cx-8,lower);ctx.moveTo(cx+8,upper);ctx.lineTo(cx+8,lower);for(let yy=upper+5;yy<lower;yy+=10){ctx.moveTo(cx-8,yy);ctx.lineTo(cx+8,yy);}ctx.stroke();
+    }
+    const pc=game.player.bCol,pr=game.player.bRow,px=g.left+((game.player.bX??pc)+.5)*g.cell,py=g.top+((game.player.bY??pr)+.55)*g.cell;
+    drawBunkerLighting(g,px,py);drawBunkerLanterns(g);drawBunkerEffects(g);drawStructureWarning(g);
     // The same layered survivor rig scales to the bunker cell without a camera-angle rotation.
     drawPlayerForest(px,py+g.cell*.34,.72,false);
     // night raiders pacing at the surface
@@ -1524,8 +1620,8 @@
     // Base integrity and mineable prompt.
     ctx.fillStyle='rgba(4,8,7,.58)';roundedRect(ctx,Math.max(8,W-170),g.ground+14,155,25,8);ctx.fill();
     ctx.fillStyle='#e9d7ae';ctx.font='bold 10px Tahoma';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(`${b.nameFa} · استحکام ${fa(game.bunkers[game.bunkerId]?.hp??100)}٪`,W-23,g.ground+26);
-    const damaged=Object.values(game.rooms).filter(r=>r.hp<r.maxHp).length;
-    ctx.fillStyle='rgba(0,0,0,.5)';roundedRect(ctx,10,g.ground+13,138,27,8);ctx.fill();ctx.fillStyle='#d8ceb1';ctx.textAlign='left';ctx.fillText(`اتاق‌ها ${fa(Object.keys(game.rooms).length)} · آسیب ${fa(damaged)}`,20,g.ground+26);
+    const damaged=Object.values(game.rooms).filter(r=>r.hp<r.maxHp).length,roomPanelX=10,roomPanelWidth=Math.max(64,Math.min(138,g.left-20)),vitalsBottom=$('vitalsStack').getBoundingClientRect().bottom,roomPanelY=Math.max(g.ground+13,vitalsBottom+12);
+    ctx.fillStyle='rgba(0,0,0,.5)';roundedRect(ctx,roomPanelX,roomPanelY,roomPanelWidth,27,8);ctx.fill();ctx.fillStyle='#d8ceb1';ctx.textAlign='left';ctx.fillText(`اتاق‌ها ${fa(Object.keys(game.rooms).length)} · آسیب ${fa(damaged)}`,roomPanelX+10,roomPanelY+13,roomPanelWidth-18);
   }
 
   function drawSanityDistortion() {
@@ -1616,6 +1712,7 @@
     if(!world?.effects)return;
     for(const fx of world.effects){fx.life-=dt;fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.vx*=Math.max(0,1-dt*2);fx.vy=(fx.vy+18*dt)*Math.max(0,1-dt*1.1);fx.rot+=fx.spin*dt;}
     world.effects=world.effects.filter(fx=>fx.life>0);
+    if(game?.bunkerEffects){for(const fx of game.bunkerEffects){fx.life-=dt;fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.vy+=fx.gravity*dt;fx.vx*=Math.max(0,1-dt*1.5);}game.bunkerEffects=game.bunkerEffects.filter(fx=>fx.life>0);}
   }
   function drawParticles() {
     if(!world?.effects?.length)return;
@@ -1658,15 +1755,14 @@
         if(p.running){p.puffTimer=(p.puffTimer||0)-dt;if(p.puffTimer<=0){spawnRunPuff(p.x,p.y);p.puffTimer=.17;}}else p.puffTimer=.08;
       }else{p.running=false;p.puffTimer=0;}
     } else {
-      p.moving=inputMoving;p.running=false;p.exhausted=false;motionTarget=magnitude>.38?1:0;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*20);
-      p.stepTimer=Math.max(0,(p.stepTimer||0)-dt);
-      if(magnitude>.38&&p.stepTimer<=0){
-        let sx=0,sy=0;if(Math.abs(v.x)>Math.abs(v.y)){sx=Math.sign(v.x);}else{sy=Math.sign(v.y);}
-        p.faceX=sx;p.faceY=sy;p.facing=facing4(sx,sy,p.facing);p.animTime=(p.animTime||0)+dt*6.5;
-        const c=clamp(p.bCol+sx,0,GRID.cols-1),r=clamp(p.bRow+sy,0,GRID.rows-1),k=keyOf(c,r);
-        if(game.dug[k]){p.bCol=c;p.bRow=r;}
-        p.stepTimer=.18;
+      p.running=false;p.exhausted=false;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*22);
+      p.bX=clamp(Number.isFinite(Number(p.bX))?Number(p.bX):Number(p.bCol??5),0,GRID.cols-1);p.bY=clamp(Number.isFinite(Number(p.bY))?Number(p.bY):Number(p.bRow??3),0,GRID.rows-1);
+      const moveThreshold=.12,walking=magnitude>moveThreshold,horizontal=walking&&Math.abs(v.x)>=Math.abs(v.y),speed=2.35,oldX=p.bX,oldY=p.bY;
+      if(walking){
+        if(horizontal){const step=Math.sign(v.x)*speed*clamp(Math.abs(v.x),0,1)*dt,currentCol=Math.round(p.bX),row=Math.round(p.bY),nextX=clamp(p.bX+step,0,GRID.cols-1),nextCol=Math.round(nextX);p.faceX=Math.sign(v.x);p.faceY=0;p.facing=p.faceX<0?'left':'right';if(nextCol===currentCol||bunkerCellOpen(nextCol,row))p.bX=nextX;else p.bX=clamp(p.bX,currentCol-.43,currentCol+.43);}
+        else {const step=Math.sign(v.y)*speed*clamp(Math.abs(v.y),0,1)*dt,currentRow=Math.round(p.bY),col=Math.round(p.bX),nextY=clamp(p.bY+step,0,GRID.rows-1),nextRow=Math.round(nextY);p.faceX=0;p.faceY=Math.sign(v.y);p.facing=p.faceY<0?'back':'front';if(nextRow===currentRow||bunkerHasLadder(col,Math.min(currentRow,nextRow)))p.bY=nextY;else p.bY=clamp(p.bY,currentRow-.43,currentRow+.43);}
       }
+      p.bCol=Math.round(p.bX);p.bRow=Math.round(p.bY);p.moving=Math.hypot(p.bX-oldX,p.bY-oldY)>.002;motionTarget=p.moving?clamp(magnitude,0,1):0;if(p.moving)p.animTime=(p.animTime||0)+dt*(7+4*motionTarget);if(p.moving&&game.selectedCell&&Math.hypot(p.bCol-game.selectedCell.c,p.bRow-game.selectedCell.r)>2)game.selectedCell=null;
     }
     $('joystick').classList.toggle('running',p.running);const movementEase=1-Math.exp(-dt*11),runEase=1-Math.exp(-dt*9);p.motionBlend+=(motionTarget-p.motionBlend)*movementEase;p.runBlend+=(runBlendTarget-p.runBlend)*runEase;
   }
@@ -1925,7 +2021,9 @@
       setActionPrompt(label,icon);
     } else {
       $('forestSheetActions').style.display='none';$('bunkerTools').style.display='flex';$('actionSheetTitle').textContent='ابزارهای پناهگاه';
-      const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k],label=room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':'عمل';setActionPrompt(label,room?'upgrade':label==='ساخت'?'build':'action');
+      const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k],mode=game.bunkerMode||'dig';
+      $('digButton').classList.toggle('active',mode==='dig');$('roomButton').classList.toggle('active',mode==='build');$('repairButton').classList.toggle('active',mode==='repair');$('supportButton').classList.toggle('active',mode==='support');$('lampButton').classList.toggle('active',mode==='lamp');
+      const labels={dig:room||game.dug[k]?'باز است':'کندن',build:room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':game.selectedRoom?'جای‌گذاری':'اتاق',repair:'تعمیر',support:'تیرک',lamp:'چراغ'},icons={dig:'stone',build:room?'upgrade':'build',repair:'build',support:'build',lamp:'action'};setActionPrompt(labels[mode]||'عمل',icons[mode]||'action');
     }
   }
   function animatePlayerAction(kind,duration=.55) { game.player.actionKind=kind;game.player.actionDuration=duration;game.player.actionTimer=duration; }
@@ -1980,7 +2078,7 @@
     for(const drop of world.foodDrops||[])drop.timer-=dt;world.foodDrops=(world.foodDrops||[]).filter(drop=>drop.timer>0&&drop.amount>0);
     if(world.raidWarning)world.raidWarning.timer-=dt;for(const track of world.raidTracks||[])track.life-=dt;world.raidTracks=(world.raidTracks||[]).filter(track=>track.life>0);
   }
-  function enterBunker() { setActionSheet(false);game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.stepTimer=0;game.selectedCell=null;showToast('به پناهگاه رسیدی. برای حفر یا ساخت، خانه‌ای را لمس کن.',2200);beep('build');haptic(12); }
+  function enterBunker() { setActionSheet(false);game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.bX=5;game.player.bY=3;game.player.stepTimer=0;game.selectedCell=null;game.bunkerMode=game.bunkerMode||'dig';showToast('داخل پناهگاه راه برو؛ خانهٔ خاکی را لمس کن، بعد با عمل کلنگ بزن.',2400);beep('build');haptic(12);updateControlsUI(); }
   function exitBunker() {
     if(game.phase==='night'){showToast('بیرون رفتن در شب امن نیست.',1700);return;}
     setActionSheet(false);game.mode='forest';game.player.x=MAP.cx+80;game.player.y=MAP.cy+5;game.player.target=null;game.selectedCell=null;haptic(10);showToast('به جنگل برگشتی؛ غروب نزدیک است.',1700);
@@ -1991,31 +2089,66 @@
   }
   function currentTarget() {
     if(game.selectedCell)return game.selectedCell;
-    const c=clamp(game.player.bCol+game.player.faceX,0,GRID.cols-1),r=clamp(game.player.bRow+game.player.faceY,0,GRID.rows-1);
-    return {c,r};
+    const p=game.player,dx=Math.abs(p.faceX||0)>=Math.abs(p.faceY||0)?Math.sign(p.faceX||1):0,dy=dx===0?Math.sign(p.faceY||1):0;
+    return {c:clamp(p.bCol+dx,0,GRID.cols-1),r:clamp(p.bRow+dy,0,GRID.rows-1)};
   }
   function adjacentToDug(c,r) {
     if(c===5&&r===1)return true;
-    return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>game.dug[keyOf(c+dx,r+dy)]);
+    return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>bunkerCellOpen(c+dx,r+dy));
   }
   function bunkerAction() {
-    const t=currentTarget(),k=keyOf(t.c,t.r),room=game.rooms[k];
-    if(room) {
-      if(room.level>=3){showToast('این اتاق به بالاترین سطح رسیده است.',1600);return;}
-      const def=ROOMS[room.type]||ROOMS.storage,cost={...def.upgrade};
-      for(const key of Object.keys(cost))cost[key]*=room.level;
-      if(!pay(cost)){showToast(`برای ارتقا نیاز داری: ${costText(cost)}.`,1800);return;}
-      room.level++;room.maxHp+=10;room.hp=Math.min(room.maxHp,room.hp+18);game.player.noiseBurst=.85;beep('build');showToast(`${ROOMS[room.type].name} به سطح ${fa(room.level)} رسید.`,1800);return;
+    const t=currentTarget(),k=keyOf(t.c,t.r),room=game.rooms[k],mode=game.bunkerMode||'dig',p=game.player;
+    if(mode==='repair'){repair();return;}
+    if(mode==='support'){
+      if(!bunkerCellOpen(t.c,t.r)){showToast('تیرک را روی فضای کنده‌شده بگذار.',1500);return;}
+      if(game.supports?.[k]){showToast('اینجا از قبل تیرک دارد؛ فاصلهٔ تیرک‌ها را کوتاه نگه دار.',1600);return;}
+      if(!pay({wood:2})){showToast('برای تیرک چوبی ۲ چوب لازم است.',1600);return;}
+      game.supports[k]=true;game.integrity={};game.structureWarning=null;animatePlayerAction('gather',.45);p.noiseBurst=.7;beep('build');showToast('تیرک چوبی جفت شد؛ سقف این دهانه پایدارتر است.',1700);return;
     }
-    if(!game.dug[k]) {
-      if(!adjacentToDug(t.c,t.r)){showToast('برای گسترش تونل، خانه‌ای کنار فضای کنده‌شده انتخاب کن.',1900);return;}
-      game.dug[k]=true;addResource('stone',1);game.player.noiseBurst=1.05;beep('dig');showToast('سنگ را کندی؛ +۱ سنگ. حالا می‌توانی اتاق بسازی.',1600);return;
+    if(mode==='lamp'){
+      if(!bunkerCellOpen(t.c,t.r)){showToast('چراغ را روی فضای کنده‌شده نصب کن.',1500);return;}
+      if(game.lamps?.[k]){showToast('این خانه از قبل چراغ دارد.',1400);return;}
+      if(!pay({wood:1})){showToast('برای چراغ روغنی ۱ چوب لازم است.',1500);return;}
+      game.lamps[k]=true;animatePlayerAction('gather',.4);p.noiseBurst=.45;beep('build');showToast('چراغ روغنی روشن شد؛ نور گرم، تونل را بازتر می‌کند.',1700);return;
     }
-    if(!game.selectedRoom){showToast('یک اتاق انتخاب کن یا خانهٔ سنگی دیگری را برای حفر نشانه بگیر.',2000);return;}
-    const def=ROOMS[game.selectedRoom];
-    if(Object.keys(game.rooms).length>=BUNKERS.find(b=>b.id===game.bunkerId).size[0]*BUNKERS.find(b=>b.id===game.bunkerId).size[1]){showToast('گنجایش این پناهگاه پر شده است.',1600);return;}
-    if(!pay(def.cost)){showToast(`منابع کافی نیست؛ نیاز داری به ${costText(def.cost)}.`,1900);return;}
-    game.rooms[k]={type:game.selectedRoom,level:1,hp:48,maxHp:48};game.selectedRoom=null;game.player.noiseBurst=.9;beep('build');showToast(`${def.name} ساخته شد.`,1800);
+    if(mode==='dig'){
+      if(room||game.dug[k]){showToast('این خانه باز است؛ خانهٔ خاکیِ کناری را انتخاب کن.',1500);return;}
+      if(!adjacentToDug(t.c,t.r)){showToast('برای گسترش تونل، خانه‌ای کنار فضای کنده‌شده انتخاب کن.',1800);return;}
+      let state=game.digging[k];if(!state){const layerId=soilLayerAt(t.c,t.r),find=hiddenFindAt(t.c,t.r);state=game.digging[k]={c:t.c,r:t.r,layer:layerId,hits:0,maxHits:BUNKER_SOIL[layerId].hits,findId:find?.id||''};}
+      const layer=BUNKER_SOIL[state.layer]||BUNKER_SOIL.clay;state.hits=Math.min(state.maxHits,state.hits+1);p.faceX=t.c===p.bCol?0:Math.sign(t.c-p.bCol);p.faceY=t.r===p.bRow?0:Math.sign(t.r-p.bRow);p.facing=p.faceX? (p.faceX<0?'left':'right'):(p.faceY<0?'back':'front');animatePlayerAction('pickaxe',.48);p.noiseBurst=1.05;spawnBunkerParticles(t.c,t.r,'dust',6);if(state.layer==='rock'||state.layer==='clay')spawnBunkerParticles(t.c,t.r,'pebble',2);beep(state.layer==='rock'?'hit':'dig');
+      if(state.hits>=state.maxHits){game.dug[k]=true;delete game.digging[k];game.integrity={};game.structureWarning=null;if(t.r>0&&bunkerCellOpen(t.c,t.r-1))game.ladders[keyOf(t.c,t.r-1)]=true;if(t.r<GRID.rows-1&&bunkerCellOpen(t.c,t.r+1))game.ladders[keyOf(t.c,t.r)]=true;if(layer.stone)addResource('stone',layer.stone);if(state.layer==='roots'&&bunkerCellHash(t.c,t.r,107)>.62)addResource('herbs',1);let note=`${layer.label} را کندی.`;if(layer.stone)note+=` +${fa(layer.stone)} سنگ.`;if(state.layer==='roots'&&bunkerCellHash(t.c,t.r,107)>.62)note+=' یک گیاه دارویی از ریشه‌ها پیدا شد.';
+        if(state.findId){const find=BUNKER_FINDS.find(item=>item.id===state.findId);if(find){for(const [resource,amount] of Object.entries(find.reward||{}))addResource(resource,amount);if(find.health)game.stats.health=clamp(game.stats.health+find.health,0,100);game.finds[state.findId]=(game.finds[state.findId]||0)+1;note+=` یافتهٔ نادر: ${find.name}.`;spawnBunkerParticles(t.c,t.r,'pebble',8);}}
+        showToast(`${note} تونل باز شد.`,1900);
+      } else showToast(`${layer.label}: ${fa(state.hits)} از ${fa(state.maxHits)} ضربه؛ ادامه بده.`,1250);
+      return;
+    }
+    if(mode==='build'){
+      if(room){if(room.level>=3){showToast('این اتاق به بالاترین سطح رسیده است.',1500);return;}const def=ROOMS[room.type]||ROOMS.storage,cost={...def.upgrade};for(const key of Object.keys(cost))cost[key]*=room.level;if(!pay(cost)){showToast(`برای ارتقا نیاز داری: ${costText(cost)}.`,1700);return;}room.level++;room.maxHp+=10;room.hp=Math.min(room.maxHp,room.hp+18);p.noiseBurst=.85;beep('build');showToast(`${def.name} به سطح ${fa(room.level)} رسید.`,1700);return;}
+      if(!game.dug[k]){showToast('برای ساخت اتاق، اول خانهٔ خاکی را کامل حفر کن.',1500);return;}
+      if(!game.selectedRoom){showToast('یک اتاق از فهرست انتخاب کن، خانهٔ باز را لمس کن و عمل را بزن.',1900);return;}
+      const def=ROOMS[game.selectedRoom];if(!def){game.selectedRoom=null;game.bunkerMode='dig';showToast('نوع اتاق دیگر در دسترس نیست؛ دوباره انتخاب کن.',1500);return;}
+      const base=BUNKERS.find(b=>b.id===game.bunkerId)||BUNKERS[0];if(Object.keys(game.rooms).length>=base.size[0]*base.size[1]){showToast('گنجایش این پناهگاه پر شده است.',1500);return;}
+      if(!pay(def.cost)){showToast(`منابع کافی نیست؛ نیاز داری به ${costText(def.cost)}.`,1800);return;}
+      game.rooms[k]={type:game.selectedRoom,level:1,hp:48,maxHp:48};game.selectedRoom=null;game.bunkerMode='dig';p.noiseBurst=.9;beep('build');showToast(`${def.name} ساخته شد.`,1700);return;
+    }
+    game.bunkerMode='dig';showToast('ابزار کندن دوباره انتخاب شد.',1300);
+  }
+  function updateStructureIntegrity(dt) {
+    if(game.mode!=='bunker'){game.structureWarning=null;return;}
+    const seen=new Set(),warnings=[];
+    for(let r=0;r<GRID.rows;r++){
+      let c=0;while(c<GRID.cols){if(!bunkerCellOpen(c,r)){c++;continue;}const runStart=c;while(c<GRID.cols&&bunkerCellOpen(c,r))c++;const runEnd=c-1,supports=Object.keys(game.supports||{}).map(key=>key.split(',').map(Number)).filter(([sx,sr])=>sr===r&&sx>=runStart&&sx<=runEnd).map(([sx])=>sx).sort((a,b)=>a-b),anchors=[runStart-1,...supports,runEnd+1];
+        for(let i=0;i<anchors.length-1;i++){const start=anchors[i]+1,end=anchors[i+1]-1;if(end-start+1<4)continue;const id=`${r}:${start}-${end}`;seen.add(id);const risk=game.integrity[id]||(game.integrity[id]={timer:38,dustTimer:1.5,collapsed:false,warned:false});if(risk.collapsed)continue;risk.timer=Math.max(0,risk.timer-dt);risk.dustTimer-=dt;
+          if(risk.timer<=18){warnings.push({id,row:r,start,end,mid:(start+end)/2,remaining:risk.timer});if(risk.dustTimer<=0){spawnBunkerParticles((start+end)/2,r,'dust',3);risk.dustTimer=1.6;}if(!risk.warned){risk.warned=true;showToast('از سقف تونل خاک می‌ریزد؛ تیرک چوبی را نزدیک دهانه بگذار.',2400);}}
+          if(risk.timer<=0){const candidates=[];for(let x=start;x<=end;x++)if(game.rooms[keyOf(x,r)])candidates.push({x,room:game.rooms[keyOf(x,r)]});candidates.sort((a,b)=>a.room.hp/a.room.maxHp-b.room.hp/b.room.maxHp);let message='بخشی از تونل زیر خاک فرو ریخت.';spawnBunkerParticles((start+end)/2,r,'dust',18);if(candidates.length){const victim=candidates[0],damage=24;victim.room.hp=Math.max(0,victim.room.hp-damage);message=`سقفِ بی‌تیرک فروریخت و ${ROOMS[victim.room.type]?.name||'یک اتاق'} آسیب دید.`;}else{const col=clamp(Math.round((start+end)/2),start,end),key=keyOf(col,r);if(!game.rooms[key]&&(col!==game.player.bCol||r!==game.player.bRow)){game.dug[key]=false;delete game.digging[key];}else{const base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100});base.hp=Math.max(0,base.hp-8);message='سقف فروریخت؛ پوستهٔ پناهگاه هم آسیب دید.';}}risk.collapsed=true;game.screenShakeTimer=.28;game.player.noiseBurst=.6;beep('collapse');showToast(message,2400);game.integrity[id]=risk;}
+        }
+      }
+    }
+    for(const [id,risk] of Object.entries(game.integrity||{}))if(!seen.has(id)&&!risk.collapsed)delete game.integrity[id];
+    warnings.sort((a,b)=>a.remaining-b.remaining);game.structureWarning=warnings[0]||null;
+  }
+  function updateBunkerAmbience(dt) {
+    game.bunkerDripTimer=(game.bunkerDripTimer??12)-dt;if(game.bunkerDripTimer<=0){if(!muted&&audioCtx?.state==='running')beep('drip');game.bunkerDripTimer=15+Math.random()*16;}
   }
   function repair() {
     const t=currentTarget(),room=game.rooms[keyOf(t.c,t.r)];
@@ -2146,6 +2279,7 @@
     if(!active||!game)return;if(mapOpen||statusPanelOpen)return;
     if(game.gameOver){game.player.deathTimer=Math.max(0,(game.player.deathTimer||0)-dt);if(game.player.deathTimer<=0){active=false;setScreen('gameover');}return;}
     gameTime+=dt;updateMovement(dt);recordMapDiscovery();updateNoiseTrail(dt);updateHazards(dt);updateParticles(dt);
+    if(game.mode==='bunker'){updateStructureIntegrity(dt);updateBunkerAmbience(dt);}
     if(game.mode==='forest')updateAnimals(dt);
     updateSanity(dt);updatePlayerEffects(dt);updateSurvival(dt);
     if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
@@ -2231,10 +2365,14 @@
   $('hapticsButton').addEventListener('click',()=>{hapticsEnabled=!hapticsEnabled;try{localStorage.setItem('hirkani-haptics',hapticsEnabled?'on':'off');}catch(e){}updateControlsUI();if(hapticsEnabled)haptic(8);});
   $('eatButton').addEventListener('click',()=>{eat();setActionSheet(false);});$('craftButton').addEventListener('click',()=>showModal('crafting'));$('bunkerCraftButton').addEventListener('click',()=>showModal('crafting'));
   $('fireButton').addEventListener('click',()=>{lightFire();setActionSheet(false);});$('trapButton').addEventListener('click',()=>{placeSnare();setActionSheet(false);});
-  $('digButton').addEventListener('click',()=>{haptic(8);game.selectedRoom=null;showToast('حفر: خانهٔ سنگی کناری را انتخاب کن.',1300);});
-  $('roomButton').addEventListener('click',()=>showModal('rooms'));
-  $('basesButton').addEventListener('click',()=>showModal('bunkers'));
-  $('repairButton').addEventListener('click',repair);$('exitButton').addEventListener('click',exitBunker);
+  function selectBunkerMode(mode,message){if(!game||game.mode!=='bunker')return;game.bunkerMode=mode;if(mode!=='build')game.selectedRoom=null;setActionSheet(false);updateControlsUI();showToast(message,1650);}
+  $('digButton').addEventListener('click',()=>{haptic(8);selectBunkerMode('dig','حفر: یک خانهٔ خاکی را لمس کن، بعد دکمهٔ عمل را بزن.');});
+  $('roomButton').addEventListener('click',()=>{game.bunkerMode='build';game.selectedRoom=null;setActionSheet(false);showModal('rooms');});
+  $('basesButton').addEventListener('click',()=>{setActionSheet(false);showModal('bunkers');});
+  $('repairButton').addEventListener('click',()=>selectBunkerMode('repair','خانهٔ آسیب‌دیده یا پوستهٔ پناهگاه را لمس کن و عمل را بزن.'));
+  $('supportButton').addEventListener('click',()=>selectBunkerMode('support','خانهٔ باز را لمس کن؛ یک تیرک ۲ چوب می‌خواهد.'));
+  $('lampButton').addEventListener('click',()=>selectBunkerMode('lamp','خانهٔ باز را لمس کن؛ یک چراغ روغنی ۱ چوب می‌خواهد.'));
+  $('exitButton').addEventListener('click',exitBunker);
   $('soundButton').addEventListener('click',()=>{haptic(8);muted=!muted;if(game)game.muted=muted;updateUI(true);if(!muted)beep('gather');});$('torchButton').addEventListener('click',()=>{toggleTorch();setActionSheet(false);});
   $('mapButton').addEventListener('click',()=>{haptic(8);setMapOpen(!mapOpen);});$('closeMapButton').addEventListener('click',()=>setMapOpen(false));$('dropMarkerButton').addEventListener('click',()=>addMapMarker(game.player.x,game.player.y,'اینجا'));
   mapCanvas.addEventListener('pointerdown',e=>{if(!mapOpen||!mapViewport)return;e.preventDefault();const rect=mapCanvas.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,view=mapViewport;if(mx<view.x||mx>view.x+MAP.w*view.scale||my<view.y||my>view.y+MAP.h*view.scale)return;
@@ -2269,6 +2407,31 @@
   $('continueButton').style.display=savedGame()?'inline-block':'none';
   window.addEventListener('pagehide',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
 
+  function startRaidTest() {
+    const resetScenario=()=>{
+      resetNotifications();game=freshGame();game.day=3;game.phase='night';game.phaseTime=9;game.raidTimer=12;game.mode='bunker';game.bunkerMode='dig';game.tutorial.active=false;
+      game.bunkerId='hut';game.ownedBunkers=['hut'];game.resources={wood:20,stone:16,food:10,herbs:8};game.stats={health:92,hunger:76,warmth:68,stamina:100,sanity:100};game.bunkers.hut={hp:82};
+      game.dug={'5,1':true,'5,2':true,'4,2':true,'6,2':true,'7,2':true,'8,2':true,'4,3':true,'5,3':true,'6,3':true,'7,3':true,'8,3':true};
+      game.rooms={'5,3':{type:'bed',level:2,hp:48,maxHp:58},'6,3':{type:'storage',level:2,hp:42,maxHp:58},'4,3':{type:'kitchen',level:1,hp:48,maxHp:48},'7,3':{type:'trap',level:1,hp:48,maxHp:48},'6,2':{type:'workshop',level:1,hp:48,maxHp:48}};
+      game.supports={'6,2':true};game.ladders={'5,1':true,'5,2':true};game.lamps={'5,2':true,'6,3':true};game.integrity={};game.digging={};game.bunkerEffects=[];game.player.bX=5;game.player.bY=3;game.player.bCol=5;game.player.bRow=3;game.player.x=BUNKER_ENTRANCE.x;game.player.y=BUNKER_ENTRANCE.y;game.player.faceX=1;game.player.faceY=0;game.player.facing='right';game.player.torchLit=false;game.selectedCell=null;game.bunkerDripTimer=12;game.structureWarning=null;gameTime=0;
+      if(!world)world=makeWorld();world.raidWarning={angle:-.42,timer:18,likelihood:.64,primary:'ردپا کنار ورودی',notificationId:++raidNoticeSequence};world.raidTracks=[];world.foodDrops=[];world.fires=[];world.traps=[];world.effects=[];world.hallucinations=[];mapDiscovered=new Set();mapDirty=true;minimapDirty=true;active=true;mapOpen=false;statusPanelOpen=false;actionSheetOpen=false;setScreen('game');updateUI(true);
+    };
+    resetScenario();
+    const setState=state=>{
+      if(!['idle','digging','raid','report'].includes(state))return false;resetScenario();setActionSheet(false);setStatusPanel(false);
+      world.raidWarning=null;game.phase='day';game.phaseTime=27;game.day=3;
+      if(state==='digging'){
+        game.phaseTime=28;game.selectedCell={c:9,r:2};game.digging['9,2']={c:9,r:2,layer:'rock',hits:2,maxHits:4,findId:''};game.player.faceX=1;game.player.faceY=0;game.player.facing='right';game.player.actionKind='pickaxe';game.player.actionDuration=1.2;game.player.actionTimer=.85;
+      }else if(state==='raid'){
+        game.phase='night';game.phaseTime=11;world.raidWarning={angle:-.42,timer:18,likelihood:.64,primary:'ردپا کنار ورودی',notificationId:++raidNoticeSequence};
+      }else if(state==='report'){
+        game.phaseTime=2;game.day=4;showToast('سپیده زد؛ روز ۴ آغاز شد. پناهگاهت را تعمیر کن.',3200);
+      }
+      updateUI(true);draw();return true;
+    };
+    window.__hirkaniQA={setState,forceCollapse:()=>{game.integrity['3:4-8']={timer:.02,dustTimer:0,collapsed:false,warned:false};return true;},findAt:(c,r)=>hiddenFindAt(c,r)?.id||null,getState:()=>({mode:game.mode,day:game.day,phase:game.phase,phaseTime:game.phaseTime,bX:game.player.bX,bY:game.player.bY,dug:Object.keys(game.dug),digging:Object.fromEntries(Object.entries(game.digging||{}).map(([key,value])=>[key,{layer:value.layer,hits:value.hits,maxHits:value.maxHits}])),rooms:Object.keys(game.rooms),roomHP:Object.fromEntries(Object.entries(game.rooms||{}).map(([key,room])=>[key,{hp:room.hp,maxHp:room.maxHp}])),supports:Object.keys(game.supports),ladders:Object.keys(game.ladders),lamps:Object.keys(game.lamps),finds:{...game.finds},resources:{...game.resources},integrity:Object.fromEntries(Object.entries(game.integrity||{}).map(([key,risk])=>[key,{timer:risk.timer,collapsed:risk.collapsed}])),structureWarning:game.structureWarning?{row:game.structureWarning.row,start:game.structureWarning.start,end:game.structureWarning.end,remaining:game.structureWarning.remaining}:null,playerAction:game.player.actionKind,bunkerMode:game.bunkerMode})};
+  }
+  if(raidTestMode&&!characterSheetMode)startRaidTest();
   if(characterSheetMode){$('app').classList.add('charsheet');$('hud').style.display='none';game=freshGame();active=false;}
   function frame(t) {
     const dt=Math.min(.05,Math.max(0,(t-lastFrame)/1000||0));lastFrame=t;
