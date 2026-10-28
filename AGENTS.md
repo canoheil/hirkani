@@ -1,12 +1,14 @@
 ## Status
 
-Round 10 item 3: added the starter kit, nearby resource placement and short guided prompts; pacing, safe wildlife, barricade and raid integration follow in the final pass.
+Round 10 item 1: the ranger-grandfather premise, ten Persian diary pages, dawn report and blueprint progression, rereadable diary, persistent objective, fog-aware Ancient Tree marker, three explorable ruins with notes/blueprints, and the post-night-ten Ancient Tree ending with continued exploration are integrated in `www/index.html`. Older saves retain owned bunkers and gain previously earned blueprints.
 
-Round 10 item 2: added the procedural 30-second intro and About replay; input/back integration and final visual QA follow in the final pass.
+Round 10 item 2: new games show a skippable 30-second procedural forest, storm and bunker-door intro with timed Persian subtitles and procedural audio; About can replay it. Screenshots at 1600×720 and 1280×600 were inspected.
 
-Round 10 item 1: added the Persian diary, Ancient Tree and optional ruin definitions, objective HUD and diary surface; story integration and QA follow in the final pass.
+Round 10 item 3: the scripted first day lasts eight minutes to fit the requested first-ten-minute progression; later days are four minutes and nights two minutes. The knife and starter kit, glowing resources, short guidance, buildable bed/storage and barricade, safer first day, day-two leopard, smaller first wolf raid, and dawn reward are integrated. First-night numbers are provisional: representative human playtests are still needed to establish the requested 80–90% survival rate.
 
-Round 10 item 4: centralized core balance values and shelter, room, and crafting costs in BALANCE; remaining test routes and telemetry are integrated in the following commits.
+Round 10 item 4: `BALANCE` centralizes the main cycle durations, hunger/warmth/health drain, raid sizes and damage, starter resources, resource yields and bunker/room/crafting costs; some legacy gameplay mechanics still use local numeric constants. `?fast=1` runs the simulation at 4×, and `?night=1` through `?night=10` start prepared-bunker scenarios without overwriting normal saves. Console telemetry records first berry, build, dusk, raid, death and first-night survival.
+
+Round 10 item 5: intro, objective, diary and dawn-report screenshots were personally inspected at 1600×720 and 1280×600. The stale night warning after dawn was fixed. Browser smoke tests exercised first berry/build, day-to-night timing, survival through dawn, blueprint and ruin rewards, pause diary, tenth-night ending/continue, intro skip/replay, save/continue and test-mode save isolation; no browser errors were found. These automated runs are not evidence of a human survival percentage. Inline-JavaScript syntax and `git diff --check` passed. No physical-device performance test was performed.
 
 Round 9 item 1 is complete: per-action text messages now use a soft UI tone and short action-button shake; failed pickups get a floating no-item puff, resource shortages flash the required HUD glyph, and only dusk/dawn, danger/raid, level-up, and tutorial messages use the single top-center lane. Identical visible messages are deduplicated and rate-limited for 10 seconds. Inline JavaScript syntax, targeted browser smoke (no startup audio, top-center report lane, no page/console errors), and `git diff --check` passed. Item 1 is committed as `42aa363`.
 

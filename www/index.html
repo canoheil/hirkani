@@ -558,6 +558,7 @@
           <button class="tool-button" id="repairButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></b>تعمیر</button>
           <button class="tool-button" id="supportButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 20V5m14 15V5M5 9h14"/><path d="M8 6h2m4 0h2"/></svg></b>تیرک</button>
           <button class="tool-button" id="lampButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 21v-3m-3 3h6m-5-6c-1.7-1.1-3-2.9-3-5a5 5 0 0 1 10 0c0 2.1-1.3 3.9-3 5l-.5 2h-4L9.5 15Z"/><path d="M12 3V1"/></svg></b>چراغ</button>
+          <button class="tool-button" id="barricadeButton" title="مانع ورودی: ۳ چوب"><b aria-hidden="true">▥</b>مانع</button>
           <button class="tool-button" id="bunkerCraftButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m14 4 6 6M11 7l6 6-8 8-6-6 8-8Z"/></svg></b>ساخت</button>
           <button class="tool-button" id="exitButton"><b aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 19h14M8 19V8l4-4 4 4v11M12 4v9"/></svg></b>بیرون</button>
         </div>
@@ -661,6 +662,7 @@
     yields:{treeMin:1,treeRandom:2,rockMin:1,rockRandom:2,berry:1,herb:1},
     costs:{bunkers:{'hut':{wood:0,stone:0},'cave':{wood:5,stone:8},'root':{wood:8,stone:5,herbs:2},'fortress':{wood:12,stone:18},'trap-house':{wood:8,stone:8,food:2},'watchtower':{wood:12,stone:6},'swamp':{wood:6,stone:10,food:3},'trade':{wood:10,stone:7,food:3},'farm':{wood:9,stone:9,herbs:3},'forge':{wood:14,stone:14,herbs:2},'infirmary':{wood:12,stone:10,herbs:8},'hidden':{wood:18,stone:15,herbs:5,food:4}}, rooms:{'storage':{wood:3,stone:1},'kitchen':{wood:4,stone:1},'bed':{wood:3,stone:0},'workshop':{wood:5,stone:3},'trap':{wood:2,stone:2}}, roomUpgrades:{'storage':{wood:2,stone:1},'kitchen':{wood:3,stone:1},'bed':{wood:3,stone:1},'workshop':{wood:3,stone:2},'trap':{wood:2,stone:2}}, crafting:{'hatchet':{wood:3,stone:2},'torch':{wood:2,herbs:1},'poultice':{herbs:2,food:1},'ration':{food:2,herbs:1},'snareBundle':{wood:3,herbs:2},'fireKit':{wood:4,stone:1}}},
     barricade:{cost:{wood:3},defense:12},
+    secondaryCosts:{fire:{wood:2},snare:{wood:2,herbs:1},support:{wood:2},lamp:{wood:1},repairRoom:{wood:2,stone:1},repairBase:{wood:3,stone:2}},
     firstDuskLead:60, duskLead:30
   };
 
@@ -713,6 +715,7 @@
   const titleCanvas=$('titleCanvas'),titleCtx=titleCanvas?.getContext?.('2d',{alpha:true})||null;
   const characterSheetMode=/(?:^|[?&])charsheet=1(?:&|$)/.test(window.location?.search||'');
   const raidTestMode=/(?:^|[?&])raidtest=1(?:&|$)/.test(window.location?.search||'');
+  const params=new URLSearchParams(location.search), fastMode=params.get('fast')==='1', nightParam=params.get('night'), nightTest=/^(?:[1-9]|10)$/.test(nightParam||'')?Number(nightParam):null;
   const ctx = canvas.getContext('2d', { alpha:false });
   const mapCanvas=$('mapCanvas'),mapCtx=mapCanvas.getContext?.('2d')||ctx;
   const minimapCanvas=$('minimapCanvas'),minimapCtx=minimapCanvas.getContext?.('2d')||ctx;
@@ -749,8 +752,9 @@
     {id:'fossil',name:'فسیل کوچک',reward:{stone:3}},
     {id:'spring',name:'چشمهٔ زیرزمینی',reward:{food:2},health:6}
   ];
-  const DAY_LENGTH = 86;
-  const NIGHT_LENGTH = 31;
+  const DAY_LENGTH = BALANCE.daySeconds;
+  const NIGHT_LENGTH = BALANCE.nightSeconds;
+  const dayDuration=()=>game?.day===1?BALANCE.firstDaySeconds:DAY_LENGTH;
   const SAVE_KEY = 'hirkani-save-v1';
   const fa = n => Math.max(0, Math.round(n)).toLocaleString('fa-IR');
   const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
@@ -1203,10 +1207,10 @@
   }
   function freshGame() {
     return {
-      worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0, noiseTrail:0, mapDiscovery:[], mapMarkers:[],
+      playtime:0,telemetry:{},worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0, noiseTrail:0, mapDiscovery:[], mapMarkers:[], diaryPages:[], bonusNotes:[], ruinsFound:[], blueprints:['hut'], storyEnded:false, nightsSurvived:0, nightDamage:0,
       player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,bX:5,bY:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,torchLit:false,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false,motionBlend:0,runBlend:0,hurtTimer:0,hurtDirX:0,hurtDirY:0,deathTimer:0},
       stats:{...BALANCE.startingStats}, resources:{...BALANCE.starter}, inventory:{knife:1,hatchets:0,torches:0,snares:0,fireKits:0}, onboarding:{wood:false,berry:false,build:false},
-      bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}}, bunkerMode:'dig',
+      bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}}, bunkerMode:'dig', barricade:false,
       dug:{'5,1':true,'5,2':true,'4,3':true,'5,3':true,'6,3':true},
       rooms:{},
       digging:{},supports:{},integrity:{},ladders:{'5,1':true,'5,2':true},lamps:{'5,3':true},bunkerEffects:[],finds:{},
@@ -1277,7 +1281,7 @@
   }
   function notificationIsValid(item) {
     if(item.type==='tutorial')return !!game?.tutorial?.active&&Number(game.tutorial.time)<Number(item.expiresAt);
-    if(item.type==='dusk')return game?.day===item.day&&game.mode==='forest'&&(item.state==='night'?game.phase==='night':game.phase==='day'&&game.phaseTime>=DAY_LENGTH-30);
+    if(item.type==='dusk')return game?.day===item.day&&game.mode==='forest'&&(item.state==='night'?game.phase==='night':game.phase==='day'&&game.phaseTime>=dayDuration()-(game.day===1?BALANCE.firstDuskLead:BALANCE.duskLead));
     if(item.type==='raid')return game?.phase==='night'&&world?.raidWarning?.notificationId===item.notificationId&&world.raidWarning.timer>0;
     return true;
   }
@@ -1370,7 +1374,7 @@
     return true;
   }
   function saveGame() {
-    if(raidTestMode||!game||!active||game.gameOver) return;
+    if(raidTestMode||nightTest!==null||!game||!active||game.gameOver) return;
     try {
       const chunkState=[];
       for(const chunk of world.chunks.values())if(chunk.nodes.some(n=>n.remaining!==n.maxRemaining))chunkState.push({cx:chunk.cx,cy:chunk.cy,remaining:chunk.nodes.map(n=>n.remaining)});
@@ -1400,13 +1404,18 @@
     resetNotifications();game=freshGame();Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');if(!audioManager.hasStoredPreferences)audioManager.setMuted(!!data.muted);else muted=audioManager.muted;game.muted=muted;
     game.dug=game.dug&&typeof game.dug==='object'?game.dug:{};game.dug['5,1']=true;game.digging=data.digging&&typeof data.digging==='object'?data.digging:{};game.supports=data.supports&&typeof data.supports==='object'?data.supports:{};game.integrity=data.integrity&&typeof data.integrity==='object'?data.integrity:{};game.ladders=data.ladders&&typeof data.ladders==='object'?data.ladders:{};if(game.ladders['5,1']===undefined)game.ladders['5,1']=true;if(game.ladders['5,2']===undefined)game.ladders['5,2']=true;game.lamps=data.lamps&&typeof data.lamps==='object'?data.lamps:{'5,3':true};game.bunkerEffects=[];game.finds=data.finds&&typeof data.finds==='object'?data.finds:{};game.bunkerMode=['dig','build','repair','support','lamp'].includes(data.bunkerMode)?data.bunkerMode:'dig';
     const savedBX=Number(data.player.bX??data.player.bCol??5),savedBY=Number(data.player.bY??data.player.bRow??3);game.player.bX=clamp(Number.isFinite(savedBX)?savedBX:5,0,GRID.cols-1);game.player.bY=clamp(Number.isFinite(savedBY)?savedBY:3,0,GRID.rows-1);game.player.bCol=Math.round(game.player.bX);game.player.bRow=Math.round(game.player.bY);game.bunkerDripTimer=clamp(Number(data.bunkerDripTimer)||12,1,40);game.structureWarning=null;
-    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.mapDiscovery=Array.isArray(data.mapDiscovery)?[...new Set(data.mapDiscovery.map(String).filter(key=>{const match=/^(\d+),(\d+)$/.exec(key);return match&&Number(match[1])<CHUNK_COLS&&Number(match[2])<CHUNK_ROWS;}))]:[];mapDiscovered=new Set(game.mapDiscovery);game.mapMarkers=Array.isArray(data.mapMarkers)?data.mapMarkers.filter(marker=>marker&&Number.isFinite(Number(marker.x))&&Number.isFinite(Number(marker.y))).slice(-12).map((marker,index)=>({id:String(marker.id||`marker-${index}`),x:clamp(Number(marker.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(marker.y),WORLD_EDGE,MAP.h-WORLD_EDGE),label:String(marker.label||'نشان').slice(0,14)})):[];mapDirty=true;minimapDirty=true;game.inventory={hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.motionBlend=clamp(Number(game.player.motionBlend)||0,0,1);game.player.runBlend=clamp(Number(game.player.runBlend)||0,0,1);game.player.hurtTimer=clamp(Number(game.player.hurtTimer)||0,0,.55);game.player.deathTimer=0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
+    game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.mapDiscovery=Array.isArray(data.mapDiscovery)?[...new Set(data.mapDiscovery.map(String).filter(key=>{const match=/^(\d+),(\d+)$/.exec(key);return match&&Number(match[1])<CHUNK_COLS&&Number(match[2])<CHUNK_ROWS;}))]:[];mapDiscovered=new Set(game.mapDiscovery);game.mapMarkers=Array.isArray(data.mapMarkers)?data.mapMarkers.filter(marker=>marker&&Number.isFinite(Number(marker.x))&&Number.isFinite(Number(marker.y))).slice(-12).map((marker,index)=>({id:String(marker.id||`marker-${index}`),x:clamp(Number(marker.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(marker.y),WORLD_EDGE,MAP.h-WORLD_EDGE),label:String(marker.label||'نشان').slice(0,14)})):[];mapDirty=true;minimapDirty=true;game.inventory={knife:1,hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.motionBlend=clamp(Number(game.player.motionBlend)||0,0,1);game.player.runBlend=clamp(Number(game.player.runBlend)||0,0,1);game.player.hurtTimer=clamp(Number(game.player.hurtTimer)||0,0,.55);game.player.deathTimer=0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
+    game.onboarding={wood:false,berry:false,build:false,...(data.onboarding||{})};game.inventory.knife=1;
+    game.bonusNotes=Array.isArray(data.bonusNotes)?data.bonusNotes.filter(id=>RUIN_DATA.some(ruin=>ruin.id===id)):[];game.ruinsFound=Array.isArray(data.ruinsFound)?data.ruinsFound.filter(id=>RUIN_DATA.some(ruin=>ruin.id===id)):[];
+    game.diaryPages=Array.isArray(data.diaryPages)?data.diaryPages.filter(n=>Number.isInteger(n)&&n>=1&&n<=10):[];
+    game.blueprints=Array.isArray(data.blueprints)?[...new Set(['hut',...data.blueprints,...(game.ownedBunkers||[])])]:[...new Set(['hut',...(game.ownedBunkers||[]),...DIARY.slice(0,Math.min(10,Math.max(0,(Number(game.day)||1)-1))).map(p=>p.unlock)])];
+    game.nightsSurvived=Math.max(0,Number(data.nightsSurvived)||Math.max(0,game.day-1));game.storyEnded=!!data.storyEnded;game.nightDamage=Number(data.nightDamage)||0;
     const oldWorldVersion=data.worldVersion||1;
     if(oldWorldVersion<2){game.player.x=(data.player.x??1100)/2200*MAP.w;game.player.y=(data.player.y??775)/1550*MAP.h;}
     game.player.x=clamp(game.player.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.y=clamp(game.player.y,WORLD_EDGE,MAP.h-WORLD_EDGE);
     if(game.player.target){game.player.target.x=clamp(game.player.target.x,WORLD_EDGE,MAP.w-WORLD_EDGE);game.player.target.y=clamp(game.player.target.y,WORLD_EDGE,MAP.h-WORLD_EDGE);}
     game.worldVersion=2;delete game.nodes;delete game.chunkState;delete game.foodDrops;
-    world=makeWorld();
+    world=makeWorld();if(game.day===2){const leopard=world.animals.find(a=>a.kind==='leopard');if(leopard){leopard.x=BUNKER_ENTRANCE.x+650;leopard.y=BUNKER_ENTRANCE.y-260;leopard.territoryX=leopard.x;leopard.territoryY=leopard.y;}}
     if(Array.isArray(data.foodDrops))world.foodDrops=data.foodDrops.filter(drop=>drop&&Number.isFinite(Number(drop.x))&&Number.isFinite(Number(drop.y))&&Number(drop.amount)>0&&Number(drop.timer)>0).slice(0,24).map((drop,index)=>({id:String(drop.id||`saved-meat-${index}`),x:clamp(Number(drop.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(drop.y),WORLD_EDGE,MAP.h-WORLD_EDGE),amount:clamp(Math.floor(Number(drop.amount)),1,12),timer:clamp(Number(drop.timer),0,DAY_LENGTH+NIGHT_LENGTH),source:String(drop.source||'carcass')}));
     if(game.phase==='night'&&data.raidWarning&&Number.isFinite(Number(data.raidWarning.angle)))world.raidWarning={angle:Number(data.raidWarning.angle),timer:clamp(Number(data.raidWarning.timer)||2,0,8),likelihood:clamp(Number(data.raidWarning.likelihood)||.1,0,1),primary:String(data.raidWarning.primary||'پناهگاه')};
     if(Array.isArray(data.raidTracks))world.raidTracks=data.raidTracks.filter(track=>track&&Number.isFinite(Number(track.x))&&Number.isFinite(Number(track.y))&&Number(track.life)>0).slice(-60).map(track=>({x:clamp(Number(track.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(track.y),WORLD_EDGE,MAP.h-WORLD_EDGE),angle:Number(track.angle)||0,life:clamp(Number(track.life),0,30),maxLife:clamp(Number(track.maxLife)||25,1,30)}));
@@ -1506,17 +1515,34 @@
   }
   function showModal(type) {
     if(!active&&!['help','settings','overwrite','about'].includes(type))return;
-    setStatusPanel(false);setActionSheet(false);modalType=type;const cards=$('modalCards'),title=$('modalTitle'),note=$('modalNote');cards.innerHTML='';cards.classList.remove('modal-actions');cards.classList.toggle('audio-settings',type==='settings');$('craftTabs').style.display=type==='crafting'?'flex':'none';
+    setStatusPanel(false);setActionSheet(false);modalType=type;const cards=$('modalCards'),title=$('modalTitle'),note=$('modalNote');cards.innerHTML='';cards.classList.remove('modal-actions');cards.classList.toggle('audio-settings',type==='settings');$('craftTabs').style.display=type==='crafting'?'flex':'none';$('modal').classList.toggle('story-modal',type==='dawn'||type==='ending'||type==='diary'||type==='ruin');
     if(type==='bunkers') {
       title.textContent='پناهگاه‌ها';
       const base=BUNKERS.find(b=>b.id===game.bunkerId);
       note.textContent=`پناهگاه کنونی: ${base?.nameFa||'کلبهٔ چوبی'} · هر پایگاه، توان دفاع و گنجایش متفاوتی دارد.`;
       for(const b of BUNKERS) {
-        const owned=game.ownedBunkers.includes(b.id), can=canPay(b.cost), selected=game.bunkerId===b.id;
+        const owned=game.ownedBunkers.includes(b.id), unlocked=(game.blueprints||['hut']).includes(b.id)||owned, can=canPay(b.cost), selected=game.bunkerId===b.id;
         const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'+(selected?' selected':'');
+        if(!unlocked){btn.disabled=true;btn.innerHTML='<span class="data-title">طرح ناشناخته</span><span class="data-desc">با خواندن دفتر پدربزرگ پیدا می‌شود.</span>';cards.appendChild(btn);continue;}
         btn.innerHTML=`<span class="data-title">${b.nameFa}</span><span class="data-desc">${b.note} · ${b.effect.label} · دفاع ${b.defense} · گنجایش ${fa(b.size[0]*b.size[1])} اتاق</span><span class="data-meta"><span>${owned?'ساخته‌شده':costText(b.cost)}</span><span>${selected?'فعال':owned?'انتخاب':'بساز'}</span></span>`;
         btn.addEventListener('click',()=>buyOrSelectBunker(b.id)); cards.appendChild(btn);
       }
+    } else if(type==='dawn') {
+      const night=Math.min(10,game.nightsSurvived), page=DIARY[night-1];title.textContent=`گزارش سپیده‌دم · شب ${fa(night)}`;
+      note.textContent=game.lastDawnReport||'سپیده رسید و پناهگاه پابرجاست.';
+      const entry=document.createElement('div');entry.className='story-page';entry.textContent=page?.text||'جنگل هنوز نفس می‌کشد.';
+      const footer=document.createElement('small');footer.textContent=`از دفتر پدربزرگ · صفحهٔ ${fa(night)}${page?' · طرح تازه: '+(BUNKERS.find(b=>b.id===page.unlock)?.nameFa||'پناهگاه'):''}`;entry.appendChild(footer);cards.appendChild(entry);
+    } else if(type==='ruin') {
+      const ruin=RUIN_DATA.find(item=>item.id===game.lastRuin);title.textContent='پناهگاه فراموش‌شده';note.textContent=ruin?.note||'یادگاری از پدربزرگ پیدا کردی.';
+      const entry=document.createElement('div');entry.className='story-page';entry.textContent=`طرح پیدا شد: ${BUNKERS.find(b=>b.id===ruin?.blueprint)?.nameFa||'پناهگاه'} · پاداش: ۲ چوب`;const footer=document.createElement('small');footer.textContent='یادداشت در دفتر پدربزرگ نگه داشته می‌شود.';entry.appendChild(footer);cards.appendChild(entry);
+    } else if(type==='diary') {
+      title.textContent='دفتر پدربزرگ';note.textContent='صفحه‌های پیدا شده را دوباره بخوان.';
+      for(const number of game.diaryPages){const page=DIARY[number-1];if(!page)continue;const entry=document.createElement('div');entry.className='story-page';entry.textContent=page.text;const footer=document.createElement('small');footer.textContent=`صفحهٔ ${fa(number)}`;entry.appendChild(footer);cards.appendChild(entry);}
+      if(!game.diaryPages.length){const entry=document.createElement('div');entry.className='story-page';entry.textContent='اولین صفحه با سپیده‌دم از راه می‌رسد.';cards.appendChild(entry);}for(const id of game.bonusNotes||[]){const ruin=RUIN_DATA.find(item=>item.id===id);if(ruin){const entry=document.createElement('div');entry.className='story-page';entry.textContent=ruin.note;const footer=document.createElement('small');footer.textContent='یادداشت یافته‌شده در ویرانه';entry.appendChild(footer);cards.appendChild(entry);}}
+    } else if(type==='ending') {
+      title.textContent='درخت کهن';note.textContent='ده شب گذشت؛ جنگل راه خانه را به یاد داشت.';
+      const entry=document.createElement('div');entry.className='story-page';entry.textContent='دستت را بر تنهٔ کهن می‌گذاری. در خش‌خش برگ‌ها صدای پدربزرگ را می‌شنوی: «جنگل فراموش نمی‌کند.» او را نیافتی، اما راهش هنوز اینجاست؛ در هر پناه، هر ریشه و هر سپیده.';cards.appendChild(entry);
+      const more=document.createElement('button');more.className='primary-menu';more.textContent='ادامهٔ کاوش';more.addEventListener('click',closeModal);cards.appendChild(more);
     } else if(type==='rooms') {
       title.textContent='اتاق‌های زیرزمینی';
       note.textContent='اتاق را انتخاب کن، سپس یک خانهٔ خالی و کنده‌شده را نشانه بگیر و دکمهٔ عمل را بزن.';
@@ -1532,7 +1558,7 @@
     } else if(type==='about') {
       title.textContent='داستان هیرکانی';note.textContent='جنگلی که میلیون‌ها سال در کرانهٔ جنوبی دریای خزر نفس کشیده است.';
       const story=document.createElement('div');story.className='about-story';
-      const first=document.createElement('p');first.textContent='جنگل‌های هیرکانی، نوار سبزی از جنگل‌های پهن‌برگِ کهن در امتداد جنوب دریای خزرند؛ زیست‌بومی زنده با درختان دیرزیست و گونه‌های فراوان.';
+      const first=document.createElement('p');first.textContent='پدربزرگ، جنگل‌بان هیرکانی، پناهگاه‌هایی زیر خاک ساخت و پس از طوفانی بزرگ ناپدید شد. ده شب زنده بمان و به درخت کهن برس. جنگل‌های هیرکانی، نوار سبزی از جنگل‌های پهن‌برگِ کهن در امتداد جنوب دریای خزرند؛ زیست‌بومی زنده با درختان دیرزیست و گونه‌های فراوان.';
       const second=document.createElement('p');second.textContent='این میراث طبیعی در سال ۲۰۱۹ در فهرست میراث جهانی یونسکو ثبت شد. هیرکانی بازی‌ای داستانی است که با الهام از طبیعت این ناحیه ساخته شده؛ رویدادها و شخصیت‌های آن بازسازی واقعیت نیستند.';
       const source=document.createElement('small');source.textContent='مرجع: مرکز میراث جهانی یونسکو، «جنگل‌های هیرکانی» (۲۰۱۹).';story.append(first,second,source);cards.appendChild(story);const replay=document.createElement('button');replay.type='button';replay.className='secondary-menu';replay.textContent='بازپخش آغاز داستان';replay.addEventListener('click',()=>startIntro(true));cards.appendChild(replay);
     } else if(type==='overwrite') {
@@ -1560,7 +1586,7 @@
     game.resources[key]=Math.min(cap,before+amount);return game.resources[key]-before;
   }
   function buyOrSelectBunker(id) {
-    const b=BUNKERS.find(x=>x.id===id); if(!b)return;
+    const b=BUNKERS.find(x=>x.id===id); if(!b||(!(game.blueprints||['hut']).includes(id)&&!game.ownedBunkers.includes(id)))return;
     if(!game.ownedBunkers.includes(id)) {
       if(!pay(b.cost)) { actionFeedback(`منابع کافی نیست؛ نیاز داری به ${costText(b.cost)}.`,2300); return; }
       game.ownedBunkers.push(id); game.bunkers[id]={hp:100}; beep('build'); actionFeedback(`${b.nameFa} ساخته شد.`,2000);
@@ -1585,7 +1611,7 @@
       for(const light of sceneShadowLights){const d=Math.hypot(x-light.x,y-light.y);if(d<light.radius*1.4+rx*2){if(d<d1){second=first;d2=d1;first=light;d1=d;}else if(d<d2){second=light;d2=d;}}}
       for(const [light,d] of [[first,d1],[second,d2]])if(light&&d<light.radius*1.4+rx*2){const dx=(x-light.x)/(d||1),dy=(y-light.y)/(d||1),strength=clamp(1-d/(light.radius*1.4+rx*2),0,1)*light.intensity;drawShadowLobe(x,y,rx*1.5,ry*.72,dx,dy,rx*(1.25+strength*1.45),alpha*(.2+strength*.3),.2);}
     }else{
-      const progress=clamp(game.phaseTime/DAY_LENGTH,0,1),sunAngle=-Math.PI*.5+progress*Math.PI,sx=Math.cos(sunAngle),sy=Math.sin(sunAngle),soft=clamp((progress-.67)/.33,0,.9),lowSun=.7+Math.abs(progress-.5)*1.35;
+      const progress=clamp(game.phaseTime/dayDuration(),0,1),sunAngle=-Math.PI*.5+progress*Math.PI,sx=Math.cos(sunAngle),sy=Math.sin(sunAngle),soft=clamp((progress-.67)/.33,0,.9),lowSun=.7+Math.abs(progress-.5)*1.35;
       drawShadowLobe(x,y,rx*1.8,ry*.75,-sx,-sy,rx*lowSun,alpha*(.64-soft*.25),soft*.55);
       if(soft>.15)drawShadowLobe(x,y,rx*2.2,ry*.9,-sx,-sy,rx*lowSun*1.18,alpha*soft*.15,soft);
     }
@@ -1937,30 +1963,39 @@
     ctx.lineCap='round';ctx.strokeStyle='rgba(167,144,98,.19)';ctx.lineWidth=32;ctx.beginPath();ctx.moveTo(MAP.cx+20,MAP.cy);ctx.bezierCurveTo(MAP.cx+270,MAP.cy+50,MAP.cx+240,MAP.cy-220,MAP.cx+510,MAP.cy-260);ctx.stroke();
     ctx.strokeStyle='rgba(213,189,133,.10)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(MAP.cx+20,MAP.cy);ctx.bezierCurveTo(MAP.cx+270,MAP.cy+50,MAP.cx+240,MAP.cy-220,MAP.cx+510,MAP.cy-260);ctx.stroke();
     drawParticles();
+    // A unique landmark in the forest, visible only when physically nearby.
+    if(Math.abs(ANCIENT_TREE.x-cam.x-W/2)<W/2+200&&Math.abs(ANCIENT_TREE.y-cam.y-H/2)<H/2+200){
+      ctx.save();ctx.translate(ANCIENT_TREE.x,ANCIENT_TREE.y);ctx.fillStyle='#473a29';ctx.beginPath();ctx.moveTo(-35,5);ctx.lineTo(-24,-125);ctx.lineTo(25,-125);ctx.lineTo(38,5);ctx.closePath();ctx.fill();
+      for(let i=0;i<7;i++){ctx.fillStyle=i%2?'#526d43':'#415c3d';ctx.beginPath();ctx.arc(Math.sin(i*2.3)*52,-120+Math.cos(i*3)*22,45+i%3*8,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#e8cf8d';ctx.font='bold 15px Tahoma';ctx.textAlign='center';ctx.fillText('درخت کهن',0,30);ctx.restore();
+    }
     const drawables=[];
+    for(const ruin of RUIN_DATA)if(!game.ruinsFound?.includes(ruin.id)&&Math.hypot(ruin.x-game.player.x,ruin.y-game.player.y)<360&&ruin.x>cam.x-80&&ruin.x<cam.x+W+80&&ruin.y>cam.y-80&&ruin.y<cam.y+H+80)drawables.push({y:ruin.y,o:ruin,type:'ruin'});
     if(insideWorld(MAP.cx,MAP.cy)&&MAP.cx>cam.x-100&&MAP.cx<cam.x+W+100&&MAP.cy>cam.y-100&&MAP.cy<cam.y+H+100)drawables.push({y:MAP.cy+14,o:{x:MAP.cx,y:MAP.cy},type:'camp'});
     for(const fire of world.fires||[])if(insideWorld(fire.x,fire.y)&&fire.x>cam.x-120&&fire.x<cam.x+W+120&&fire.y>cam.y-120&&fire.y<cam.y+H+120)drawables.push({y:fire.y+6,o:fire,type:'fire'});
     for(const trap of world.traps||[])if(!trap.triggered&&insideWorld(trap.x,trap.y)&&trap.x>cam.x-60&&trap.x<cam.x+W+60&&trap.y>cam.y-60&&trap.y<cam.y+H+60)drawables.push({y:trap.y+4,o:trap,type:'trap'});
     for(const track of world.raidTracks||[])if(track.x>cam.x-25&&track.x<cam.x+W+25&&track.y>cam.y-25&&track.y<cam.y+H+25)drawables.push({y:track.y+1,o:track,type:'track'});
+    if(game.day===1&&game.phase==='day')for(const chunk of visibleChunks)for(const n of chunk.nodes)if(n.id.startsWith('starter-')&&n.remaining>0&&!(n.type==='tree'?game.onboarding?.wood:game.onboarding?.berry)){
+      const g=ctx.createRadialGradient(n.x,n.y,5,n.x,n.y,60);g.addColorStop(0,`rgba(244,218,132,${.25+.08*Math.sin(gameTime*3)})`);g.addColorStop(1,'rgba(244,218,132,0)');ctx.fillStyle=g;ctx.fillRect(n.x-60,n.y-60,120,120);
+    }
     for(const chunk of visibleChunks){
       for(const n of chunk.nodes)if(insideWorld(n.x,n.y)&&n.x>cam.x-90&&n.x<cam.x+W+90&&n.y>cam.y-90&&n.y<cam.y+H+90)drawables.push({y:n.y,o:n,type:n.type});
       for(const a of chunk.fauna)if(insideWorld(a.x,a.y)&&(a.hp>0||!a.prey)&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
     }
     for(const wall of world.edgeTrees)if(insideWorld(wall.x,wall.y)&&wall.x>cam.x-90&&wall.x<cam.x+W+90&&wall.y>cam.y-90&&wall.y<cam.y+H+90)drawables.push({y:wall.y,o:wall,type:'tree'});
     for(const rock of world.edgeCliffs)if(insideWorld(rock.x,rock.y)&&rock.x>cam.x-45&&rock.x<cam.x+W+45&&rock.y>cam.y-45&&rock.y<cam.y+H+45)drawables.push({y:rock.y,o:rock,type:'rock'});
-    for(const a of world.animals)if(insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
-    for(const a of world.residents||[])if(insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-110&&a.x<cam.x+W+110&&a.y>cam.y-110&&a.y<cam.y+H+110)drawables.push({y:a.y+8,o:a,type:'animal'});
+    for(const a of world.animals)if(game.day>1&&(game.day>2||a.kind!=='wolf')&&insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-100&&a.x<cam.x+W+100&&a.y>cam.y-100&&a.y<cam.y+H+100)drawables.push({y:a.y+8,o:a,type:'animal'});
+    for(const a of world.residents||[])if((game.day>1||a.kind==='jackal')&&insideWorld(a.x,a.y)&&a.hp>0&&a.x>cam.x-110&&a.x<cam.x+W+110&&a.y>cam.y-110&&a.y<cam.y+H+110)drawables.push({y:a.y+8,o:a,type:'animal'});
     for(const drop of world.foodDrops||[])if(drop.amount>0&&insideWorld(drop.x,drop.y)&&drop.x>cam.x-35&&drop.x<cam.x+W+35&&drop.y>cam.y-35&&drop.y<cam.y+H+35)drawables.push({y:drop.y+3,o:drop,type:'foodDrop'});
     for(const shadow of world.hallucinations||[])if(insideWorld(shadow.x,shadow.y)&&shadow.x>cam.x-45&&shadow.x<cam.x+W+45&&shadow.y>cam.y-45&&shadow.y<cam.y+H+45)drawables.push({y:shadow.y+8,o:shadow,type:'shadow'});
     const px=game.player.x,py=game.player.y;drawables.push({y:py+7,o:game.player,type:'player'});drawables.sort((a,b)=>a.y-b.y);
-    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else if(it.type==='shadow')drawShadowCreature(it.o);else if(it.type==='foodDrop')drawFoodDrop(it.o);else if(it.type==='track')drawRaidTrack(it.o);else if(it.type==='camp')drawCamp(it.o.x,it.o.y);else if(it.type==='fire')drawCampfire(it.o);else if(it.type==='trap')drawSnare(it.o);else drawPlayerForest(px,py);}
+    for(const it of drawables){if(it.type==='tree')drawTree(it.o);else if(it.type==='rock')drawRock(it.o);else if(it.type==='bush')drawBush(it.o);else if(it.type==='animal')drawAnimal(it.o);else if(it.type==='shadow')drawShadowCreature(it.o);else if(it.type==='foodDrop')drawFoodDrop(it.o);else if(it.type==='track')drawRaidTrack(it.o);else if(it.type==='camp')drawCamp(it.o.x,it.o.y);else if(it.type==='ruin')drawForestRuin(it.o);else if(it.type==='fire')drawCampfire(it.o);else if(it.type==='trap')drawSnare(it.o);else drawPlayerForest(px,py);}
     for(let i=0;i<4;i++){const fx=MAP.cx+((i*443+gameTime*3)%1100)-550,fy=MAP.cy+((i*257)%730)-365;if(fx>cam.x-150&&fx<cam.x+W+150&&fy>cam.y-70&&fy<cam.y+H+70){const g=ctx.createRadialGradient(fx,fy,8,fx,fy,180);g.addColorStop(0,'rgba(218,225,193,.09)');g.addColorStop(1,'rgba(218,225,193,0)');ctx.fillStyle=g;ctx.fillRect(fx-180,fy-75,360,150);}}
     ctx.restore();drawNightLighting();drawMorningFog();drawRaidWarningOverlay();drawFeedbackPuff(game.player.x-cam.x,game.player.y-cam.y);
     if(game.player.bleedTimer>0){const blood=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.28,W/2,H/2,Math.max(W,H)*.78);blood.addColorStop(0,'rgba(90,8,12,0)');blood.addColorStop(1,`rgba(135,18,21,${.18*clamp(game.player.bleedTimer/8,0,1)})`);ctx.fillStyle=blood;ctx.fillRect(0,0,W,H);}
     const vignette=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.23,W/2,H/2,Math.max(W,H)*.78);vignette.addColorStop(0,'rgba(0,0,0,0)');vignette.addColorStop(1,'rgba(5,10,8,.28)');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   }
   function drawNightLighting() {
-    const dusk=game.phase==='day'&&game.phaseTime>DAY_LENGTH*.72?clamp((game.phaseTime-DAY_LENGTH*.72)/(DAY_LENGTH*.28)*.26,0,.26):0,darkness=game.phase==='night'?.74:dusk;
+    const dusk=game.phase==='day'&&game.phaseTime>dayDuration()*.72?clamp((game.phaseTime-dayDuration()*.72)/(dayDuration()*.28)*.26,0,.26):0,darkness=game.phase==='night'?.74:dusk;
     if(darkness<=0)return;
     ctx.fillStyle=`rgba(8,14,27,${darkness})`;ctx.fillRect(0,0,W,H);ctx.save();ctx.globalCompositeOperation='screen';
     const light=(x,y,radius,intensity)=>{
@@ -2149,9 +2184,10 @@
     // The same layered survivor rig scales to the bunker cell without a camera-angle rotation.
     drawPlayerForest(px,py+g.cell*.34,.72,false);drawFeedbackPuff(px,py+g.cell*.34);
     // night raiders pacing at the surface
-    if(game.phase==='night') {
+    if(game.barricade){ctx.strokeStyle='#bd9862';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(entranceX-22,g.ground-25);ctx.lineTo(entranceX+22,g.ground-9);ctx.moveTo(entranceX+22,g.ground-25);ctx.lineTo(entranceX-22,g.ground-9);ctx.stroke();}
+    if(game.phase==='night'&&world.raidWarning?.timer>0) {
       const raidGlow=ctx.createRadialGradient(entranceX,g.ground-28,3,entranceX,g.ground-28,90);raidGlow.addColorStop(0,'rgba(194,77,53,.2)');raidGlow.addColorStop(1,'rgba(194,77,53,0)');ctx.fillStyle=raidGlow;ctx.fillRect(entranceX-90,g.ground-110,180,130);
-      const n=gameTime*17,leader=world.raidWarning?.primary?.includes('خوراک')?'bear':game.day%2?'wolf':'leopard';drawAnimal({x:entranceX-72+Math.sin(n)*11,y:g.ground-19,kind:leader,dir:.1,hp:40,maxHp:40});drawAnimal({x:entranceX+66+Math.cos(n*.8)*9,y:g.ground-18,kind:'wolf',dir:Math.PI,hp:40,maxHp:40});
+      const n=gameTime*17,leader=game.day>=4&&world.raidWarning?.primary?.includes('خوراک')?'bear':game.day>=2&&game.day%2===0?'leopard':'wolf';drawAnimal({x:entranceX-72+Math.sin(n)*11,y:g.ground-19,kind:leader,dir:.1,hp:40,maxHp:40});if((game.raidSize||1)>1)drawAnimal({x:entranceX+66+Math.cos(n*.8)*9,y:g.ground-18,kind:'wolf',dir:Math.PI,hp:40,maxHp:40});
       const bearing=world.raidWarning?.angle||0;drawRaidEyesAt(entranceX+Math.cos(bearing)*156,g.ground-30+Math.sin(bearing)*7,bearing);ctx.fillStyle='rgba(45,35,27,.55)';for(let i=0;i<6;i++){const along=12+i*16,x=entranceX+Math.cos(bearing)*along-Math.sin(bearing)*(i%2?7:-7),y=g.ground-3+Math.sin(bearing)*along;ctx.beginPath();ctx.ellipse(x,y,4,2.4,bearing,0,Math.PI*2);ctx.fill();}
     }
     // Base integrity and mineable prompt.
@@ -2168,6 +2204,13 @@
     ctx.strokeStyle=`rgba(177,153,192,${.11*power})`;ctx.lineWidth=1;
     for(let i=0;i<5;i++){const y=((i*113+gameTime*26)%(H+24))-12;ctx.beginPath();for(let x=0;x<=W;x+=24){const dy=Math.sin(x*.018+gameTime*2.1+i)*3.2*power;if(x===0)ctx.moveTo(x,y+dy);else ctx.lineTo(x,y+dy);}ctx.stroke();}
     ctx.restore();
+  }
+  function drawForestRuin(ruin) {
+    const x=ruin.x,y=ruin.y,pulse=.5+.5*Math.sin(gameTime*2.4);ctx.save();ctx.globalAlpha=.82;
+    ctx.fillStyle='rgba(208,178,113,.16)';ctx.beginPath();ctx.ellipse(x,y+6,47,26,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#726448';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x-29,y+8);ctx.lineTo(x-27,y-12);ctx.lineTo(x-8,y-25);ctx.lineTo(x+12,y-19);ctx.lineTo(x+31,y-7);ctx.lineTo(x+32,y+9);ctx.stroke();
+    ctx.strokeStyle='#a28b5d';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-27,y-10);ctx.lineTo(x-8,y-23);ctx.lineTo(x+12,y-17);ctx.lineTo(x+29,y-6);ctx.stroke();
+    ctx.fillStyle=`rgba(240,207,127,${.18+.16*pulse})`;ctx.beginPath();ctx.arc(x,y-2,18,0,Math.PI*2);ctx.fill();ctx.fillStyle='#edd394';ctx.font='bold 9px Tahoma';ctx.textAlign='center';ctx.fillText('ویرانه',x,y+27);ctx.restore();
   }
   const MAP_BIOME_COLORS={forest:'#355741',clearing:'#82905d',hill:'#7e7158',swamp:'#4c7058',river:'#4c7d83'};
   const DEN_LABELS={wolf:'گرگ',leopard:'پلنگ',bear:'خرس',boar:'گراز',jackal:'شغال'};
@@ -2191,8 +2234,13 @@
   function drawMapLandmarks(c,view,mini=false) {
     const discoveredPath=()=>{c.beginPath();for(let cy=0;cy<CHUNK_ROWS;cy++)for(let cx=0;cx<CHUNK_COLS;cx++)if(mapDiscovered.has(chunkKey(cx,cy)))c.rect(view.x+cx*CHUNK_SIZE*view.scale,view.y+cy*CHUNK_SIZE*view.scale,Math.min(CHUNK_SIZE,MAP.w-cx*CHUNK_SIZE)*view.scale,Math.min(CHUNK_SIZE,MAP.h-cy*CHUNK_SIZE)*view.scale);c.clip();};
     c.save();discoveredPath();
+    for(const ruin of RUIN_DATA){const cx=Math.floor(ruin.x/CHUNK_SIZE),cy=Math.floor(ruin.y/CHUNK_SIZE);if(!mapDiscovered.has(chunkKey(cx,cy)))continue;const point=mapPoint(view,ruin.x,ruin.y),r=mini?2.5:5.5;c.fillStyle=game.ruinsFound?.includes(ruin.id)?'#91a489':'#e4c47e';c.fillRect(point.x-r,point.y-r,r*2,r*2);if(!mini){c.font='bold 9px Tahoma';c.textAlign='left';c.fillStyle='#eee4c9';c.fillText(game.ruinsFound?.includes(ruin.id)?'پناهگاه کهن':'ویرانهٔ ناشناخته',point.x+8,point.y-4);}}
     for(const den of world?.dens||[]){const cx=Math.floor(den.x/CHUNK_SIZE),cy=Math.floor(den.y/CHUNK_SIZE);if(!mapDiscovered.has(chunkKey(cx,cy)))continue;const p=mapPoint(view,den.x,den.y),color={wolf:'#ce9072',leopard:'#e3c978',bear:'#d19a69',boar:'#9dc17f',jackal:'#baa0d1'}[den.kind]||'#d0c497',radius=clamp((den.radius||220)*view.scale,mini?2.5:9,mini?7:54);c.globalAlpha=mini ? .7 : .72;c.strokeStyle=color;c.lineWidth=mini ? 1 : 1.4;c.setLineDash(mini?[]:[4,4]);c.beginPath();c.arc(p.x,p.y,radius,0,Math.PI*2);c.stroke();c.setLineDash([]);c.globalAlpha=1;c.fillStyle=color;c.beginPath();c.arc(p.x,p.y,mini?2.1:4,0,Math.PI*2);c.fill();if(!mini&&radius>18){c.font='bold 8px Tahoma';c.textAlign='left';c.textBaseline='bottom';c.fillStyle='#f2ead3';c.fillText(DEN_LABELS[den.kind]||'پناهگاه',p.x+6,p.y-5);}}
+    const treeChunk=chunkKey(Math.floor(ANCIENT_TREE.x/CHUNK_SIZE),Math.floor(ANCIENT_TREE.y/CHUNK_SIZE));if(game.nightsSurvived>=1&&mapDiscovered.has(treeChunk)){const tree=mapPoint(view,ANCIENT_TREE.x,ANCIENT_TREE.y);c.fillStyle='#f5dc89';c.font=mini?'bold 10px Tahoma':'bold 18px Tahoma';c.textAlign='center';c.fillText('✦',tree.x,tree.y);if(!mini){c.font='bold 11px Tahoma';c.fillText('درخت کهن',tree.x,tree.y-13);}}
     c.restore();
+    if(game.nightsSurvived>=1&&!mapDiscovered.has(chunkKey(Math.floor(ANCIENT_TREE.x/CHUNK_SIZE),Math.floor(ANCIENT_TREE.y/CHUNK_SIZE)))){
+      const homeHint=mapPoint(view,BUNKER_ENTRANCE.x,BUNKER_ENTRANCE.y),angle=Math.atan2(ANCIENT_TREE.y-BUNKER_ENTRANCE.y,ANCIENT_TREE.x-BUNKER_ENTRANCE.x);c.save();c.translate(homeHint.x+Math.cos(angle)*(mini?14:35),homeHint.y+Math.sin(angle)*(mini?14:35));c.rotate(angle);c.fillStyle='#f5dc89';c.beginPath();c.moveTo(6,0);c.lineTo(-4,-4);c.lineTo(-4,4);c.closePath();c.fill();c.restore();if(!mini){c.save();c.fillStyle='#f5dc89';c.font='bold 10px Tahoma';c.textAlign='left';c.fillText('به سوی درخت کهن',homeHint.x+20,homeHint.y-25);c.restore();}
+    }
     const home=mapPoint(view,BUNKER_ENTRANCE.x,BUNKER_ENTRANCE.y);c.save();c.fillStyle='rgba(11,17,13,.8)';c.beginPath();c.arc(home.x,home.y,mini?5.2:10,0,Math.PI*2);c.fill();c.fillStyle='#f0c36d';c.beginPath();c.moveTo(home.x,home.y-(mini?4:8));c.lineTo(home.x+(mini?4:8),home.y);c.lineTo(home.x,home.y+(mini?4:8));c.lineTo(home.x-(mini?4:8),home.y);c.closePath();c.fill();if(!mini){c.font='bold 10px Tahoma';c.textAlign='left';c.textBaseline='middle';c.fillStyle='#f7e4b7';c.fillText('بانکر',home.x+11,home.y-8);}c.restore();
     for(let i=0;i<(game.mapMarkers||[]).length;i++){const marker=game.mapMarkers[i],point=mapPoint(view,marker.x,marker.y),r=mini?3.2:6.4;c.save();c.fillStyle='rgba(13,19,15,.8)';c.beginPath();c.arc(point.x,point.y,r+2,0,Math.PI*2);c.fill();c.fillStyle='#ee856e';c.strokeStyle='#ffe0ad';c.lineWidth=mini ? .8 : 1.3;c.beginPath();c.arc(point.x,point.y,r,0,Math.PI*2);c.fill();c.stroke();if(!mini){c.font='bold 9px Tahoma';c.textAlign='left';c.textBaseline='bottom';c.fillStyle='#fff0d8';c.fillText(marker.label||`نشان ${fa(i+1)}`,point.x+8,point.y-4);}c.restore();}
     const player=mapPoint(view,game.player.x,game.player.y),radius=mini?3.4:5.5;c.save();c.fillStyle='#f7f3df';c.strokeStyle='#142019';c.lineWidth=mini?1:2;c.beginPath();c.arc(player.x,player.y,radius,0,Math.PI*2);c.fill();c.stroke();const fx=game.player.faceX||1,fy=game.player.faceY||0;c.strokeStyle='#fff0bb';c.lineWidth=mini?1:2;c.beginPath();c.moveTo(player.x,player.y);c.lineTo(player.x+fx*(mini?7:12),player.y+fy*(mini?7:12));c.stroke();c.restore();
@@ -2352,7 +2400,7 @@
   }
   function huntWindow(kind) {
     if(game.phase==='night')return true;
-    const t=game.phaseTime||0,dusk=t>DAY_LENGTH*.73,dawn=t<15;
+    const t=game.phaseTime||0,dusk=t>dayDuration()*.73,dawn=t<15;
     if(kind==='wolf')return dusk;
     if(kind==='leopard'||kind==='jackal'||kind==='boar')return dusk||dawn;
     return true;
@@ -2370,7 +2418,7 @@
     if(isHerd){for(const predator of predators){const pd=Math.hypot(predator.x-a.x,predator.y-a.y),aware=predator.kind==='wolf'?huntWindow('wolf')||pd<130:predator.kind==='leopard'?huntWindow('leopard')||pd<105:true,range=(a.senses?.daySight||traits.senses?.daySight||180)*.82;if(aware&&pd<range){threat=true;if(pd<dangerD){dangerX=predator.x;dangerY=predator.y;dangerD=pd;}}}}
     if(threat&&isHerd){if(a.state!=='retreat')audioManager.animalCall(a.kind,'flee',a,a.id);a.state='retreat';a.fleeTimer=Math.max(a.fleeTimer||0,2.1);}
     if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-dangerX,dy=a.y-dangerY,m=Math.hypot(dx,dy)||1,fatigue=updateAnimalStamina(a,dt,.62),speed=(a.speeds?.flee||traits.speed?.flee||140)*(.52+.48*fatigue);moveCreature(a,a.x+dx/m*220,a.y+dy/m*220,speed,dt);return;}
-    const time=game.phaseTime||0,activeHours=a.kind==='deer'?game.phase==='day'&&(time<18||time>DAY_LENGTH*.72):a.kind==='rabbit'?game.phase==='night'||time<19||time>DAY_LENGTH*.72:game.phase==='day';
+    const time=game.phaseTime||0,activeHours=a.kind==='deer'?game.phase==='day'&&(time<18||time>dayDuration()*.72):a.kind==='rabbit'?game.phase==='night'||time<19||time>dayDuration()*.72:game.phase==='day';
     if(!activeHours){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);a.animTime=(a.animTime||0)+dt*.45;return;}
     const staminaRatio=updateAnimalStamina(a,dt,0);a.stateTimer-=dt;
     if(a.stateTimer<=0){a.state=a.kind==='deer'||a.kind==='rabbit'?'graze':'wander';a.stateTimer=2+world.rand()*5;a.roamAngle+=(world.rand()-.5)*2.4;}
@@ -2383,12 +2431,12 @@
   function hurtPlayerFromBite(a) {
     const p=game.player;if(p.hitGrace>0)return;
     const damage={leopard:20,wolf:13,bear:25}[a.kind]||13;
-    game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.78;p.invuln=.46;p.hurtTimer=.55;p.hurtDirX=p.x-a.x;p.hurtDirY=p.y-a.y;p.bleedTimer=Math.max(p.bleedTimer||0,a.kind==='leopard'?8:a.kind==='bear'?7:6);p.bleedTickTimer=.9;p.bleedSeverity=a.kind==='leopard'?1.15:a.kind==='bear'?1.05:.72;
+    game.lastDamageCause=a.kind;game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.78;p.invuln=.46;p.hurtTimer=.55;p.hurtDirX=p.x-a.x;p.hurtDirY=p.y-a.y;p.bleedTimer=Math.max(p.bleedTimer||0,a.kind==='leopard'?8:a.kind==='bear'?7:6);p.bleedTickTimer=.9;p.bleedSeverity=a.kind==='leopard'?1.15:a.kind==='bear'?1.05:.72;
     audioManager.animalCall(a.kind,'attack',a,a.id);beep('hit',{position:a,priority:6});haptic(34);showImportantToast(a.kind==='leopard'?'پلنگ گاز گرفت؛ خون‌ریزی داری! بدو یا از آتش و بانکر کمک بگیر.':a.kind==='bear'?'خرس با پنجه حمله کرد؛ خون‌ریزی داری! از محدودهٔ بچه‌ها یا لاشه دور شو.':'گرگ گاز گرفت؛ خون‌ریزی داری! فرار کن یا تله و آتش به کار ببر.',2300);
   }
   function hurtPlayerFromCharge(a) {
     const p=game.player;if(p.hitGrace>0)return;
-    const damage=a.kind==='boar'?17:20;game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.9;p.invuln=.5;
+    const damage=a.kind==='boar'?17:20;game.lastDamageCause=a.kind;game.stats.health=Math.max(0,game.stats.health-damage);p.hitGrace=.9;p.invuln=.5;
     const dx=p.x-a.x,dy=p.y-a.y,m=Math.hypot(dx,dy)||1;p.hurtTimer=.55;p.hurtDirX=dx;p.hurtDirY=dy;p.x=clamp(p.x+dx/m*34,WORLD_EDGE,MAP.w-WORLD_EDGE);p.y=clamp(p.y+dy/m*34,WORLD_EDGE,MAP.h-WORLD_EDGE);p.target=null;
     if(a.kind==='boar'){p.bleedTimer=Math.max(p.bleedTimer||0,3.2);p.bleedSeverity=.5;showImportantToast('گراز وحشی به تو زد؛ از گله فاصله بگیر.',1900);}else showImportantToast('خرس با پنجه زد؛ از محدودهٔ دفاعی عقب‌نشینی کن.',1900);
     audioManager.animalCall(a.kind,'charge',a,a.id);beep('hit',{position:a,priority:6});haptic(30);
@@ -2513,15 +2561,16 @@
     const drop=nearestFoodDrop(a,a.senses?.smell||640);
     if(drop){a.state='scavenge';if(Math.hypot(drop.x-a.x,drop.y-a.y)<20){stealFoodDrop(drop,a);a.state='retreat';a.fleeTimer=2.5;return;}const ratio=updateAnimalStamina(a,dt,.3);moveCreature(a,drop.x,drop.y,a.speeds.follow*(.7+.3*ratio),dt);return;}
     if(a.state==='retreat'&&a.fleeTimer>0){a.fleeTimer-=dt;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;updateAnimalStamina(a,dt,.12);moveCreature(a,a.x+dx/m*200,a.y+dy/m*200,a.speeds.flee,dt);return;}
-    const activeWindow=game.phase==='night'||game.phaseTime<16||game.phaseTime>DAY_LENGTH*.72;if(!activeWindow){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
+    const activeWindow=game.phase==='night'||game.phaseTime<16||game.phaseTime>dayDuration()*.72;if(!activeWindow){a.state='rest';a.vx=0;a.vy=0;updateAnimalStamina(a,dt,0);return;}
     updateAnimalStamina(a,dt,0);const noise=playerNoiseLevel(p),follows=(game.resources.food||0)>0||noise>.35;
     if(follows&&d>370){a.state='follow';const fx=p.faceX||1,fy=p.faceY||0,side=a.territoryId?.includes('south')?-1:1;moveCreature(a,p.x-fx*270-fy*side*90,p.y-fy*270+fx*side*90,a.speeds.follow,dt);}
     else if(d<190){a.state='retreat';a.fleeTimer=2;const dx=a.x-p.x,dy=a.y-p.y,m=Math.hypot(dx,dy)||1;moveCreature(a,a.x+dx/m*180,a.y+dy/m*180,a.speeds.flee,dt);}
     else {a.state='scavenge';a.stateTimer-=dt;if(a.stateTimer<=0){a.roamAngle+=(world.rand()-.5)*2.5;a.stateTimer=2+world.rand()*4;}const tx=a.territoryX+Math.cos(a.roamAngle)*a.territoryRadius*.36,ty=a.territoryY+Math.sin(a.roamAngle)*a.territoryRadius*.36;moveCreature(a,tx,ty,a.speeds.forage,dt);}
   }
   function updateAnimals(dt) {
-    for(const a of world.animals){if(a.hp<=0){respawnCreature(a,dt);continue;}updatePredator(a,dt);}
-    for(const a of world.residents||[]){if(a.hp<=0){respawnCreature(a,dt);continue;}if(a.kind==='bear')updateBear(a,dt);else if(a.kind==='boar')updateBoar(a,dt);else if(a.kind==='jackal')updateJackal(a,dt);}
+    const safe=game.phase==='day'&&dist(game.player,BUNKER_ENTRANCE)<250;
+    for(const a of world.animals){if(safe||game.day===1||(game.day===2&&a.kind==='wolf'))continue;if(a.hp<=0){respawnCreature(a,dt);continue;}updatePredator(a,dt);}
+    for(const a of world.residents||[]){if((safe||game.day===1)&&a.kind!=='jackal')continue;if(a.hp<=0){respawnCreature(a,dt);continue;}if(a.kind==='bear')updateBear(a,dt);else if(a.kind==='boar')updateBoar(a,dt);else if(a.kind==='jackal')updateJackal(a,dt);}
     for(const chunk of chunksAround(game.player.x,game.player.y,1))for(const a of chunk.fauna){
       if(a.prey&&a.hp<=0){respawnCreature(a,dt);continue;}updatePrey(a,dt);
     }
@@ -2551,9 +2600,11 @@
     const fireButton=$('fireButton'),trapButton=$('trapButton'),hapticsButton=$('hapticsButton');$('forestControls').style.display='flex';hapticsButton.classList.toggle('active',hapticsEnabled);hapticsButton.setAttribute?.('aria-pressed',String(hapticsEnabled));$('hapticsLabel').textContent=hapticsEnabled?'لرزش روشن':'لرزش خاموش';
     if(game.mode==='forest') {
       $('forestSheetActions').style.display='grid';$('bunkerTools').style.display='none';$('actionSheetTitle').textContent='ابزارهای جنگل';
-      fireButton.disabled=(game.inventory.fireKits||0)<1&&game.resources.wood<2;trapButton.disabled=(game.inventory.snares||0)<1&&(game.resources.wood<2||game.resources.herbs<1);
+      fireButton.disabled=(game.inventory.fireKits||0)<1&&!canPay(BALANCE.secondaryCosts.fire);trapButton.disabled=(game.inventory.snares||0)<1&&!canPay(BALANCE.secondaryCosts.snare);
       const n=nearestNode(86),a=nearestAnimal(58),drop=nearestFoodDrop(game.player,58);let label='عمل',icon='action';
+      const ruin=RUIN_DATA.find(item=>!game.ruinsFound?.includes(item.id)&&Math.hypot(game.player.x-item.x,game.player.y-item.y)<64);
       if(atBunkerEntrance()){label='ورود';icon='entry';}
+      else if(ruin){label='ویرانه';icon='entry';}
       else if(a){label=a.predator?'دفاع':'شکار';icon=a.predator?'defense':'hunt';}
       else if(drop){label='گوشت';icon='food';}
       else if(n){label=n.node.type==='tree'?'چوب':n.node.type==='rock'?'سنگ':n.node.herb?'گیاه':'خوراک';icon=n.node.type==='tree'?'wood':n.node.type==='rock'?'stone':n.node.herb?'herb':'food';}
@@ -2566,13 +2617,20 @@
     }
   }
   function animatePlayerAction(kind,duration=.55) { game.player.actionKind=kind;game.player.actionDuration=duration;game.player.actionTimer=duration; }
+  function telemetry(name,details={}) {
+    if(!game)return;game.telemetry=game.telemetry||{};if(name!=='death'&&game.telemetry[name]!=null)return;
+    const elapsed=Math.round((game.playtime||0)*10)/10;if(name!=='death')game.telemetry[name]=elapsed;
+    console.info('[Hirkani playtest]',JSON.stringify({event:name,seconds:elapsed,day:game.day,phase:game.phase,...details}));
+  }
   function gather() {
+    const ruin=RUIN_DATA.find(item=>!game.ruinsFound?.includes(item.id)&&Math.hypot(game.player.x-item.x,game.player.y-item.y)<64);
+    if(ruin){game.ruinsFound.push(ruin.id);if(ruin.blueprint&&!game.blueprints.includes(ruin.blueprint))game.blueprints.push(ruin.blueprint);game.bonusNotes.push(ruin.id);game.lastRuin=ruin.id;addResource('wood',2);animatePlayerAction('interact',.45);beep('gather');actionFeedback('');saveGame();updateUI(true);showModal('ruin');console.info('[Hirkani exploration]',JSON.stringify({event:'ruin_found',id:ruin.id,blueprint:ruin.blueprint,note:ruin.note}));return;}
     if(atBunkerEntrance()){animatePlayerAction('interact',.35);enterBunker();return;}
     const animal=nearestAnimal(61);
     if(animal) {
-      animatePlayerAction('swing',.52);game.player.noiseBurst=.8;animal.hp-=animal.predator?22:animal.kind==='deer'?28:24;animal.hitFlash=.28;animal.threatenedTimer=animal.kind==='bear'||animal.kind==='boar'?5:animal.threatenedTimer||0;beep(game.inventory.hatchets>0?'axe':'weapon',{position:animal,priority:4});
+      animatePlayerAction('swing',.52);game.player.noiseBurst=.8;animal.hp-=animal.predator?(game.inventory.knife?30:22):animal.kind==='deer'?28:24;animal.hitFlash=.28;animal.threatenedTimer=animal.kind==='bear'||animal.kind==='boar'?5:animal.threatenedTimer||0;beep(game.inventory.hatchets>0?'axe':'weapon',{position:animal,priority:4});
       if(animal.hp<=0){animal.hp=0;animal.respawnTimer=animal.predator?160:animal.kind==='deer'?65:42;const meat=animal.kind==='deer'?2:animal.kind==='bear'||animal.kind==='boar'?3:1,carried=addResource('food',meat),dropped=meat-carried;if(dropped>0)createFoodDrop(animal.x,animal.y,dropped,'carcass');if(animal.kind==='leopard')addResource('herbs',1);actionFeedback(`شکار موفق؛ +${fa(carried)} خوراک.${dropped?` ${fa(dropped)} تکه روی زمین ماند؛ شغال‌ها بویش را می‌گیرند.`:''}`,2200);}
-      else if(animal.predator){if(animal.hp<animal.maxHp*.43){animal.retreatReason='wounded';changeAnimalState(animal,'retreat',2.5);}actionFeedback('با چوبدستی ضربه زدی؛ جانور خطرناک می‌تواند واکنش نشان دهد.',1800);}
+      else if(animal.predator){if(animal.hp<animal.maxHp*.43){animal.retreatReason='wounded';changeAnimalState(animal,'retreat',2.5);}actionFeedback('با با چاقو ضربه زدی؛ جانور خطرناک می‌تواند واکنش نشان دهد.',1800);}
       else {animal.state='retreat';animal.fleeTimer=2.2;actionFeedback(animal.kind==='boar'?'گراز وحشی را تحریک کردی؛ حالا ممکن است گله یورش بیاورد.':'شکار زخمی شد و می‌گریزد؛ برای رسیدن باید بدوی.',1900);}
       return;
     }
@@ -2580,10 +2638,10 @@
     animatePlayerAction('gather',.58);
     const result=nearestNode(80);
     if(!result){actionFeedback('چیزی برای برداشت نزدیک نیست؛ چند قدم دیگر برو.',1600);return;}
-    const n=result.node;
-    if(n.type==='tree'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2)+(game.inventory.hatchets>0?1:0));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('wood',gain);actionFeedback(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
-    else if(n.type==='rock'){const picked=Math.min(n.remaining,1+Math.floor(Math.random()*2));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('stone',gain);actionFeedback(`سنگ برداشتی: +${fa(gain)} سنگ.`,1500);}
-    else {n.remaining--;if(n.herb){addResource('herbs',1);actionFeedback('گیاه دارویی هیرکانی پیدا کردی: +۱ گیاه.',1600);}else{addResource('food',1);actionFeedback('میوهٔ جنگلی چیدی: +۱ خوراک.',1500);}}
+    const n=result.node;if(n.type==='tree')game.onboarding.wood=true;else if(n.type==='bush'&&!n.herb){game.onboarding.berry=true;telemetry('first_berry');}
+    if(n.type==='tree'){const picked=Math.min(n.remaining,BALANCE.yields.treeMin+Math.floor(Math.random()*BALANCE.yields.treeRandom)+(game.inventory.hatchets>0?1:0));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('wood',gain);actionFeedback(`چوب خشک برداشتی: +${fa(gain)} چوب.`,1500);}
+    else if(n.type==='rock'){const picked=Math.min(n.remaining,BALANCE.yields.rockMin+Math.floor(Math.random()*BALANCE.yields.rockRandom));n.remaining-=picked;const gain=picked+(Math.random()<combinedEffects().gatherBonus?1:0);addResource('stone',gain);actionFeedback(`سنگ برداشتی: +${fa(gain)} سنگ.`,1500);}
+    else {n.remaining--;if(n.herb){addResource('herbs',BALANCE.yields.herb);actionFeedback('گیاه دارویی هیرکانی پیدا کردی: +۱ گیاه.',1600);}else{addResource('food',BALANCE.yields.berry);actionFeedback('میوهٔ جنگلی چیدی: +۱ خوراک.',1500);}}
     beep(n.type==='tree'?'axe':n.type==='rock'?'stonePick':'gather',{position:n,priority:3});
   }
   function eat() {
@@ -2599,14 +2657,14 @@
   }
   function lightFire() {
     if(!active||game.mode!=='forest')return;
-    const kit=(game.inventory.fireKits||0)>0;if(!kit&&game.resources.wood<2){flashResource('wood');actionFeedback('');return;}
-    if(kit)game.inventory.fireKits--;else game.resources.wood-=2;world.fires.push({x:game.player.x,y:game.player.y,timer:24,radius:156});if(world.fires.length>2)world.fires.shift();
+    const kit=(game.inventory.fireKits||0)>0;if(!kit&&!canPay(BALANCE.secondaryCosts.fire)){flashResource('wood');actionFeedback('');return;}
+    if(kit)game.inventory.fireKits--;else pay(BALANCE.secondaryCosts.fire);world.fires.push({x:game.player.x,y:game.player.y,timer:24,radius:156});if(world.fires.length>2)world.fires.shift();
     animatePlayerAction('gather',.45);game.player.noiseBurst=1.1;beep('build');haptic(16);actionFeedback(kit?'کیت آتش را روشن کردی؛ شکارچیان از شعله فاصله می‌گیرند.':'آتش روشن شد؛ شکارچیان از شعله فاصله می‌گیرند.',1900);updateUI(true);
   }
   function placeSnare() {
     if(!active||game.mode!=='forest')return;
-    const kit=(game.inventory.snares||0)>0;if(!kit&&(game.resources.wood<2||game.resources.herbs<1)){flashResource(game.resources.wood<2?'wood':'herbs');actionFeedback('');return;}
-    if(kit)game.inventory.snares--;else{game.resources.wood-=2;game.resources.herbs-=1;}world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});
+    const kit=(game.inventory.snares||0)>0;if(!kit&&!canPay(BALANCE.secondaryCosts.snare)){flashResource(game.resources.wood<BALANCE.secondaryCosts.snare.wood?'wood':'herbs');actionFeedback('');return;}
+    if(kit)game.inventory.snares--;else pay(BALANCE.secondaryCosts.snare);world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});
     if(world.traps.length>4)world.traps.shift();animatePlayerAction('gather',.58);game.player.noiseBurst=1.25;beep('trapSet',{priority:3});haptic(16);actionFeedback('تلهٔ گیاهی کار گذاشتی؛ جانور نزدیک را به سمتش بکشان.',2000);updateUI(true);
   }
   function updateHazards(dt) {
@@ -2623,7 +2681,7 @@
     setActionSheet(false);beep('door',{priority:4});game.mode='forest';game.player.x=MAP.cx+80;game.player.y=MAP.cy+5;game.player.target=null;game.selectedCell=null;haptic(10);actionFeedback('به جنگل برگشتی؛ غروب نزدیک است.',1700);
   }
   function doAction() {
-    if(!active||game.gameOver||statusPanelOpen)return;
+    if(!active||!game||game.gameOver||paused||introActive||mapOpen||statusPanelOpen||$('modal').classList.contains('show'))return;
     if(game.mode==='forest')gather();else bunkerAction();updateUI(true);
   }
   function currentTarget() {
@@ -2641,13 +2699,13 @@
     if(mode==='support'){
       if(!bunkerCellOpen(t.c,t.r)){actionFeedback('تیرک را روی فضای کنده‌شده بگذار.',1500);return;}
       if(game.supports?.[k]){actionFeedback('اینجا از قبل تیرک دارد؛ فاصلهٔ تیرک‌ها را کوتاه نگه دار.',1600);return;}
-      if(!pay({wood:2})){actionFeedback('برای تیرک چوبی ۲ چوب لازم است.',1600);return;}
+      if(!pay(BALANCE.secondaryCosts.support)){actionFeedback('برای تیرک چوبی ۲ چوب لازم است.',1600);return;}
       game.supports[k]=true;game.integrity={};game.structureWarning=null;animatePlayerAction('gather',.45);p.noiseBurst=.7;beep('build');actionFeedback('تیرک چوبی جفت شد؛ سقف این دهانه پایدارتر است.',1700);return;
     }
     if(mode==='lamp'){
       if(!bunkerCellOpen(t.c,t.r)){actionFeedback('چراغ را روی فضای کنده‌شده نصب کن.',1500);return;}
       if(game.lamps?.[k]){actionFeedback('این خانه از قبل چراغ دارد.',1400);return;}
-      if(!pay({wood:1})){actionFeedback('برای چراغ روغنی ۱ چوب لازم است.',1500);return;}
+      if(!pay(BALANCE.secondaryCosts.lamp)){actionFeedback('برای چراغ روغنی ۱ چوب لازم است.',1500);return;}
       game.lamps[k]=true;animatePlayerAction('gather',.4);p.noiseBurst=.45;beep('build');actionFeedback('چراغ روغنی روشن شد؛ نور گرم، تونل را بازتر می‌کند.',1700);return;
     }
     if(mode==='dig'){
@@ -2662,13 +2720,13 @@
       return;
     }
     if(mode==='build'){
-      if(room){if(room.level>=3){actionFeedback('این اتاق به بالاترین سطح رسیده است.',1500);return;}const def=ROOMS[room.type]||ROOMS.storage,cost={...def.upgrade};for(const key of Object.keys(cost))cost[key]*=room.level;if(!pay(cost)){actionFeedback(`برای ارتقا نیاز داری: ${costText(cost)}.`,1700);return;}room.level++;room.maxHp+=10;room.hp=Math.min(room.maxHp,room.hp+18);p.noiseBurst=.85;beep('build');showImportantToast(`${def.name} به سطح ${fa(room.level)} رسید.`,1700);return;}
+      if(room){if(room.level>=3){actionFeedback('این اتاق به بالاترین سطح رسیده است.',1500);return;}const def=ROOMS[room.type]||ROOMS.storage,cost={...def.upgrade};for(const key of Object.keys(cost))cost[key]*=room.level;if(!pay(cost)){actionFeedback(`برای ارتقا نیاز داری: ${costText(cost)}.`,1700);return;}room.level++;room.maxHp+=10;room.hp=Math.min(room.maxHp,room.hp+18);p.noiseBurst=.85;beep('build');actionFeedback(`${def.name} به سطح ${fa(room.level)} رسید.`,1700);return;}
       if(!game.dug[k]){actionFeedback('برای ساخت اتاق، اول خانهٔ خاکی را کامل حفر کن.',1500);return;}
       if(!game.selectedRoom){actionFeedback('یک اتاق از فهرست انتخاب کن، خانهٔ باز را لمس کن و عمل را بزن.',1900);return;}
       const def=ROOMS[game.selectedRoom];if(!def){game.selectedRoom=null;game.bunkerMode='dig';actionFeedback('نوع اتاق دیگر در دسترس نیست؛ دوباره انتخاب کن.',1500);return;}
       const base=BUNKERS.find(b=>b.id===game.bunkerId)||BUNKERS[0];if(Object.keys(game.rooms).length>=base.size[0]*base.size[1]){actionFeedback('گنجایش این پناهگاه پر شده است.',1500);return;}
       if(!pay(def.cost)){actionFeedback(`منابع کافی نیست؛ نیاز داری به ${costText(def.cost)}.`,1800);return;}
-      game.rooms[k]={type:game.selectedRoom,level:1,hp:48,maxHp:48};game.selectedRoom=null;game.bunkerMode='dig';p.noiseBurst=.9;beep('build');actionFeedback(`${def.name} ساخته شد.`,1700);return;
+      game.onboarding.build=true;telemetry('first_build',{room:game.selectedRoom});game.rooms[k]={type:game.selectedRoom,level:1,hp:48,maxHp:48};game.selectedRoom=null;game.bunkerMode='dig';p.noiseBurst=.9;beep('build');actionFeedback(`${def.name} ساخته شد.`,1700);return;
     }
     game.bunkerMode='dig';actionFeedback('ابزار کندن دوباره انتخاب شد.',1300);
   }
@@ -2691,10 +2749,10 @@
   }
   function repair() {
     const t=currentTarget(),room=game.rooms[keyOf(t.c,t.r)];
-    if(room&&room.hp<room.maxHp){const cost={wood:2,stone:1};if(!pay(cost)){actionFeedback(`برای تعمیر اتاق نیاز داری: ${costText(cost)}.`,1800);return;}room.hp=Math.min(room.maxHp,room.hp+23);game.player.noiseBurst=.8;beep('build');actionFeedback(`${ROOMS[room.type].name} تعمیر شد.`,1500);return;}
+    if(room&&room.hp<room.maxHp){const cost=BALANCE.secondaryCosts.repairRoom;if(!pay(cost)){actionFeedback(`برای تعمیر اتاق نیاز داری: ${costText(cost)}.`,1800);return;}room.hp=Math.min(room.maxHp,room.hp+23);game.player.noiseBurst=.8;beep('build');actionFeedback(`${ROOMS[room.type].name} تعمیر شد.`,1500);return;}
     const base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100});
     if(base.hp>=100){actionFeedback('پناهگاه آسیبی ندیده است.',1500);return;}
-    const cost={wood:3,stone:2};if(!pay(cost)){actionFeedback(`برای تعمیر پناهگاه نیاز داری: ${costText(cost)}.`,1800);return;}
+    const cost=BALANCE.secondaryCosts.repairBase;if(!pay(cost)){actionFeedback(`برای تعمیر پناهگاه نیاز داری: ${costText(cost)}.`,1800);return;}
     base.hp=Math.min(100,base.hp+25);game.player.noiseBurst=.85;beep('build');actionFeedback('بخش آسیب‌دیدهٔ پناهگاه تعمیر شد.',1600);
   }
 
@@ -2711,7 +2769,7 @@
     return total;
   }
   function roomDefense() { return combinedEffects().defense; }
-  function baseDefense() { return (BUNKERS.find(b=>b.id===game.bunkerId)?.defense||0)+roomDefense(); }
+  function baseDefense() { return (BUNKERS.find(b=>b.id===game.bunkerId)?.defense||0)+roomDefense()+(game.barricade?BALANCE.barricade.defense:0); }
   function updateNoiseTrail(dt) {
     const level=playerNoiseLevel(game.player),build=level>.25?level*.25:0,decay=game.mode==='bunker' ? .2 : .11;
     game.noiseTrail=clamp((game.noiseTrail||0)+dt*(build-decay),0,1);
@@ -2750,7 +2808,7 @@
     const dx=Math.cos(warning.angle),dy=Math.sin(warning.angle),reach=Math.min((W*.5-32)/(Math.abs(dx)||.001),(H*.5-32)/(Math.abs(dy)||.001)),x=W*.5+dx*reach,y=H*.5+dy*reach;drawRaidEyesAt(x,y,warning.angle);
   }
   function beginNight() {
-    game.phase='night';game.phaseTime=0;game.player.target=null;game.player.stepTimer=0;game.raidTimer=3;
+    game.phase='night';game.phaseTime=0;game.player.target=null;game.player.stepTimer=0;game.raidTimer=BALANCE.firstRaidTimer;game.raidCount=0;game.lastRaidOutcome='';game.raidSize=BALANCE.raidSize[Math.min(9,game.day-1)]+(game.day===1&&Math.random()<.4?1:0);
     if(game.mode==='forest'&&!game.player.torchLit&&game.inventory.torches>0){game.inventory.torches--;game.player.torchLit=true;}
     if(game.mode==='bunker')game.selectedCell=null;
     const profile=raidAttractionProfile();refreshRaidWarning(profile);howl();
@@ -2758,17 +2816,18 @@
     showImportantToast(`${game.mode==='forest'?'شب فرارسید؛ بیرون ماندی! سرما آسیب می‌زند؛ با پیکان ورودی را پیدا کن.':'شب فرارسید؛ زوزه و ردپا از لبهٔ جنگل خبر می‌دهد.'} ${cause}${game.player.torchLit?' مشعل روشن است و نورش دیده می‌شود.':''}`,3600);
   }
   function nightRaid() {
+    telemetry('first_raid',{size:game.raidSize||1});
     const profile=raidAttractionProfile(),base=game.bunkers[game.bunkerId]||(game.bunkers[game.bunkerId]={hp:100}),effects=combinedEffects();refreshRaidWarning(profile);howl();
-    if(Math.random()>profile.likelihood){showImportantToast(`زوزه از سمت ${profile.primary} شنیدی، اما این‌بار جانورها به پناهگاه نرسیدند؛ نور، صدا یا خوراک کمتر، خطر را کم می‌کند.`,2400);return;}
-    const raw=8+Math.floor(Math.random()*8),def=baseDefense(),evade=clamp((effects.stealth||0)+(effects.raidDamage||0),0,.84),damage=Math.max(1,Math.round(raw*(1-evade)-Math.min(raw*.68,def*.22)));
-    base.hp=Math.max(0,base.hp-damage);
-    const rooms=Object.entries(game.rooms).filter(([,r])=>r.hp>0).sort((a,b)=>a[1].hp/a[1].maxHp-b[1].hp/b[1].maxHp),bearPressure=clamp(profile.storedFood*.55+profile.groundFood*.42,0,.72),bearRaid=Math.random()<bearPressure;
+    game.raidCount=(game.raidCount||0)+1;if(Math.random()>profile.likelihood){game.lastRaidOutcome='گرگ‌ها نزدیک شدند، اما رد کم‌رنگ تو را گم کردند.';showImportantToast(`زوزه از سمت ${profile.primary} شنیدی، اما این‌بار جانورها به پناهگاه نرسیدند؛ نور، صدا یا خوراک کمتر، خطر را کم می‌کند.`,2400);return;}
+    const raw=BALANCE.raidBaseDamage+(game.raidSize||1)*BALANCE.raidDamagePerWolf+Math.floor(Math.random()*(BALANCE.raidVariance+1)),def=baseDefense(),evade=clamp((effects.stealth||0)+(effects.raidDamage||0),0,.84),damage=Math.max(1,Math.round(raw*(1-evade)-Math.min(raw*.68,def*.22)));
+    game.lastRaidOutcome=game.day===1?'گرگ‌ها به ورودی رسیدند؛ سکوت و استحکام پناهگاه آسیب را کمتر کرد.':'جانوران به ورودی رسیدند؛ استحکام و آرامش پناهگاه از آسیب کاست.';base.hp=Math.max(0,base.hp-damage);game.nightDamage=(game.nightDamage||0)+damage;
+    const rooms=Object.entries(game.rooms).filter(([,r])=>r.hp>0).sort((a,b)=>a[1].hp/a[1].maxHp-b[1].hp/b[1].maxHp),bearPressure=clamp(profile.storedFood*.55+profile.groundFood*.42,0,.72),bearRaid=game.day>=4&&Math.random()<bearPressure;
     let damaged='',stolenFood=0,stoleCarcass=false;
     if(bearRaid&&game.resources.food>0){stolenFood=Math.min(game.resources.food,1+Math.floor(Math.random()*3));game.resources.food-=stolenFood;}
     else if(bearRaid&&profile.drops.length){const drop=profile.drops[0];stolenFood=Math.min(drop.amount,1+Math.floor(Math.random()*2));drop.amount-=stolenFood;stoleCarcass=true;if(drop.amount<=0)world.foodDrops=world.foodDrops.filter(item=>item!==drop);}
     const store=rooms.find(([,room])=>room.type==='storage');
-    if(bearRaid&&store){const [key,room]=store;room.hp=Math.max(0,room.hp-Math.ceil(damage*.85));damaged=` انبار خوراک ${room.hp===0?'از کار افتاد':'آسیب دید'}.`;}
-    else if(rooms.length&&Math.random()<.78){const [key,room]=rooms[Math.floor(Math.random()*Math.min(3,rooms.length))],hit=Math.ceil(damage*(.75+Math.random()*.6));room.hp=Math.max(0,room.hp-hit);damaged=` ${ROOMS[room.type].name} ${room.hp===0?'از کار افتاد':'آسیب دید'}.`;}
+    if(bearRaid&&store){const [key,room]=store;room.hp=Math.max(0,room.hp-Math.ceil(damage*BALANCE.raidRoomHit));damaged=` انبار خوراک ${room.hp===0?'از کار افتاد':'آسیب دید'}.`;}
+    else if(rooms.length&&Math.random()<BALANCE.raidRoomChance){const [key,room]=rooms[Math.floor(Math.random()*Math.min(3,rooms.length))],hit=Math.ceil(damage*(.75+Math.random()*.6));room.hp=Math.max(0,room.hp-hit);damaged=` ${ROOMS[room.type].name} ${room.hp===0?'از کار افتاد':'آسیب دید'}.`;}
     if(base.hp===0)game.stats.health=Math.max(0,game.stats.health-3);
     const cause=profile.causes.length?` جانوران جذب ${profile.causes.join('، ')} شدند.`:' با ردپایی کم‌رنگ به پناهگاه رسیدند.';let bearNote='';
     if(bearRaid)bearNote=stoleCarcass?' خرس قهوه‌ای لاشهٔ روی زمین را ربود.':stolenFood?` خرس قهوه‌ای به بوی غذا رسید و ${fa(stolenFood)} خوراک از ${game.mode==='bunker'?'انبار':'کیسه‌ات'} برد.`:' خرس قهوه‌ای انبار را جست‌وجو کرد.';
@@ -2795,11 +2854,11 @@
   }
   function updateSurvival(dt) {
     const night=game.phase==='night',effects=combinedEffects();
-    game.stats.hunger=clamp(game.stats.hunger-dt*(night?.095:.07),0,100);
-    if(night&&game.mode==='bunker')game.stats.warmth=clamp(game.stats.warmth+dt*Math.max(.035,.12+effects.warmth),0,100);
-    else if(night){game.stats.warmth=clamp(game.stats.warmth-dt*.72,0,100);game.stats.health=clamp(game.stats.health-dt*.36,0,100);}
-    else game.stats.warmth=clamp(game.stats.warmth+dt*.055,0,100);
-    if(game.stats.hunger<13||game.stats.warmth<14)game.stats.health=clamp(game.stats.health-dt*.32,0,100);
+    const first=game.day===1;game.stats.hunger=clamp(game.stats.hunger-dt*(first?(night?BALANCE.hunger.firstNight:BALANCE.hunger.firstDay):(night?BALANCE.hunger.night:BALANCE.hunger.day)),0,100);
+    if(night&&game.mode==='bunker')game.stats.warmth=clamp(game.stats.warmth+dt*Math.max(.035,BALANCE.warmth.bunkerRecovery+effects.warmth),0,100);
+    else if(night){game.stats.warmth=clamp(game.stats.warmth-dt*(first?BALANCE.warmth.firstNight:BALANCE.warmth.outsideNight),0,100);game.stats.health=clamp(game.stats.health-dt*(first?BALANCE.health.firstNight:BALANCE.health.outsideNight),0,100);}
+    else game.stats.warmth=clamp(game.stats.warmth+dt*BALANCE.warmth.dayRecovery,0,100);
+    if(game.stats.hunger<13||game.stats.warmth<14)game.stats.health=clamp(game.stats.health-dt*BALANCE.health.critical,0,100);
     else if(game.mode==='bunker'&&effects.healing>0)game.stats.health=clamp(game.stats.health+dt*effects.healing,0,100);
   }
   function produceAtDawn() {
@@ -2812,21 +2871,23 @@
     return lines.length?`تولید روزانه: ${lines.join(' · ')}.`:'';
   }
   function beginPlayerDeath(reason='سرما و خطرهای جنگل توانت را گرفتند.') {
-    if(!game||game.gameOver)return;game.stats.health=0;game.gameOver=true;game.player.deathTimer=.9;game.player.hurtTimer=0;game.player.target=null;game.player.moving=false;game.player.running=false;$('gameOverReason').textContent=reason;try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+    if(!game||game.gameOver)return;telemetry('death',{cause:reason,lastDamage:game.lastDamageCause||'survival'});game.stats.health=0;game.gameOver=true;game.player.deathTimer=.9;game.player.hurtTimer=0;game.player.target=null;game.player.moving=false;game.player.running=false;$('gameOverReason').textContent=reason;try{localStorage.removeItem(SAVE_KEY);}catch(e){}
   }
   function update(dt) {
-    if(paused||!active||!game)return;if(mapOpen||statusPanelOpen)return;
+    if(paused||introActive||!active||!game)return;if(mapOpen||statusPanelOpen||$('modal').classList.contains('show'))return;
     if(game.gameOver){game.player.deathTimer=Math.max(0,(game.player.deathTimer||0)-dt);if(game.player.deathTimer<=0){active=false;setScreen('gameover');}return;}
-    gameTime+=dt;updateMovement(dt);recordMapDiscovery();updateNoiseTrail(dt);updateHazards(dt);updateParticles(dt);
+    gameTime+=dt;game.playtime=(game.playtime||0)+dt;if(game.day===1&&game.phase==='day'&&game.phaseTime>=320&&!game.foreshadowed){game.foreshadowed=true;audioManager.howl({gainScale:.3});}if(game.phase==='day'&&game.phaseTime>=dayDuration()-(game.day===1?BALANCE.firstDuskLead:BALANCE.duskLead))telemetry('first_dusk');updateMovement(dt);recordMapDiscovery();
+    if(!game.storyEnded&&game.nightsSurvived>=10&&game.mode==='forest'&&dist(game.player,ANCIENT_TREE)<110){game.storyEnded=true;saveGame();showModal('ending');return;}updateNoiseTrail(dt);updateHazards(dt);updateParticles(dt);
     if(game.mode==='bunker'){updateStructureIntegrity(dt);updateBunkerAmbience(dt);}
     if(game.mode==='forest')updateAnimals(dt);
     updateSanity(dt);updatePlayerEffects(dt);updateSurvival(dt);
-    if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=DAY_LENGTH)beginNight(); }
+    if(game.stats.health<=0){const cause=game.stats.hunger<13?'گرسنگی':game.stats.warmth<14?'سرما':game.lastDamageCause||'خطرهای جنگل';beginPlayerDeath(`توانت در برابر ${cause} تمام شد.`);return;}
+    if(game.phase==='day') { game.phaseTime+=dt;if(game.phaseTime>=dayDuration())beginNight(); }
     else {
-      game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0){nightRaid();game.raidTimer=7.1+Math.random()*2.6;}
-      if(game.phaseTime>=NIGHT_LENGTH){game.phase='day';game.phaseTime=0;game.day++;game.player.torchLit=false;if(game.mode==='bunker'){game.mode='forest';game.player.x=BUNKER_ENTRANCE.x+42;game.player.y=BUNKER_ENTRANCE.y+5;game.player.target=null;}game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();showImportantToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. پناهگاهت را تعمیر کن. ${produced}`,3000);beep('gather');}
+      game.phaseTime+=dt;game.raidTimer-=dt;if(game.raidTimer<=0&&(game.raidCount||0)<1){nightRaid();game.raidTimer=NIGHT_LENGTH;}
+      if(game.phaseTime>=NIGHT_LENGTH){resetNotifications();const night=game.day;game.phase='day';game.phaseTime=0;game.day++;if(game.day===2){const leopard=world.animals.find(a=>a.kind==='leopard');if(leopard){leopard.x=BUNKER_ENTRANCE.x+650;leopard.y=BUNKER_ENTRANCE.y-260;leopard.territoryX=leopard.x;leopard.territoryY=leopard.y;}}game.nightsSurvived=Math.max(game.nightsSurvived||0,night);if(night===1&&game.stats.health>0)telemetry('first_night_survived',{health:Math.round(game.stats.health),barricade:!!game.barricade,raidSize:game.raidSize||1});game.player.torchLit=false;if(game.mode==='bunker'){game.mode='forest';game.player.x=BUNKER_ENTRANCE.x+42;game.player.y=BUNKER_ENTRANCE.y+5;game.player.target=null;}game.stats.warmth=clamp(game.stats.warmth+9,0,100);const produced=produceAtDawn();if(night<=10){if(!game.diaryPages.includes(night))game.diaryPages.push(night);const page=DIARY[night-1];if(!game.blueprints.includes(page.unlock))game.blueprints.push(page.unlock);if(night===8&&!game.blueprints.includes('fortress'))game.blueprints.push('fortress');if(night===1)addResource('food',2);game.lastDawnReport=`${game.lastRaidOutcome||'شب آرام گذشت.'} سپیده زد؛ پناهگاه ${fa(game.nightDamage||0)}٪ آسیب دید. ${produced} ${night===1?'پاداش: ۲ خوراک · نشانی تازه‌ای در نقشه منتظر توست.':''}`;game.nightDamage=0;saveGame();showModal('dawn');}else showImportantToast(`سپیده زد؛ روز ${fa(game.day)} آغاز شد. ${produced}`,3000);beep('gather');}
     }
-    if(game.tutorial?.active){game.tutorial.time+=dt;if(game.tutorial.time>=60){game.tutorial.active=false;showImportantToast('آموزش کامل شد؛ از هیرکانی مراقبت کن.',2200);}}
+    if(game.tutorial?.active){game.tutorial.time+=dt;if(game.tutorial.time>=BALANCE.firstDaySeconds){game.tutorial.active=false;showImportantToast('آموزش کامل شد؛ از هیرکانی مراقبت کن.',2200);}}
     if(game.stats.health<=0){beginPlayerDeath('سرما و خطرهای جنگل توانت را گرفتند.');return;}
     saveTimer+=dt;uiTimer+=dt;if(saveTimer>=5){saveTimer=0;saveGame();}if(uiTimer>=.12){uiTimer=0;updateUI();}
   }
@@ -2855,8 +2916,9 @@
     $('healthValue').textContent=fa(s.health);$('warmthValue').textContent=fa(s.warmth);$('hungerValue').textContent=fa(s.hunger);$('staminaValue').textContent=fa(stamina);$('sanityValue').textContent=fa(sanity);
     $('healthFill').style.width=`${s.health}%`;$('warmthFill').style.width=`${s.warmth}%`;$('hungerFill').style.width=`${s.hunger}%`;$('staminaFill').style.width=`${stamina}%`;$('staminaFill').classList.toggle('low',stamina<18);$('sanityFill').style.width=`${sanity}%`;$('sanityFill').classList.toggle('low',sanity<30);updateVitalsStack(s,stamina,sanity);
     $('woodValue').textContent=fa(game.resources.wood);$('stoneValue').textContent=fa(game.resources.stone);$('foodValue').textContent=fa(game.resources.food);$('herbsValue').textContent=fa(game.resources.herbs||0);
-    const total=game.phase==='day'?DAY_LENGTH:NIGHT_LENGTH;
+    const total=game.phase==='day'?dayDuration():NIGHT_LENGTH;
     $('cycleFill').style.width=`${clamp(game.phaseTime/total*100,0,100)}%`;
+    $('storyObjective').textContent=game.storyEnded?'راه جنگل ادامه دارد':`شب ${fa(Math.min(10,game.day))} از ۱۰ · تا درخت کهن`;
     $('phaseText').textContent=game.phase==='day'?`روز ${fa(game.day)} · روشنایی`:`روز ${fa(game.day)} · یورش شب`;
     const compass=$('compassWidget'),biome=biomeAt(game.player.x,game.player.y),bdx=BUNKER_ENTRANCE.x-game.player.x,bdy=BUNKER_ENTRANCE.y-game.player.y;
     compass.style.display='flex';$('biomeName').textContent=BIOME_NAMES[biome]||BIOME_NAMES.forest;$('compassArrow').style.transform=`rotate(${Math.atan2(bdy,bdx)*180/Math.PI+90}deg)`;
@@ -2866,13 +2928,13 @@
     let stepIndex=-1;
     if(game.tutorial?.active){for(let i=0;i<tutorialSteps.length;i++)if(game.tutorial.time>=tutorialSteps[i][0])stepIndex=i;}
     const stepStart=stepIndex>=0?tutorialSteps[stepIndex][0]:0;
-    const stepEnd=stepIndex>=0?Math.min(60,stepStart+6):0;
+    const stepEnd=stepIndex>=0?Math.min(BALANCE.firstDaySeconds,stepStart+8):0;
     const showStep=stepIndex>=0&&game.tutorial.active&&game.tutorial.time<stepEnd;
     if(showStep&&stepIndex!==tutorialNoticeStep){
       tutorialNoticeStep=stepIndex;notificationQueue=notificationQueue.filter(item=>item.type!=='tutorial');
       enqueueNotification({type:'tutorial',text:tutorialSteps[stepIndex][1],meta:`${fa(stepIndex+1)} / ${fa(tutorialSteps.length)}`,marker:'❧',duration:Math.max(650,(stepEnd-game.tutorial.time)*1000),expiresAt:stepEnd,key:`tutorial:${stepIndex}`});
     }
-    const outside=game.mode==='forest',lateDay=game.phase==='day'&&game.phaseTime>=DAY_LENGTH-30,coldNight=game.phase==='night'&&outside;
+    const outside=game.mode==='forest',lateDay=game.phase==='day'&&game.phaseTime>=dayDuration()-(game.day===1?BALANCE.firstDuskLead:BALANCE.duskLead),coldNight=game.phase==='night'&&outside;
     queueDuskNotification(outside?(coldNight?'night':lateDay?'dusk':''):'');
     updateRaidWarningUI();updateControlsUI();drawMinimap();
     if(force)draw();
@@ -2911,6 +2973,7 @@
   $('repairButton').addEventListener('click',()=>selectBunkerMode('repair','خانهٔ آسیب‌دیده یا پوستهٔ پناهگاه را لمس کن و عمل را بزن.'));
   $('supportButton').addEventListener('click',()=>selectBunkerMode('support','خانهٔ باز را لمس کن؛ یک تیرک ۲ چوب می‌خواهد.'));
   $('lampButton').addEventListener('click',()=>selectBunkerMode('lamp','خانهٔ باز را لمس کن؛ یک چراغ روغنی ۱ چوب می‌خواهد.'));
+  $('barricadeButton').addEventListener('click',()=>{if(!game||game.mode!=='bunker')return;if(game.barricade){actionFeedback('مانع ورودی برپاست.');return;}if(!pay(BALANCE.barricade.cost)){actionFeedback('');return;}game.barricade=true;beep('build');setActionSheet(false);actionFeedback('');saveGame();updateUI(true);});
   $('exitButton').addEventListener('click',exitBunker);
   $('soundButton').addEventListener('click',()=>{haptic(8);audioManager.setMuted(!audioManager.muted);updateUI(true);if(!muted)beep('ui');});$('torchButton').addEventListener('click',()=>{toggleTorch();setActionSheet(false);});
   $('mapButton').addEventListener('click',()=>{haptic(8);setMapOpen(!mapOpen);});$('closeMapButton').addEventListener('click',()=>setMapOpen(false));$('dropMarkerButton').addEventListener('click',()=>addMapMarker(game.player.x,game.player.y,'اینجا'));
@@ -2934,8 +2997,9 @@
   window.addEventListener('keydown',e=>{
     const k=e.key;if(k==='Escape'||k==='Backspace'){
       if(mapOpen){e.preventDefault();setMapOpen(false);return;}if(actionSheetOpen){e.preventDefault();setActionSheet(false);return;}if(statusPanelOpen){e.preventDefault();setStatusPanel(false);return;}
-      if($('modal').classList.contains('show')){e.preventDefault();closeModal();return;}if(paused){e.preventDefault();closePauseMenu();return;}if(active&&game&&!game.gameOver){e.preventDefault();openPauseMenu();return;}
+      if(introActive){e.preventDefault();finishIntro();return;}if($('modal').classList.contains('show')){e.preventDefault();closeModal();return;}if(paused){e.preventDefault();closePauseMenu();return;}if(active&&game&&!game.gameOver){e.preventDefault();openPauseMenu();return;}
     }
+    if(introActive){e.preventDefault();return;}
     if(paused){if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k))e.preventDefault();return;}
     if(statusPanelOpen&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k)){e.preventDefault();return;}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','e','E'].includes(k))e.preventDefault();
     if(k===' '||k==='e'||k==='E'){if(!e.repeat)doAction();return;}keys[k]=true;
@@ -2943,6 +3007,7 @@
   window.addEventListener('keyup',e=>{keys[e.key]=false;});
   window.addEventListener('blur',()=>{clearGameplayInput();setActionSheet(false);setStatusPanel(false);});
   window.addEventListener('popstate',event=>{
+    if(introActive){finishIntro();return;}
     if(pauseHistoryPending){pauseHistoryPending=false;if(active&&!paused&&!game?.gameOver&&event.state?.hirkani!=='game')pushGameHistoryState();return;}
     if($('modal').classList.contains('show')){closeModal();if(paused)pushPauseHistoryState();return;}
     if(paused){closePauseMenu(true,event.state);return;}
@@ -2955,7 +3020,7 @@
   }
   function initializeFirstLaunchSplash() {
     let seen=false;try{seen=localStorage.getItem('hirkani-intro-v1')==='seen';}catch(e){}
-    if(raidTestMode||characterSheetMode)seen=true;
+    if(raidTestMode||nightTest!==null||characterSheetMode)seen=true;
     firstLaunchSplashOpen=!seen;$('splashScreen').classList.toggle('show',firstLaunchSplashOpen);$('splashScreen').setAttribute('aria-hidden',String(!firstLaunchSplashOpen));syncTouchAction();
   }
   $('splashContinueButton').addEventListener('click',dismissFirstLaunchSplash);
@@ -2963,12 +3028,12 @@
   $('continueButton').addEventListener('click',()=>beginGame(true));$('helpButton').addEventListener('click',()=>showModal('help'));$('aboutButton').addEventListener('click',()=>showModal('about'));
   $('tutorialPreferenceButton').addEventListener('click',toggleTutorialPreference);
   $('pauseButton').addEventListener('click',()=>openPauseMenu());$('resumeGameButton').addEventListener('click',()=>closePauseMenu());
-  $('pauseSettingsButton').addEventListener('click',()=>showModal('settings'));$('pauseHelpButton').addEventListener('click',()=>showModal('help'));
+  $('pauseDiaryButton').addEventListener('click',()=>showModal('diary'));$('pauseSettingsButton').addEventListener('click',()=>showModal('settings'));$('pauseHelpButton').addEventListener('click',()=>showModal('help'));
   $('pauseReturnMenuButton').addEventListener('click',()=>{saveGame();active=false;paused=false;pauseReturnFocus=null;setScreen('menu');refreshMenuSaveSummary();audioManager.setMood('calmDay');audioManager.resume();try{history.replaceState({hirkani:'menu'},'',location.href);}catch(e){}});
   $('restartButton').addEventListener('click',startNew);
   $('returnMenuButton').addEventListener('click',()=>{active=false;paused=false;setScreen('menu');refreshMenuSaveSummary();try{history.replaceState({hirkani:'menu'},'',location.href);}catch(e){}});
   refreshMenuSaveSummary();updateTutorialPreferenceButton();initializeFirstLaunchSplash();
-  window.addEventListener('pagehide',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
+  window.addEventListener('pagehide',saveGame);document.addEventListener('visibilitychange',()=>{introLastFrame=performance.now();if(document.hidden)saveGame();});
 
   function startRaidTest() {
     const resetScenario=()=>{
@@ -2976,7 +3041,7 @@
       game.bunkerId='hut';game.ownedBunkers=['hut'];game.resources={wood:20,stone:16,food:10,herbs:8};game.stats={health:92,hunger:76,warmth:68,stamina:100,sanity:100};game.bunkers.hut={hp:82};
       game.dug={'5,1':true,'5,2':true,'4,2':true,'6,2':true,'7,2':true,'8,2':true,'4,3':true,'5,3':true,'6,3':true,'7,3':true,'8,3':true};
       game.rooms={'5,3':{type:'bed',level:2,hp:48,maxHp:58},'6,3':{type:'storage',level:2,hp:42,maxHp:58},'4,3':{type:'kitchen',level:1,hp:48,maxHp:48},'7,3':{type:'trap',level:1,hp:48,maxHp:48},'6,2':{type:'workshop',level:1,hp:48,maxHp:48}};
-      game.supports={'6,2':true};game.ladders={'5,1':true,'5,2':true};game.lamps={'5,2':true,'6,3':true};game.integrity={};game.digging={};game.bunkerEffects=[];game.player.bX=5;game.player.bY=3;game.player.bCol=5;game.player.bRow=3;game.player.x=BUNKER_ENTRANCE.x;game.player.y=BUNKER_ENTRANCE.y;game.player.faceX=1;game.player.faceY=0;game.player.facing='right';game.player.torchLit=false;game.selectedCell=null;game.bunkerDripTimer=12;game.structureWarning=null;gameTime=0;
+      game.supports={'6,2':true,'6,3':true};game.ladders={'5,1':true,'5,2':true};game.lamps={'5,2':true,'6,3':true};game.integrity={};game.digging={};game.bunkerEffects=[];game.player.bX=5;game.player.bY=3;game.player.bCol=5;game.player.bRow=3;game.player.x=BUNKER_ENTRANCE.x;game.player.y=BUNKER_ENTRANCE.y;game.player.faceX=1;game.player.faceY=0;game.player.facing='right';game.player.torchLit=false;game.selectedCell=null;game.bunkerDripTimer=12;game.structureWarning=null;gameTime=0;
       if(!world)world=makeWorld();world.raidWarning={angle:-.42,timer:18,likelihood:.64,primary:'ردپا کنار ورودی',notificationId:++raidNoticeSequence};world.raidTracks=[];world.foodDrops=[];world.fires=[];world.traps=[];world.effects=[];world.hallucinations=[];mapDiscovered=new Set();mapDirty=true;minimapDirty=true;active=true;mapOpen=false;statusPanelOpen=false;actionSheetOpen=false;setScreen('game');updateUI(true);
     };
     resetScenario();
@@ -2992,11 +3057,24 @@
       }
       updateUI(true);draw();return true;
     };
-    window.__hirkaniQA={setState,forceCollapse:()=>{game.integrity['3:4-8']={timer:.02,dustTimer:0,collapsed:false,warned:false};return true;},findAt:(c,r)=>hiddenFindAt(c,r)?.id||null,getState:()=>({mode:game.mode,day:game.day,phase:game.phase,phaseTime:game.phaseTime,bX:game.player.bX,bY:game.player.bY,dug:Object.keys(game.dug),digging:Object.fromEntries(Object.entries(game.digging||{}).map(([key,value])=>[key,{layer:value.layer,hits:value.hits,maxHits:value.maxHits}])),rooms:Object.keys(game.rooms),roomHP:Object.fromEntries(Object.entries(game.rooms||{}).map(([key,room])=>[key,{hp:room.hp,maxHp:room.maxHp}])),supports:Object.keys(game.supports),ladders:Object.keys(game.ladders),lamps:Object.keys(game.lamps),finds:{...game.finds},resources:{...game.resources},integrity:Object.fromEntries(Object.entries(game.integrity||{}).map(([key,risk])=>[key,{timer:risk.timer,collapsed:risk.collapsed}])),structureWarning:game.structureWarning?{row:game.structureWarning.row,start:game.structureWarning.start,end:game.structureWarning.end,remaining:game.structureWarning.remaining}:null,playerAction:game.player.actionKind,bunkerMode:game.bunkerMode})};
+    window.__hirkaniQA={setState,forceCollapse:()=>{game.integrity['3:4-8']={timer:.02,dustTimer:0,collapsed:false,warned:false};return true;},findAt:(c,r)=>hiddenFindAt(c,r)?.id||null,getState:()=>({mode:game.mode,day:game.day,phase:game.phase,phaseTime:game.phaseTime,bX:game.player.bX,bY:game.player.bY,dug:Object.keys(game.dug),digging:Object.fromEntries(Object.entries(game.digging||{}).map(([key,value])=>[key,{layer:value.layer,hits:value.hits,maxHits:value.maxHits}])),rooms:Object.keys(game.rooms),roomHP:Object.fromEntries(Object.entries(game.rooms||{}).map(([key,room])=>[key,{hp:room.hp,maxHp:room.maxHp}])),supports:Object.keys(game.supports),ladders:Object.keys(game.ladders),lamps:Object.keys(game.lamps),finds:{...game.finds},resources:{...game.resources},inventory:{...game.inventory},stats:{...game.stats},barricade:!!game.barricade,onboarding:{...game.onboarding},integrity:Object.fromEntries(Object.entries(game.integrity||{}).map(([key,risk])=>[key,{timer:risk.timer,collapsed:risk.collapsed}])),structureWarning:game.structureWarning?{row:game.structureWarning.row,start:game.structureWarning.start,end:game.structureWarning.end,remaining:game.structureWarning.remaining}:null,playerAction:game.player.actionKind,bunkerMode:game.bunkerMode})};
   }
-  if(raidTestMode&&!characterSheetMode)startRaidTest();
+  if((raidTestMode||nightTest!==null)&&!characterSheetMode){
+    startRaidTest();
+    if(nightTest!==null){game.day=nightTest;game.nightsSurvived=nightTest-1;game.diaryPages=Array.from({length:nightTest-1},(_,i)=>i+1);game.blueprints=['hut',...DIARY.slice(0,nightTest-1).map(page=>page.unlock)];if(nightTest>8)game.blueprints.push('fortress');game.phase='night';game.phaseTime=0;game.raidCount=0;game.raidSize=BALANCE.raidSize[nightTest-1];game.raidTimer=BALANCE.firstRaidTimer;game.playtime=0;game.telemetry={};refreshRaidWarning();updateUI(true);}
+    window.__hirkaniQA.prepareFirstDay=()=>{game=freshGame();world=makeWorld();game.tutorial.active=false;mapDiscovered=new Set();gameTime=0;ensureChunksAround(game.player.x,game.player.y,1);recordMapDiscovery();setScreen('game');updateUI(true);return window.__hirkaniQA.getState();};
+    window.__hirkaniQA.setForestMode=()=>{game.mode='forest';return game.mode;};
+    window.__hirkaniQA.gatherStarter=type=>{const node=nodesNear(MAP.cx,MAP.cy,300).find(n=>n.id===`starter-${type}`);if(!node)return false;game.mode='forest';game.player.x=node.x;game.player.y=node.y;gather();return true;};
+    window.__hirkaniQA.buildStarter=()=>{game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.bX=5;game.player.bY=3;game.selectedCell={c:4,r:3};game.selectedRoom='bed';game.bunkerMode='build';bunkerAction();return !!game.rooms['4,3'];};
+    window.__hirkaniQA.buildRoom=(type,c,r)=>{game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.bX=5;game.player.bY=3;game.selectedCell={c,r};game.selectedRoom=type;game.bunkerMode='build';bunkerAction();return game.rooms[`${c},${r}`]?.type===type;};
+    window.__hirkaniQA.visitRuin=id=>{const ruin=RUIN_DATA.find(item=>item.id===id);if(!ruin)return false;game.mode='forest';game.player.x=ruin.x;game.player.y=ruin.y;gather();return game.ruinsFound.includes(id);};
+    window.__hirkaniQA.visitTree=()=>{game.mode='forest';game.player.x=ANCIENT_TREE.x;game.player.y=ANCIENT_TREE.y;update(.01);return game.storyEnded;};
+    window.__hirkaniQA.story=()=>({treeChunkDiscovered:mapDiscovered.has(chunkKey(Math.floor(ANCIENT_TREE.x/CHUNK_SIZE),Math.floor(ANCIENT_TREE.y/CHUNK_SIZE))),pages:[...game.diaryPages],blueprints:[...game.blueprints],nights:game.nightsSurvived,ended:game.storyEnded,stats:{...game.stats},telemetry:{...game.telemetry}});
+    window.__hirkaniQA.advance=seconds=>{for(let left=Math.max(0,seconds);left>0;left-=.25){update(Math.min(.25,left));if($('modal').classList.contains('show'))break;}draw();return window.__hirkaniQA.getState();};
+  }
   if(characterSheetMode){$('app').classList.add('charsheet');$('hud').style.display='none';game=freshGame();active=false;}
   function currentMusicMood() {
+    if(introActive)return introTime>13&&introTime<24?'tenseDusk':'dawn';
     if(game?.gameOver&&(active||$('gameOverScreen').classList.contains('show')))return 'death';
     if(!active||!game)return 'calmDay';
     if(game.mode==='bunker'&&game.phase==='night'&&world?.raidWarning?.timer>0)return 'raid';
@@ -3004,13 +3082,13 @@
     if(game.mode==='bunker')return 'bunkerSafe';
     if(game.phase==='night')return world?.raidWarning?.timer>0?'raid':'tenseDusk';
     if(game.day>1&&game.phaseTime<13)return 'dawn';
-    if(game.phaseTime>=DAY_LENGTH*.72)return 'tenseDusk';
+    if(game.phaseTime>=dayDuration()*.72)return 'tenseDusk';
     return 'calmDay';
   }
   function frame(t) {
     const dt=Math.min(.05,Math.max(0,(t-lastFrame)/1000||0));lastFrame=t;
     if(characterSheetMode){gameTime+=dt;drawCharacterContactSheet();requestAnimationFrame(frame);return;}
-    if(active&&!paused)update(dt);else if(!active)gameTime+=dt;
+    if(active&&!paused){for(let i=0;i<(fastMode?4:1);i++)update(dt);}else if(!active)gameTime+=dt;
     draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);if(introActive)drawIntro(dt);
     audioManager.setMood(currentMusicMood());audioManager.update(dt);updateNotificationLane(dt);
     requestAnimationFrame(frame);
