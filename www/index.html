@@ -330,6 +330,11 @@
     @media (orientation: portrait) {
       #rotateHint { display: flex; }
     }
+    #introScreen { position:absolute; inset:0; z-index:45; display:none; background:#111d17; overflow:hidden; }
+    #introScreen.show { display:block; }
+    #introCanvas { position:absolute; inset:0; width:100%; height:100%; }
+    #introSubtitle { position:absolute; left:max(12%, env(safe-area-inset-left)); right:max(12%, env(safe-area-inset-right)); bottom:calc(11% + env(safe-area-inset-bottom)); text-align:center; color:#fff8df; font-size:clamp(20px,2.4vw,36px); font-weight:800; line-height:1.8; text-shadow:0 2px 7px #000,0 1px 20px #000; pointer-events:none; }
+    #introSkip { position:absolute; top:calc(16px + env(safe-area-inset-top)); left:calc(16px + env(safe-area-inset-left)); min-height:48px; min-width:88px; color:#fff4d7; background:rgba(10,20,14,.8); border:1px solid rgba(255,238,195,.45); border-radius:12px; }
     /* Round 10 story: the objective stays in the existing top-right context. */
     #storyObjective { color:#e5d0a0; font-size:10px; white-space:nowrap; opacity:.86; }
     #modal.story-modal .modal-note { font-size:14px; color:#e3dcc7; line-height:1.8; }
@@ -591,6 +596,9 @@
       <div class="menu-foot"><span>بدون اینترنت</span><i></i><span>ذخیرهٔ خودکار</span><i></i><span>صدا و تصویرِ زایشی</span></div>
     </div>
   </section>
+  <section id="introScreen" role="dialog" aria-modal="true" aria-label="آغاز داستان" aria-hidden="true">
+    <canvas id="introCanvas" aria-hidden="true"></canvas><div id="introSubtitle" aria-live="polite"></div><button id="introSkip" type="button">رد کردن</button>
+  </section>
   <section class="screen splash-screen" id="splashScreen" role="dialog" aria-modal="true" aria-label="خوش‌آمدگویی به هیرکانی" aria-hidden="true">
     <div class="splash-card">
       <div class="menu-logo splash-mark" aria-hidden="true">❧</div>
@@ -750,6 +758,7 @@
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, paused=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
+  let introActive=false,introTime=0,introLastFrame=0,introReplay=false,introStormPlayed=false;
   let notificationQueue=[],activeNotification=null,tutorialNoticeStep=-1,lastDuskNoticeState='',lastRaidNoticeId=null,raidNoticeSequence=0,lastNotificationAtByText=new Map();
   let vitalSeverity={health:'normal',warmth:'normal',hunger:'normal',stamina:'normal',sanity:'normal'};
   let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},actionPointer=null,audioManager=null,muted=false,modalType='',craftCategory='tools',actionSheetOpen=false,statusPanelOpen=false,currentActionGlyph='',modalReturnFocus=null,hapticsEnabled=true,lastActionFeedbackAt=0,actionFeedbackTimer=0,resourceFlashTimer=0;
@@ -974,6 +983,7 @@
     function resume() { if(unlocked&&context&&context.state==='suspended'&&!document.hidden&&!paused)context.resume().catch(()=>{}); }
     function update(dt) {
       if(!unlocked||!context)return;pruneVoices();if(document.hidden||paused||context.state!=='running')return;updateMusic(dt);
+      if(introActive){createAmbience();if(ambienceReady){fadeLayer('surface',.012);fadeLayer('rain',introTime>12&&introTime<20?.028:0);fadeLayer('bunker',introTime>22?.01:0);fadeLayer('river',0);fadeLayer('night',0);fadeLayer('raid',0);}return;}
       if(!active||!game){if(ambienceReady)for(const name of Object.keys(ambientLayers))fadeLayer(name,0);return;}
       createAmbience();if(!ambienceReady)return;ambienceTick-=dt;if(ambienceTick>0)return;ambienceTick=.55;
       rainTimer-=.55;if(rainTimer<=0){rainTarget=Math.random()<.23 ? .75 : 0;rainTimer=62+Math.random()*84;}
@@ -1406,10 +1416,45 @@
     try { if(!document.fullscreenElement&&document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); } catch(e) {}
     try { if(screen.orientation&&screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(e) {}
   }
-  function startNew() {
+  function startNewGame() {
     resetNotifications();game=freshGame();if(skipTutorialOnStart)game.tutorial.active=false;mapDiscovered=new Set();mapMarkerSequence=0;mapOpen=false;paused=false;$('mapOverlay').classList.remove('show');mapDirty=true;minimapDirty=true;world=makeWorld();ensureChunksAround(game.player.x,game.player.y,1);recordMapDiscovery();active=true;gameTime=0;game.muted=muted;
     try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
     setScreen('game');pushGameHistoryState();requestImmersive();beep('build');updateUI(true);
+  }
+  const INTRO_LINES=['ده‌ها میلیون سال پیش از ما، اینجا جنگل بود.','پدربزرگ می‌گفت: جنگل فراموش نمی‌کند.','طوفان که تمام شد، راه‌ها رفته بود… و او هم.','فقط یک نقشه ماند و پناهگاه‌هایی که زیر خاک ساخته بود.','زنده بمان. او را پیدا کن.'];
+  function startIntro(replay=false) {
+    closeModal();introActive=true;introReplay=replay;introTime=0;introLastFrame=performance.now();introStormPlayed=false;clearGameplayInput();$('introScreen').classList.add('show');$('introScreen').setAttribute('aria-hidden','false');$('introSubtitle').textContent='';$('introSkip').focus();audioManager.resume();
+  }
+  function finishIntro() {
+    if(!introActive)return;introActive=false;$('introScreen').classList.remove('show');$('introScreen').setAttribute('aria-hidden','true');
+    if(!introReplay)startNewGame();else if(active)updateUI(true);
+  }
+  function startNew() { startIntro(false); }
+  $('introSkip').addEventListener('click',finishIntro);
+  function drawIntro(dt) {
+    if(document.hidden){introLastFrame=performance.now();return;}const now=performance.now();introTime+=Math.max(0,(now-introLastFrame)/1000);introLastFrame=now;const canvas=$('introCanvas'),c=canvas.getContext('2d'),w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio||1,1.5);
+    if(canvas.width!==Math.floor(w*d)||canvas.height!==Math.floor(h*d)){canvas.width=Math.floor(w*d);canvas.height=Math.floor(h*d);}c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,w,h);
+    const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#111e1b');sky.addColorStop(.55,'#607461');sky.addColorStop(1,'#14291c');c.fillStyle=sky;c.fillRect(0,0,w,h);
+    for(let layer=0;layer<4;layer++){
+      const base=h*(.64+layer*.12),scale=.42+layer*.23,spacing=55+layer*25,drift=(introTime*(2+layer*2))%spacing;c.fillStyle=['#748a75','#4d6750','#2b4935','#172e21'][layer];
+      c.beginPath();c.moveTo(0,h);c.lineTo(0,base);for(let x=0;x<=w+30;x+=30)c.lineTo(x,base+Math.sin(x*.006+layer)*h*.035);c.lineTo(w,h);c.closePath();c.fill();
+      for(let i=-2;i<w/spacing+2;i++){const x=i*spacing-drift+Math.sin(i*4+layer)*18,th=h*(.24+((i*37+layer*17+1000)%40)/100)*scale,y=base+12;c.fillRect(x-3*scale,y-th*.65,6*scale,th*.65);c.beginPath();c.ellipse(x,y-th*.7,th*.24,th*.32,0,0,Math.PI*2);c.fill();}
+      const mist=c.createLinearGradient(0,base-40,0,base+50);mist.addColorStop(0,'rgba(192,208,186,0)');mist.addColorStop(.5,`rgba(192,208,186,${.07+layer*.012})`);mist.addColorStop(1,'rgba(192,208,186,0)');c.fillStyle=mist;c.fillRect(0,base-40,w,90);
+    }
+    for(let i=0;i<25;i++){const x=(i*191+introTime*(3+i%3)*2)%w,y=h*(.4+(i*43%50)/100)+Math.sin(introTime+i)*12,alpha=.25+.32*(.5+.5*Math.sin(introTime*2+i));c.fillStyle=`rgba(255,227,145,${alpha})`;c.beginPath();c.arc(x,y,1.3+i%2,0,Math.PI*2);c.fill();}
+    if(introTime>13.5&&introTime<14.3){c.fillStyle=`rgba(240,245,231,${Math.max(0,1-Math.abs(introTime-13.7)*5)*.8})`;c.fillRect(0,0,w,h);if(!introStormPlayed){introStormPlayed=true;beep('collapse',{priority:6});}}
+    if(introTime>22){c.clearRect(0,0,w,h);const a=Math.min(1,(introTime-22)/2);c.save();c.globalAlpha=a;
+      const sky2=c.createLinearGradient(0,0,0,h);sky2.addColorStop(0,'#182820');sky2.addColorStop(1,'#586850');c.fillStyle=sky2;c.fillRect(0,0,w,h);
+      c.fillStyle='#273d2a';c.beginPath();c.moveTo(0,h*.75);c.quadraticCurveTo(w*.24,h*.5,w*.5,h*.64);c.quadraticCurveTo(w*.8,h*.48,w,h*.76);c.lineTo(w,h);c.lineTo(0,h);c.closePath();c.fill();
+      const ground=h*.79,doorH=Math.min(h*.38,225),doorW=doorH*.75;c.translate(w*.5,ground);
+      c.fillStyle='#263323';c.beginPath();c.ellipse(0,0,doorW*1.55,doorH*.65,0,Math.PI,0);c.lineTo(doorW*1.55,0);c.closePath();c.fill();
+      c.fillStyle='#675c45';c.beginPath();c.ellipse(0,-doorH*.48,doorW*.58,doorH*.54,0,Math.PI,0);c.lineTo(doorW*.58,0);c.lineTo(-doorW*.58,0);c.closePath();c.fill();
+      c.fillStyle='#3c3021';c.beginPath();c.ellipse(0,-doorH*.45,doorW*.46,doorH*.44,0,Math.PI,0);c.lineTo(doorW*.46,0);c.lineTo(-doorW*.46,0);c.closePath();c.fill();
+      c.save();c.beginPath();c.ellipse(0,-doorH*.45,doorW*.46,doorH*.44,0,Math.PI,0);c.lineTo(doorW*.46,0);c.lineTo(-doorW*.46,0);c.closePath();c.clip();c.strokeStyle='#8c7550';c.lineWidth=3;for(let x=-doorW/2;x<doorW/2;x+=doorW/5){c.beginPath();c.moveTo(x,-doorH);c.lineTo(x,0);c.stroke();}for(const y of [-doorH*.3,-doorH*.1]){c.beginPath();c.moveTo(-doorW/2,y);c.lineTo(doorW/2,y);c.stroke();}c.fillStyle='#e1c27e';c.beginPath();c.arc(doorW*.27,-doorH*.25,4,0,Math.PI*2);c.fill();c.restore();
+      c.fillStyle='#1a2b1c';c.fillRect(-w*.5,0,w,h*.21);c.strokeStyle='#45583d';c.lineWidth=5;for(let i=0;i<9;i++){const x=(i-4)*doorW*.4;c.beginPath();c.moveTo(x,-doorH*.55);c.quadraticCurveTo(x*1.4,-doorH*.3,x*1.6,0);c.stroke();}c.restore();}
+
+    const index=Math.min(4,Math.floor(introTime/6)),progress=Math.max(0,introTime-index*6),line=INTRO_LINES[index];$('introSubtitle').textContent=Array.from(line).slice(0,Math.floor(progress*17)).join('');
+    if(introTime>=BALANCE.introSeconds)finishIntro();
   }
   function requestNewGame() {
     const previous=savedGame();if(previous&&previous.player&&previous.resources){showModal('overwrite');return;}startNew();
@@ -1485,7 +1530,7 @@
       const story=document.createElement('div');story.className='about-story';
       const first=document.createElement('p');first.textContent='جنگل‌های هیرکانی، نوار سبزی از جنگل‌های پهن‌برگِ کهن در امتداد جنوب دریای خزرند؛ زیست‌بومی زنده با درختان دیرزیست و گونه‌های فراوان.';
       const second=document.createElement('p');second.textContent='این میراث طبیعی در سال ۲۰۱۹ در فهرست میراث جهانی یونسکو ثبت شد. هیرکانی بازی‌ای داستانی است که با الهام از طبیعت این ناحیه ساخته شده؛ رویدادها و شخصیت‌های آن بازسازی واقعیت نیستند.';
-      const source=document.createElement('small');source.textContent='مرجع: مرکز میراث جهانی یونسکو، «جنگل‌های هیرکانی» (۲۰۱۹).';story.append(first,second,source);cards.appendChild(story);
+      const source=document.createElement('small');source.textContent='مرجع: مرکز میراث جهانی یونسکو، «جنگل‌های هیرکانی» (۲۰۱۹).';story.append(first,second,source);cards.appendChild(story);const replay=document.createElement('button');replay.type='button';replay.className='secondary-menu';replay.textContent='بازپخش آغاز داستان';replay.addEventListener('click',()=>startIntro(true));cards.appendChild(replay);
     } else if(type==='overwrite') {
       const data=savedGame(),day=Math.max(1,Number(data?.day)||1);title.textContent='سفر تازه‌ای آغاز شود؟';note.textContent=`ذخیرهٔ روز ${fa(day)} با شروع سفر تازه جایگزین می‌شود. این کار برگشت‌پذیر نیست.`;cards.classList.add('modal-actions');
       const confirm=document.createElement('button');confirm.type='button';confirm.className='primary-menu';confirm.textContent='جایگزینی و آغاز';confirm.addEventListener('click',()=>{closeModal();startNew();});
@@ -2962,7 +3007,7 @@
     const dt=Math.min(.05,Math.max(0,(t-lastFrame)/1000||0));lastFrame=t;
     if(characterSheetMode){gameTime+=dt;drawCharacterContactSheet();requestAnimationFrame(frame);return;}
     if(active&&!paused)update(dt);else if(!active)gameTime+=dt;
-    draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);
+    draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);if(introActive)drawIntro(dt);
     audioManager.setMood(currentMusicMood());audioManager.update(dt);updateNotificationLane(dt);
     requestAnimationFrame(frame);
   }

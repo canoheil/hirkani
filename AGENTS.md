@@ -1,5 +1,7 @@
 ## Status
 
+Round 10 item 2: added the procedural 30-second intro and About replay; input/back integration and final visual QA follow in the final pass.
+
 Round 10 item 1: added the Persian diary, Ancient Tree and optional ruin definitions, objective HUD and diary surface; story integration and QA follow in the final pass.
 
 Round 10 item 4: centralized core balance values and shelter, room, and crafting costs in BALANCE; remaining test routes and telemetry are integrated in the following commits.
