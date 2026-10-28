@@ -1,5 +1,7 @@
 ## Status
 
+Round 10 item 3: added the starter kit, nearby resource placement and short guided prompts; pacing, safe wildlife, barricade and raid integration follow in the final pass.
+
 Round 10 item 2: added the procedural 30-second intro and About replay; input/back integration and final visual QA follow in the final pass.
 
 Round 10 item 1: added the Persian diary, Ancient Tree and optional ruin definitions, objective HUD and diary surface; story integration and QA follow in the final pass.

@@ -1134,6 +1134,10 @@
     else if(chunkBiome==='hill'){addWild('deer',r()<.3?1:0);addWild('rabbit',1+(r()<.3?1:0));addWild('bird',2);addWild('butterfly',r()<.5?1:0);}
     else if(chunkBiome==='swamp'){addWild('rabbit',r()<.6?1:0);addWild('bird',2+(r()<.5?1:0));addWild('butterfly',2+(r()<.75?1:0));}
     else {addWild('deer',r()<.38?1:0);addWild('rabbit',1);addWild('bird',2+(r()<.55?1:0));addWild('butterfly',1);}
+    for(const starter of [{x:MAP.cx-200,y:MAP.cy+50,type:'tree',species:'oak'},{x:MAP.cx-175,y:MAP.cy-65,type:'bush'}]){
+      if(Math.floor(starter.x/CHUNK_SIZE)!==cx||Math.floor(starter.y/CHUNK_SIZE)!==cy)continue;
+      nodes.push({id:`starter-${starter.type}`,chunkX:cx,chunkY:cy,index:nodes.length,...starter,remaining:3,maxRemaining:3,radius:starter.type==='tree'?21:15,variant:.5,scale:1,herb:false});
+    }
     return {cx,cy,x,y,w,h,biome:chunkBiome,terrain,decals,nodes,fauna};
   }
   function getChunk(cx,cy) {
@@ -1201,10 +1205,10 @@
     return {
       worldVersion:2, mode:'forest', day:1, phase:'day', phaseTime:0, noiseTrail:0, mapDiscovery:[], mapMarkers:[],
       player:{x:MAP.cx-60,y:MAP.cy+30,bCol:5,bRow:3,bX:5,bY:3,faceX:1,faceY:0,facing:'right',hp:100,invuln:0,hitGrace:0,bleedTimer:0,bleedTickTimer:0,bleedSeverity:.8,noiseBurst:0,exhausted:false,breathTimer:0,hallucinationTimer:0,torchLit:false,stepTimer:0,animTime:0,actionTimer:0,actionDuration:.55,actionKind:'',puffTimer:0,moving:false,running:false,motionBlend:0,runBlend:0,hurtTimer:0,hurtDirX:0,hurtDirY:0,deathTimer:0},
-      stats:{health:100,hunger:82,warmth:76,stamina:100,sanity:100}, resources:{wood:12,stone:8,food:4,herbs:2}, inventory:{hatchets:0,torches:0,snares:0,fireKits:0},
+      stats:{...BALANCE.startingStats}, resources:{...BALANCE.starter}, inventory:{knife:1,hatchets:0,torches:0,snares:0,fireKits:0}, onboarding:{wood:false,berry:false,build:false},
       bunkerId:'hut', ownedBunkers:['hut'], bunkers:{hut:{hp:100}}, bunkerMode:'dig',
       dug:{'5,1':true,'5,2':true,'4,3':true,'5,3':true,'6,3':true},
-      rooms:{'5,3':{type:'bed',level:1,hp:48,maxHp:48},'6,3':{type:'storage',level:1,hp:48,maxHp:48}},
+      rooms:{},
       digging:{},supports:{},integrity:{},ladders:{'5,1':true,'5,2':true},lamps:{'5,3':true},bunkerEffects:[],finds:{},
       selectedRoom:null, selectedCell:null, tutorial:{active:true,time:0}, raidTimer:4,bunkerDripTimer:12,structureWarning:null,
       gameOver:false, muted:false, lastSave:Date.now()
@@ -2827,12 +2831,12 @@
     saveTimer+=dt;uiTimer+=dt;if(saveTimer>=5){saveTimer=0;saveGame();}if(uiTimer>=.12){uiTimer=0;updateUI();}
   }
   const tutorialSteps=[
-    [0,'دستهٔ ثابتِ پایینِ چپ را لمس کن؛ آرام بکش تا آهسته راه بروی و دسته را تا ۶۵٪ ببر تا بدوی. دویدن توان را مصرف می‌کند؛ اگر خالی شد تا رسیدن به ۲۰٪ فقط راه برو.'],
-    [9,'کنار منبع بایست؛ دکمهٔ طلاییِ کنش را بزن تا چوب، سنگ، خوراک یا گیاه جمع کنی.'],
-    [19,'گوزن و خرگوش خوراک می‌دهند؛ دویدن صدا می‌کند و خوراک، مشعل و دود آتش جانوران را جذب می‌کنند. غذا را بخور، آرام بمان و نور را خاموش کن؛ آتش و تله هم شکارچی را عقب می‌رانند.'],
-    [30,'با نزدیک‌شدن غروب، پیکان راه ورودی را نشان می‌دهد. کنار در بایست و دکمهٔ عمل را بزن؛ ورود خودکار نیست.'],
-    [40,'در زیرزمین خانهٔ سنگی را لمس کن، «کندن» را انتخاب کن و دکمهٔ عمل را بزن؛ فضای اتاق باز می‌شود.'],
-    [50,'«اتاق» را انتخاب کن، خانهٔ خالی را لمس کن و دکمهٔ طلایی را بزن. «تعمیر» آسیب‌های شبانه را برمی‌گرداند.']
+    [BALANCE.onboarding.move,'برای حرکت، دسته را آرام بکش.'],
+    [BALANCE.onboarding.harvest,'چوب و میوهٔ درخشان نزدیک پناهگاه را بردار.'],
+    [BALANCE.onboarding.build,'به ورودی برگرد و زیر زمین را حفر کن.'],
+    [BALANCE.onboarding.bedStorage,'از «بیشتر» اتاق خواب و انبار را انتخاب و جای‌گذاری کن.'],
+    [BALANCE.onboarding.prepare,'چوب ذخیره کن؛ از «بیشتر» در پناهگاه، مانع ورودی بساز.'],
+    [BALANCE.onboarding.dusk,'غروب نزدیک است؛ آرام بمان و به پناهگاه برگرد.']
   ];
   function updateVitalsStack(stats,stamina=stats.stamina??100,sanity=stats.sanity??100) {
     const values=[['health',stats.health,'miniHealthFill'],['warmth',stats.warmth,'miniWarmthFill'],['hunger',stats.hunger,'miniHungerFill'],['stamina',stamina,'miniStaminaFill'],['sanity',sanity,'miniSanityFill']];
