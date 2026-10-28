@@ -1,5 +1,7 @@
 ## Status
 
+Round 10 item 1: added the Persian diary, Ancient Tree and optional ruin definitions, objective HUD and diary surface; story integration and QA follow in the final pass.
+
 Round 10 item 4: centralized core balance values and shelter, room, and crafting costs in BALANCE; remaining test routes and telemetry are integrated in the following commits.
 
 Round 9 item 1 is complete: per-action text messages now use a soft UI tone and short action-button shake; failed pickups get a floating no-item puff, resource shortages flash the required HUD glyph, and only dusk/dawn, danger/raid, level-up, and tutorial messages use the single top-center lane. Identical visible messages are deduplicated and rate-limited for 10 seconds. Inline JavaScript syntax, targeted browser smoke (no startup audio, top-center report lane, no page/console errors), and `git diff --check` passed. Item 1 is committed as `42aa363`.

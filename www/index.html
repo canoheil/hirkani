@@ -330,6 +330,11 @@
     @media (orientation: portrait) {
       #rotateHint { display: flex; }
     }
+    /* Round 10 story: the objective stays in the existing top-right context. */
+    #storyObjective { color:#e5d0a0; font-size:10px; white-space:nowrap; opacity:.86; }
+    #modal.story-modal .modal-note { font-size:14px; color:#e3dcc7; line-height:1.8; }
+    .story-page { grid-column:1/-1; padding:18px; border:1px solid rgba(230,195,129,.25); border-radius:14px; background:rgba(255,248,220,.055); color:#f5ead4; font-size:clamp(15px,1.3vw,20px); line-height:2; }
+    .story-page small { display:block; color:#dfbd79; font-size:12px; margin-top:12px; }
     /* Round 9 item 4: atmospheric menu, accessible touch sizes, and pause surfaces. */
     #menuScreen,#pauseScreen,#gameOverScreen,#splashScreen { padding:calc(18px + var(--safe-top)) calc(18px + env(safe-area-inset-right,0px)) calc(18px + var(--safe-bottom)) calc(18px + env(safe-area-inset-left,0px)); }
     #menuScreen { overflow:hidden; isolation:isolate; background:linear-gradient(120deg,rgba(8,15,11,.3),rgba(7,13,10,.18)); }
@@ -483,7 +488,7 @@
     <div class="topbar hud-topbar" id="topbar" style="display:none">
       <div class="top-group glass top-context">
         <div class="brand-mini"><span class="brand-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M5 20c1-6 5-11 14-16-1 8-4 13-10 15M7 16l-3-4m7 1 1-5m1 10 5-1"/></svg></span><span class="brand-name">هیرکانی</span></div>
-        <div class="cycle"><div class="cycle-title" id="phaseText">روز ۱ · روشنایی</div><div class="cycle-track"><div class="cycle-fill" id="cycleFill"></div></div></div>
+        <div class="cycle"><div class="cycle-title" id="phaseText">روز ۱ · روشنایی</div><div id="storyObjective">شب ۱ از ۱۰ · تا درخت کهن</div><div class="cycle-track"><div class="cycle-fill" id="cycleFill"></div></div></div>
         <div class="compass-widget" id="compassWidget" aria-label="جهت ورودی بانکر"><div class="compass-ring"><span id="compassArrow" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m12 3 4 13-4-2-4 2 4-13Z"/><path d="M12 14v7"/></svg></span></div><span id="biomeName">جنگل انبوه</span></div>
       </div>
     </div>
@@ -605,6 +610,7 @@
         <button class="primary-menu" id="resumeGameButton" type="button">ادامهٔ سفر</button>
         <button class="secondary-menu" id="pauseSettingsButton" type="button">تنظیمات صدا</button>
         <button class="secondary-menu" id="pauseHelpButton" type="button">راهنمای بازی</button>
+        <button class="secondary-menu" id="pauseDiaryButton" type="button">دفتر پدربزرگ</button>
         <button class="secondary-menu" id="pauseReturnMenuButton" type="button">ذخیره و بازگشت به منو</button>
       </div>
       <div class="menu-foot"><span>با بازگشت به منو، پیشرفت ذخیره می‌شود</span></div>
@@ -665,6 +671,18 @@
     { id:'infirmary', nameFa:'درمانگاه زیرزمینی', cost:BALANCE.costs.bunkers['infirmary'], size:[5,4], effect:{label:'مراقبت و درمان',warmth:.04,stealth:.11,healing:.17,production:{}}, defense:17, tint:'#809477', style:'infirmary', note:'گیاهان دارویی و استراحت، جان را آرام‌آرام بازمی‌گردانند.' },
     { id:'hidden', nameFa:'پناهگاه پنهان', cost:BALANCE.costs.bunkers['hidden'], size:[5,4], effect:{label:'ردپای بسیار کم',warmth:.025,stealth:.62,production:{}}, defense:16, tint:'#53634f', style:'hidden', note:'ورودی پوشیده و هوای مرداب، رد پناهگاه را محو می‌کند.' }
   ];
+  const DIARY = [
+    {text:'اگر این دفتر را پیدا کردی، بدان جنگل هنوز خانهٔ ماست. از پناهگاه نترس؛ زیر خاک هم زندگی جریان دارد.', unlock:'cave'},
+    {text:'امروز رد پلنگ را کنار رود دیدم. او نگهبان جنگل است، نه دشمن آن.', unlock:'root'},
+    {text:'ریشه‌ها راه‌هایی را می‌شناسند که روی هیچ نقشه‌ای نیست. به صدای آب گوش کن.', unlock:'trap-house'},
+    {text:'طوفان هرچه را می‌شکند، جنگل آرام از نو می‌سازد. تو هم می‌توانی.', unlock:'watchtower'},
+    {text:'در مه تالاب پناهی ساختم؛ جایی که سکوت، امن‌ترین دیوار است.', unlock:'swamp'},
+    {text:'هیچ رهگذری را بی‌خوراک رها نکن. این جنگل با بخشیدن زنده مانده است.', unlock:'trade'},
+    {text:'دانه‌ای زیر خاک گذاشتم. شاید وقتی بازگردی باغی کوچک باشد.', unlock:'farm'},
+    {text:'گرمای آتش را برای شب‌های سرد نگه دار؛ اما بگذار ستاره‌ها هم دیده شوند.', unlock:'forge'},
+    {text:'اگر خسته شدی استراحت کن. شجاعت همیشه به معنی ادامه دادن نیست.', unlock:'infirmary'},
+    {text:'درخت کهن را پیدا کن. اگر من آنجا نبودم، دستت را بر تنه‌اش بگذار؛ ما هر دو بخشی از این جنگلیم.', unlock:'hidden'}
+  ];
   const ROOMS = {
     storage:{ name:'انبار', short:'انبار', cost:BALANCE.costs.rooms.storage, upgrade:BALANCE.costs.roomUpgrades.storage, desc:'ظرفیت ذخیره‌سازی بیشتر', effect:{capacity:8,defense:1}, color:'#bd9957' },
     kitchen:{ name:'آشپزخانه', short:'آشپز', cost:BALANCE.costs.rooms.kitchen, upgrade:BALANCE.costs.roomUpgrades.kitchen, desc:'خوراک روزانه و گرمای اجاق', effect:{warmth:.025,production:{food:1},defense:1}, color:'#d8894c' },
@@ -705,6 +723,12 @@
     butterfly:{role:'wildlife',den:'under-leaf',routine:'day',speed:{forage:15,flee:35},senses:{daySight:90,nightSight:0,smell:70,hearing:20},territory:280,stamina:24,chaseDrain:8,animation:'flutter',size:6}
   };
   const BUNKER_ENTRANCE = { x:MAP.cx+34, y:MAP.cy };
+  const ANCIENT_TREE = {x:MAP.cx+820, y:MAP.cy-650};
+  const RUIN_DATA=[
+    {id:'stream-shelter',x:MAP.cx-430,y:MAP.cy-265,blueprint:'cave',note:'پدربزرگ در حاشیهٔ رود، طرح غار سنگی را پنهان کرده بود.'},
+    {id:'old-watch',x:MAP.cx+810,y:MAP.cy+470,blueprint:'fortress',note:'یادداشتی کنار برج فروریخته: «از بلندی، مسیر امن پیداست.»'},
+    {id:'root-cellar',x:MAP.cx-1380,y:MAP.cy+1020,blueprint:'farm',note:'در انبار ریشه‌ها، طرح باغچه‌ای زیرزمینی پیدا کردی.'}
+  ];
   const GRID = { cols:12, rows:4 };
   const BUNKER_SOIL = {
     topsoil:{label:'خاک سطحی',color:'#62503b',hits:1,stone:0},
