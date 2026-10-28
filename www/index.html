@@ -634,36 +634,52 @@
 (() => {
   'use strict';
 
+  const BALANCE = {
+    daySeconds:240, firstDaySeconds:480, nightSeconds:120,
+    hunger:{day:.055,night:.075,firstDay:.045,firstNight:.055},
+    warmth:{dayRecovery:.055,bunkerRecovery:.12,outsideNight:.38,firstNight:.18},
+    health:{outsideNight:.18,firstNight:.08,critical:.20},
+    starter:{wood:7,stone:1,food:3,herbs:1},
+    startingStats:{health:100,hunger:90,warmth:85,stamina:100,sanity:100},
+    onboarding:{move:0,harvest:9,build:120,bedStorage:145,prepare:300,dusk:420},
+    introSeconds:30,
+    raidSize:[1,2,2,3,3,4,4,5,5,6], raidBaseDamage:5, raidDamagePerWolf:2, raidVariance:3, raidRoomHit:.85, raidRoomChance:.78, firstRaidTimer:14,
+    yields:{treeMin:1,treeRandom:2,rockMin:1,rockRandom:2,berry:1,herb:1},
+    costs:{bunkers:{'hut':{wood:0,stone:0},'cave':{wood:5,stone:8},'root':{wood:8,stone:5,herbs:2},'fortress':{wood:12,stone:18},'trap-house':{wood:8,stone:8,food:2},'watchtower':{wood:12,stone:6},'swamp':{wood:6,stone:10,food:3},'trade':{wood:10,stone:7,food:3},'farm':{wood:9,stone:9,herbs:3},'forge':{wood:14,stone:14,herbs:2},'infirmary':{wood:12,stone:10,herbs:8},'hidden':{wood:18,stone:15,herbs:5,food:4}}, rooms:{'storage':{wood:3,stone:1},'kitchen':{wood:4,stone:1},'bed':{wood:3,stone:0},'workshop':{wood:5,stone:3},'trap':{wood:2,stone:2}}, roomUpgrades:{'storage':{wood:2,stone:1},'kitchen':{wood:3,stone:1},'bed':{wood:3,stone:1},'workshop':{wood:3,stone:2},'trap':{wood:2,stone:2}}, crafting:{'hatchet':{wood:3,stone:2},'torch':{wood:2,herbs:1},'poultice':{herbs:2,food:1},'ration':{food:2,herbs:1},'snareBundle':{wood:3,herbs:2},'fireKit':{wood:4,stone:1}}},
+    barricade:{cost:{wood:3},defense:12},
+    firstDuskLead:60, duskLead:30
+  };
+
   // --- Data: shelter types are intentionally data-driven. ---
   const BUNKERS = [
-    { id:'hut', nameFa:'کلبهٔ چوبی', cost:{wood:0,stone:0}, size:[4,3], effect:{label:'گرم و ساده',warmth:.035,stealth:.035,production:{}}, defense:10, tint:'#9b7041', style:'hut', note:'پناهی کوچک از چوب‌های جنگل؛ آغاز راه.' },
-    { id:'cave', nameFa:'غار سنگی', cost:{wood:5,stone:8}, size:[5,3], effect:{label:'پوستهٔ سنگی',warmth:.015,stealth:.09,production:{}}, defense:19, tint:'#718079', style:'cave', note:'دیوارهای سنگی، در برابر یورش مقاوم‌ترند.' },
-    { id:'root', nameFa:'خانهٔ ریشه‌ای', cost:{wood:8,stone:5,herbs:2}, size:[5,4], effect:{label:'ریشه‌های پنهان',warmth:.075,stealth:.19,production:{herbs:1}}, defense:15, tint:'#6f7850', style:'root', note:'پناهگاهی زیر درخت کهنسال هیرکانی.' },
-    { id:'fortress', nameFa:'دژ سنگی', cost:{wood:12,stone:18}, size:[6,4], effect:{label:'دیوارهای ستبر',warmth:0,stealth:.025,production:{}}, defense:29, tint:'#85877b', style:'fortress', note:'استحکام بسیار بالا؛ ساخت آن سنگ زیادی می‌خواهد.' },
-    { id:'trap-house', nameFa:'خانهٔ تله‌ای', cost:{wood:8,stone:8,food:2}, size:[5,4], effect:{label:'تله‌های دفاعی',warmth:.015,stealth:.08,raidDamage:.17,production:{}}, defense:18, tint:'#806347', style:'trap', note:'سازوکار تله‌ها از شدت یورش شبانه می‌کاهد.' },
-    { id:'watchtower', nameFa:'برج دیده‌بانی', cost:{wood:12,stone:6}, size:[4,5], effect:{label:'هشدار زودهنگام',warmth:0,stealth:.07,raidDamage:.16,production:{}}, defense:17, tint:'#ad8751', style:'tower', note:'از بلندی، نزدیک‌شدن جانوران زودتر دیده می‌شود.' },
-    { id:'swamp', nameFa:'پناهگاه تالابی', cost:{wood:6,stone:10,food:3}, size:[5,4], effect:{label:'مه و نی‌زار',warmth:-.035,stealth:.29,production:{food:1}}, defense:18, tint:'#647a57', style:'swamp', note:'در مهِ تالاب پنهان می‌ماند و خوراک می‌رویاند.' },
-    { id:'trade', nameFa:'پناهگاه بازرگانی', cost:{wood:10,stone:7,food:3}, size:[6,3], effect:{label:'دادوستد روزانه',warmth:.025,stealth:.07,production:{wood:1}}, defense:16, tint:'#a27d4d', style:'trade', note:'راه‌های امنِ مبادله، هر سپیده‌دم چوب فراهم می‌کند.' },
-    { id:'farm', nameFa:'پناهگاه مزرعه', cost:{wood:9,stone:9,herbs:3}, size:[6,4], effect:{label:'کشت زیرزمینی',warmth:.02,stealth:.06,production:{food:2}}, defense:15, tint:'#71854e', style:'farm', note:'سبزی و خوراک در باغچه‌های کم‌نور پرورش می‌یابد.' },
-    { id:'forge', nameFa:'کورهٔ آهنگری', cost:{wood:14,stone:14,herbs:2}, size:[5,4], effect:{label:'سنگ و گرمای کوره',warmth:.09,stealth:.015,production:{stone:2}}, defense:22, tint:'#8a6046', style:'forge', note:'کوره پناهگاه را گرم می‌کند و سنگ می‌پردازد.' },
-    { id:'infirmary', nameFa:'درمانگاه زیرزمینی', cost:{wood:12,stone:10,herbs:8}, size:[5,4], effect:{label:'مراقبت و درمان',warmth:.04,stealth:.11,healing:.17,production:{}}, defense:17, tint:'#809477', style:'infirmary', note:'گیاهان دارویی و استراحت، جان را آرام‌آرام بازمی‌گردانند.' },
-    { id:'hidden', nameFa:'پناهگاه پنهان', cost:{wood:18,stone:15,herbs:5,food:4}, size:[5,4], effect:{label:'ردپای بسیار کم',warmth:.025,stealth:.62,production:{}}, defense:16, tint:'#53634f', style:'hidden', note:'ورودی پوشیده و هوای مرداب، رد پناهگاه را محو می‌کند.' }
+    { id:'hut', nameFa:'کلبهٔ چوبی', cost:BALANCE.costs.bunkers['hut'], size:[4,3], effect:{label:'گرم و ساده',warmth:.035,stealth:.035,production:{}}, defense:10, tint:'#9b7041', style:'hut', note:'پناهی کوچک از چوب‌های جنگل؛ آغاز راه.' },
+    { id:'cave', nameFa:'غار سنگی', cost:BALANCE.costs.bunkers['cave'], size:[5,3], effect:{label:'پوستهٔ سنگی',warmth:.015,stealth:.09,production:{}}, defense:19, tint:'#718079', style:'cave', note:'دیوارهای سنگی، در برابر یورش مقاوم‌ترند.' },
+    { id:'root', nameFa:'خانهٔ ریشه‌ای', cost:BALANCE.costs.bunkers['root'], size:[5,4], effect:{label:'ریشه‌های پنهان',warmth:.075,stealth:.19,production:{herbs:1}}, defense:15, tint:'#6f7850', style:'root', note:'پناهگاهی زیر درخت کهنسال هیرکانی.' },
+    { id:'fortress', nameFa:'دژ سنگی', cost:BALANCE.costs.bunkers['fortress'], size:[6,4], effect:{label:'دیوارهای ستبر',warmth:0,stealth:.025,production:{}}, defense:29, tint:'#85877b', style:'fortress', note:'استحکام بسیار بالا؛ ساخت آن سنگ زیادی می‌خواهد.' },
+    { id:'trap-house', nameFa:'خانهٔ تله‌ای', cost:BALANCE.costs.bunkers['trap-house'], size:[5,4], effect:{label:'تله‌های دفاعی',warmth:.015,stealth:.08,raidDamage:.17,production:{}}, defense:18, tint:'#806347', style:'trap', note:'سازوکار تله‌ها از شدت یورش شبانه می‌کاهد.' },
+    { id:'watchtower', nameFa:'برج دیده‌بانی', cost:BALANCE.costs.bunkers['watchtower'], size:[4,5], effect:{label:'هشدار زودهنگام',warmth:0,stealth:.07,raidDamage:.16,production:{}}, defense:17, tint:'#ad8751', style:'tower', note:'از بلندی، نزدیک‌شدن جانوران زودتر دیده می‌شود.' },
+    { id:'swamp', nameFa:'پناهگاه تالابی', cost:BALANCE.costs.bunkers['swamp'], size:[5,4], effect:{label:'مه و نی‌زار',warmth:-.035,stealth:.29,production:{food:1}}, defense:18, tint:'#647a57', style:'swamp', note:'در مهِ تالاب پنهان می‌ماند و خوراک می‌رویاند.' },
+    { id:'trade', nameFa:'پناهگاه بازرگانی', cost:BALANCE.costs.bunkers['trade'], size:[6,3], effect:{label:'دادوستد روزانه',warmth:.025,stealth:.07,production:{wood:1}}, defense:16, tint:'#a27d4d', style:'trade', note:'راه‌های امنِ مبادله، هر سپیده‌دم چوب فراهم می‌کند.' },
+    { id:'farm', nameFa:'پناهگاه مزرعه', cost:BALANCE.costs.bunkers['farm'], size:[6,4], effect:{label:'کشت زیرزمینی',warmth:.02,stealth:.06,production:{food:2}}, defense:15, tint:'#71854e', style:'farm', note:'سبزی و خوراک در باغچه‌های کم‌نور پرورش می‌یابد.' },
+    { id:'forge', nameFa:'کورهٔ آهنگری', cost:BALANCE.costs.bunkers['forge'], size:[5,4], effect:{label:'سنگ و گرمای کوره',warmth:.09,stealth:.015,production:{stone:2}}, defense:22, tint:'#8a6046', style:'forge', note:'کوره پناهگاه را گرم می‌کند و سنگ می‌پردازد.' },
+    { id:'infirmary', nameFa:'درمانگاه زیرزمینی', cost:BALANCE.costs.bunkers['infirmary'], size:[5,4], effect:{label:'مراقبت و درمان',warmth:.04,stealth:.11,healing:.17,production:{}}, defense:17, tint:'#809477', style:'infirmary', note:'گیاهان دارویی و استراحت، جان را آرام‌آرام بازمی‌گردانند.' },
+    { id:'hidden', nameFa:'پناهگاه پنهان', cost:BALANCE.costs.bunkers['hidden'], size:[5,4], effect:{label:'ردپای بسیار کم',warmth:.025,stealth:.62,production:{}}, defense:16, tint:'#53634f', style:'hidden', note:'ورودی پوشیده و هوای مرداب، رد پناهگاه را محو می‌کند.' }
   ];
   const ROOMS = {
-    storage:{ name:'انبار', short:'انبار', cost:{wood:3,stone:1}, upgrade:{wood:2,stone:1}, desc:'ظرفیت ذخیره‌سازی بیشتر', effect:{capacity:8,defense:1}, color:'#bd9957' },
-    kitchen:{ name:'آشپزخانه', short:'آشپز', cost:{wood:4,stone:1}, upgrade:{wood:3,stone:1}, desc:'خوراک روزانه و گرمای اجاق', effect:{warmth:.025,production:{food:1},defense:1}, color:'#d8894c' },
-    bed:{ name:'اتاق خواب', short:'خواب', cost:{wood:3,stone:0}, upgrade:{wood:3,stone:1}, desc:'بازیابی گرما و سلامت', effect:{warmth:.085,healing:.07}, color:'#bd806c' },
-    workshop:{ name:'کارگاه', short:'کارگاه', cost:{wood:5,stone:3}, upgrade:{wood:3,stone:2}, desc:'سنگ روزانه و برداشت بهتر', effect:{gatherBonus:.08,production:{stone:1},defense:1}, color:'#88918a' },
-    trap:{ name:'اتاق تله', short:'تله', cost:{wood:2,stone:2}, upgrade:{wood:2,stone:2}, desc:'کاهش آسیب یورش شبانه', effect:{raidDamage:.1,defense:5}, color:'#778e58' }
+    storage:{ name:'انبار', short:'انبار', cost:BALANCE.costs.rooms.storage, upgrade:BALANCE.costs.roomUpgrades.storage, desc:'ظرفیت ذخیره‌سازی بیشتر', effect:{capacity:8,defense:1}, color:'#bd9957' },
+    kitchen:{ name:'آشپزخانه', short:'آشپز', cost:BALANCE.costs.rooms.kitchen, upgrade:BALANCE.costs.roomUpgrades.kitchen, desc:'خوراک روزانه و گرمای اجاق', effect:{warmth:.025,production:{food:1},defense:1}, color:'#d8894c' },
+    bed:{ name:'اتاق خواب', short:'خواب', cost:BALANCE.costs.rooms.bed, upgrade:BALANCE.costs.roomUpgrades.bed, desc:'بازیابی گرما و سلامت', effect:{warmth:.085,healing:.07}, color:'#bd806c' },
+    workshop:{ name:'کارگاه', short:'کارگاه', cost:BALANCE.costs.rooms.workshop, upgrade:BALANCE.costs.roomUpgrades.workshop, desc:'سنگ روزانه و برداشت بهتر', effect:{gatherBonus:.08,production:{stone:1},defense:1}, color:'#88918a' },
+    trap:{ name:'اتاق تله', short:'تله', cost:BALANCE.costs.rooms.trap, upgrade:BALANCE.costs.roomUpgrades.trap, desc:'کاهش آسیب یورش شبانه', effect:{raidDamage:.1,defense:5}, color:'#778e58' }
   };
   const CRAFTING_CATEGORIES=[{id:'tools',name:'ابزار'},{id:'survival',name:'بقا'},{id:'defense',name:'دفاع'}];
   const CRAFTING_RECIPES=[
-    {id:'hatchet',category:'tools',name:'تبر سنگی',description:'برداشت از درختان چوب بیشتری می‌دهد.',cost:{wood:3,stone:2},output:{hatchets:1},unique:'hatchets'},
-    {id:'torch',category:'tools',name:'مشعل',description:'در شب همراهت روشن می‌شود؛ نورش آرامش را نگه می‌دارد.',cost:{wood:2,herbs:1},output:{torches:1}},
-    {id:'poultice',category:'survival',name:'ضماد گیاهی',description:'هنگام ساخت مصرف می‌شود: سلامت را بازمی‌گرداند و خون‌ریزی را بند می‌آورد.',cost:{herbs:2,food:1},consume:{health:30,sanity:5,clearBleed:true}},
-    {id:'ration',category:'survival',name:'جیرهٔ جنگلی',description:'هنگام ساخت خورده می‌شود و گرسنگی و کمی گرما را برمی‌گرداند.',cost:{food:2,herbs:1},consume:{hunger:34,warmth:5}},
-    {id:'snareBundle',category:'defense',name:'بستهٔ تله',description:'دو بار تله بگذار؛ شکارچیان از تلهٔ گیاهی آسیب می‌بینند.',cost:{wood:3,herbs:2},output:{snares:2}},
-    {id:'fireKit',category:'defense',name:'کیت آتش',description:'یک آتش روشن کن بی‌آنکه چوب خام مصرف شود.',cost:{wood:4,stone:1},output:{fireKits:1}}
+    {id:'hatchet',category:'tools',name:'تبر سنگی',description:'برداشت از درختان چوب بیشتری می‌دهد.',cost:BALANCE.costs.crafting.hatchet,output:{hatchets:1},unique:'hatchets'},
+    {id:'torch',category:'tools',name:'مشعل',description:'در شب همراهت روشن می‌شود؛ نورش آرامش را نگه می‌دارد.',cost:BALANCE.costs.crafting.torch,output:{torches:1}},
+    {id:'poultice',category:'survival',name:'ضماد گیاهی',description:'هنگام ساخت مصرف می‌شود: سلامت را بازمی‌گرداند و خون‌ریزی را بند می‌آورد.',cost:BALANCE.costs.crafting.poultice,consume:{health:30,sanity:5,clearBleed:true}},
+    {id:'ration',category:'survival',name:'جیرهٔ جنگلی',description:'هنگام ساخت خورده می‌شود و گرسنگی و کمی گرما را برمی‌گرداند.',cost:BALANCE.costs.crafting.ration,consume:{hunger:34,warmth:5}},
+    {id:'snareBundle',category:'defense',name:'بستهٔ تله',description:'دو بار تله بگذار؛ شکارچیان از تلهٔ گیاهی آسیب می‌بینند.',cost:BALANCE.costs.crafting.snareBundle,output:{snares:2}},
+    {id:'fireKit',category:'defense',name:'کیت آتش',description:'یک آتش روشن کن بی‌آنکه چوب خام مصرف شود.',cost:BALANCE.costs.crafting.fireKit,output:{fireKits:1}}
   ];
 
   const $ = id => document.getElementById(id);
