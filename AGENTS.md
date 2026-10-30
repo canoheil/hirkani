@@ -1,5 +1,37 @@
 ## Status
 
+Round 11C item 5: no manual downloads needed. Browser checks passed for gesture-only loading and decoding all six assets, per-slot music fallback, persisted sliders, day/night/raid/bunker mix, river proximity, background suspension and pause/resume; crafting/inventory and first-night regressions also passed. Settings and credits screenshots at 1600×720 and 1280×600 were inspected; settings were compacted to avoid clipping. Physical Android audio and subjective loop-seam listening remain untested.
+
+Round 11C item 4: independent music, nature and SFX controls persist across sessions; music and ambience crossfade with day, dusk, night and raids, river proximity and bunker muffling, with individual procedural fallbacks and background/pause suspension.
+
+Round 11C item 3: six normalized 112 kbps OGG loops total approximately 2.8 MB; trimmed recordings and raid music use overlapped loop seams. Lazy gesture-triggered decoding keeps the original synthesizer available on individual asset failures. Scene mixing follows in item 4.
+
+Round 11C item 2: obtained forest and raid music plus birds, river, crickets and wind from GitHub mirrors of the verified sources. The optional dawn stinger is omitted.
+
+Round 11C item 1: verified the six original audio source pages and their CC0/public-domain licenses; added source, author and license credits and an About → audio credits screen. Bundled audio integration follows in the next items.
+
+Round 11B item 7: personally inspected all four craft tabs, inventory, locked blueprint, missing-resource state and bunker-mode screenshots at 1600×720 and/or 1280×600 (all requested states captured at both sizes); corrected a clipped detail button and improved locked-cost contrast. Browser checks passed for 48px targets, pause, backdrop/Escape/history closing, crafting, locked/missing gating, bunker and room selection, eat/drop/pickup, and dropped-item save/reload. A scripted first-night regression also passed; no browser errors. Physical Android/device testing remains outstanding.
+
+Round 11B item 6: removed the obsolete More sheet, preserved its actions in the new categories and inventory, moved haptics to settings, and added input clearing, pause, keyboard/backdrop dismissal and browser-history back handling. Responsive touch/layout QA passed at both requested sizes.
+
+Round 11B item 5: bunker blueprints share the craft cards and detail pane, with defensive/capacity strengths, explicit trade-offs, blueprint hints, affordability and owned/active states; building or selecting a base still requires being inside the bunker.
+
+Round 11B item 4: added a paused inventory sheet with resource and equipment counts, contextual eat/use actions and recoverable, saved forest item drops; the essential knife cannot be discarded.
+
+Round 11B item 3: introduced a unified inline-SVG stroke/palette set for resources, equipment, structures, all bunker types and inventory, including icons for requested items not yet implemented as gameplay.
+
+Round 11B item 2: added a paused, dim-backed bottom crafting sheet with four category tabs, selectable cards, resource affordability chips, a details pane and context-sensitive build actions. Later items added icon coverage, inventory, bunker descriptions and final QA.
+
+Round 11B item 1: replaced the visible More control with separate 48px+ ساخت and backpack controls beside the action button; the backpack opens the inventory sheet introduced in item 4.
+
+Round 11A item 4: personally inspected multi-floor ladder/support, distant and close tree (including behind/under the canopy), and day-one encounter captures at 1600×720 and 1280×600; faded the obscuring trunk and cached static map terrain after inspection. Scripted checks passed for ridge collision/crossing, trunk collision, hidden discovery, interaction-only ending, first-day harmlessness, day-two danger, and a sheltered first night; no browser errors. These are scripted browser checks, not physical Android or representative balance testing.
+
+Round 11A item 3: wolf territory signs and a nearby den foreshadow danger; daytime entry warns and produces a harmless first-day bluff, with attacks from day two. Danger zones, directional audio, low-health feedback and cause-specific death advice are included. Inspected the day-one encounter at both sizes; scripted day-one bluffs did no damage, and a stationary day-two encounter reduced health from 100 to about 29 in 14 seconds. Representative player balance testing remains pending.
+
+Round 11A item 2: the Ancient Tree now stands beyond a ridgeline crossing at over 70% of the world diagonal from home; its trunk collides, canopy is depth-sorted and fades overhead, and discovery and the post-night-10 ending require proximity and interaction respectively. Diary and subtle directional glow hint at its location. Inspected at both viewport sizes and tested collision, ridge crossing and interaction-gated ending.
+
+Round 11A item 1: bunker ladders and support beams render as grouped consecutive-column runs with continuous rails/posts, caps and regular rungs; traversal and support logic are unchanged. Inspected at 1600×720 and 1280×600.
+
 Round 10 item 1: the ranger-grandfather premise, ten Persian diary pages, dawn report and blueprint progression, rereadable diary, persistent objective, fog-aware Ancient Tree marker, three explorable ruins with notes/blueprints, and the post-night-ten Ancient Tree ending with continued exploration are integrated in `www/index.html`. Older saves retain owned bunkers and gain previously earned blueprints.
 
 Round 10 item 2: new games show a skippable 30-second procedural forest, storm and bunker-door intro with timed Persian subtitles and procedural audio; About can replay it. Screenshots at 1600×720 and 1280×600 were inspected.
