@@ -830,6 +830,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, paused=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
+  let reducedQuality=false, slowFrameTime=0, fastFrameTime=0;
   let introActive=false,introTime=0,introLastFrame=0,introReplay=false,introStormPlayed=false;
   let notificationQueue=[],activeNotification=null,tutorialNoticeStep=-1,lastDuskNoticeState='',lastRaidNoticeId=null,raidNoticeSequence=0,lastNotificationAtByText=new Map();
   let vitalSeverity={health:'normal',warmth:'normal',hunger:'normal',stamina:'normal',sanity:'normal'};
@@ -1321,7 +1322,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
     };
   }
   function configureCanvas() {
-    W=innerWidth; H=innerHeight; dpr=Math.min(window.devicePixelRatio||1,1.8);
+    W=innerWidth; H=innerHeight; dpr=Math.min(window.devicePixelRatio||1,reducedQuality?1:1.8);
     canvas.width=Math.floor(W*dpr); canvas.height=Math.floor(H*dpr);
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);mapDirty=true;minimapDirty=true;
@@ -2244,6 +2245,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
       ctx.fillStyle=groundColorAt(tile.x+tile.w/2,tile.y+tile.h/2);ctx.fillRect(tile.x,tile.y,tile.w+1,tile.h+1);
     }
     for(const chunk of visibleChunks)for(const decal of chunk.decals){
+      if(reducedQuality&&decal.variant<.55)continue;
       if(decal.x<cam.x-12||decal.x>cam.x+W+12||decal.y<cam.y-12||decal.y>cam.y+H+12)continue;
       const {x,y,size,variant}=decal;
       if(decal.kind==='reed'){ctx.strokeStyle='rgba(177,174,117,.22)';ctx.lineWidth=.7+size*.35;ctx.beginPath();ctx.moveTo(x,y+size*2);ctx.lineTo(x+(variant-.5)*size*2,y-size*2);ctx.stroke();}
@@ -2362,7 +2364,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
   }
   function spawnBunkerParticles(c,r,kind='dust',count=7) {
     if(!game.bunkerEffects)game.bunkerEffects=[];for(let i=0;i<count;i++){const angle=Math.random()*Math.PI*2,speed=.35+Math.random()*1.25;game.bunkerEffects.push({kind,x:c+.5+(Math.random()-.5)*.42,y:r+.42+(Math.random()-.5)*.22,vx:Math.cos(angle)*speed,vy:-.35-Math.random()*.85,gravity:kind==='pebble'?2.8:1.4,life:.45+Math.random()*.42,maxLife:.87,size:kind==='pebble'?1.5+Math.random()*2:2+Math.random()*3,color:kind==='pebble'?'#aaa18a':'#c3ad84',rotation:Math.random()*6.28});}
-    if(game.bunkerEffects.length>90)game.bunkerEffects.splice(0,game.bunkerEffects.length-90);
+    const cap=reducedQuality?45:90;if(game.bunkerEffects.length>cap)game.bunkerEffects.splice(0,game.bunkerEffects.length-cap);
   }
   function drawBunkerEffects(g) {
     for(const fx of game.bunkerEffects||[]){const alpha=clamp(fx.life/fx.maxLife,0,1),x=g.left+fx.x*g.cell,y=g.top+fx.y*g.cell;ctx.save();ctx.globalAlpha=alpha*.8;ctx.translate(x,y);ctx.rotate(fx.rotation+(1-alpha)*2);ctx.fillStyle=fx.color;if(fx.kind==='pebble'){ctx.beginPath();ctx.moveTo(-fx.size,fx.size*.2);ctx.lineTo(-fx.size*.25,-fx.size);ctx.lineTo(fx.size,fx.size*.15);ctx.lineTo(fx.size*.2,fx.size*.8);ctx.closePath();ctx.fill();}else{ctx.beginPath();ctx.ellipse(0,0,fx.size*1.3,fx.size*.75,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
@@ -2581,13 +2583,14 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
     if(!world.effects)world.effects=[];
     const p=game.player,side=world.rand?.()||Math.random();
     world.effects.push({x:x-p.faceX*7+(side-.5)*8,y:y-p.faceY*7+(side-.5)*8,vx:-p.faceX*(18+side*18)+(side-.5)*24,vy:-p.faceY*(18+side*18)-8+(side-.5)*20,life:.42,maxLife:.42,size:2+side*2,leaf:side>.58,rot:side*Math.PI*2,spin:(side-.5)*5});
-    if(world.effects.length>70)world.effects.shift();
+    if(world.effects.length>(reducedQuality?35:70))world.effects.shift();
   }
+  function compactLiving(items) { let write=0;for(let i=0;i<items.length;i++)if(items[i].life>0)items[write++]=items[i];items.length=write; }
   function updateParticles(dt) {
     if(!world?.effects)return;
     for(const fx of world.effects){fx.life-=dt;fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.vx*=Math.max(0,1-dt*2);fx.vy=(fx.vy+18*dt)*Math.max(0,1-dt*1.1);fx.rot+=fx.spin*dt;}
-    world.effects=world.effects.filter(fx=>fx.life>0);
-    if(game?.bunkerEffects){for(const fx of game.bunkerEffects){fx.life-=dt;fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.vy+=fx.gravity*dt;fx.vx*=Math.max(0,1-dt*1.5);}game.bunkerEffects=game.bunkerEffects.filter(fx=>fx.life>0);}
+    compactLiving(world.effects);
+    if(game?.bunkerEffects){for(const fx of game.bunkerEffects){fx.life-=dt;fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.vy+=fx.gravity*dt;fx.vx*=Math.max(0,1-dt*1.5);}compactLiving(game.bunkerEffects);}
   }
   function drawParticles() {
     if(!world?.effects?.length)return;
@@ -2977,7 +2980,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
   function placeSnare() {
     if(!active||game.mode!=='forest')return;
     const kit=(game.inventory.snares||0)>0;if(!kit&&!canPay(BALANCE.secondaryCosts.snare)){flashResource(game.resources.wood<BALANCE.secondaryCosts.snare.wood?'wood':'herbs');actionFeedback('');return;}
-    if(kit)game.inventory.snares--;else pay(BALANCE.secondaryCosts.snare);world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});
+    if(kit)game.inventory.snares--;else pay(BALANCE.secondaryCosts.snare);world.traps.push({x:game.player.x,y:game.player.y,timer:75,radius:29,triggered:false});if(world.traps.length>24)world.traps.shift();
     if(world.traps.length>4)world.traps.shift();animatePlayerAction('gather',.58);game.player.noiseBurst=1.25;beep('trapSet',{priority:3});haptic(16);actionFeedback('تلهٔ گیاهی کار گذاشتی؛ جانور نزدیک را به سمتش بکشان.',2000);updateUI(true);
   }
   function updateHazards(dt) {
@@ -3428,7 +3431,12 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
   function frame(t) {
     try {
       if(document.hidden){lastFrame=0;return;}
-      const dt=lastFrame?Math.min(.05,Math.max(0,(t-lastFrame)/1000)):0;lastFrame=t;
+      const elapsed=lastFrame?Math.max(0,(t-lastFrame)/1000):0,dt=Math.min(.05,elapsed);lastFrame=t;
+      if(active&&!paused&&elapsed>0&&elapsed<.5){
+        if(elapsed>.030){slowFrameTime+=elapsed;fastFrameTime=0;}else{slowFrameTime=Math.max(0,slowFrameTime-elapsed*2);fastFrameTime+=elapsed;}
+        if(!reducedQuality&&slowFrameTime>3){reducedQuality=true;slowFrameTime=fastFrameTime=0;configureCanvas();}
+        else if(reducedQuality&&fastFrameTime>20){reducedQuality=false;slowFrameTime=fastFrameTime=0;configureCanvas();}
+      }
       if(characterSheetMode){gameTime+=dt;drawCharacterContactSheet();return;}
       if(active&&!paused){for(let i=0;i<(fastMode?4:1);i++)update(dt);}else if(!active)gameTime+=dt;
       draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);if(introActive)drawIntro(dt);
