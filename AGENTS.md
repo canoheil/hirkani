@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 5: added a tree/shelter emblem, adaptive and monochrome SVG sources, pre-rendered density PNGs, dark landscape splash, menu mark and 512px documentation icon. Inspected 48/72/96/192 circle and rounded-square previews on light and dark backgrounds; launcher/device appearance remains unverified.
+
 Final release item 4: normalized the workshop shelter label in Persian and smoke-tested starter tree/bush gathering and first room construction at 1280×600. Intro timing, all tutorial layouts, dusk and linguistic review remain to be checked manually.
 
 Final release item 3: scripted isolated prepared-bunker nights 1–10 reached dawn and awarded diary pages; night 10 reached the Ancient Tree ending, and confirmed night exit reached the forest. This is not a continuous resource/balance playthrough or an exhaustive softlock audit.
