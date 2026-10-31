@@ -709,6 +709,9 @@
   <div id="rotateHint">هیرکانی در حالت افقی بهتر بازی می‌شود.<br>لطفاً گوشی را بچرخانید. <span style="font-size:28px;display:block;margin-top:12px">↻</span></div>
 </div>
 <script>
+// Report unexpected browser errors without suppressing them or interrupting later frames.
+window.addEventListener('error',event=>console.error('[Hirkani error]',event.message,event.error||''));
+window.addEventListener('unhandledrejection',event=>console.error('[Hirkani rejection]',event.reason));
 (() => {
   'use strict';
 
@@ -1110,7 +1113,7 @@
     if(!audioManager.unlock())return;const button=event.target.closest?.('button');
     if(button&&!button.disabled&&!['actionButton','soundButton'].includes(button.id))audioManager.play('ui',{priority:1,gainScale:.56});
   }, {capture:true,passive:true});
-  document.addEventListener('visibilitychange',()=>document.hidden?audioManager.pause():audioManager.resume());
+  document.addEventListener('visibilitychange',()=>{lastFrame=0;introLastFrame=performance.now();if(document.hidden){clearGameplayInput();audioManager.pause();}else{configureCanvas();configureTitleCanvas();audioManager.resume();}});
   window.addEventListener('blur',()=>{if(document.hidden)audioManager.pause();});window.addEventListener('focus',()=>{if(!document.hidden)audioManager.resume();});
   function haptic(duration=10) { if(!hapticsEnabled)return;try { const nav=window.navigator;if(nav&&typeof nav.vibrate==='function')nav.vibrate(duration); } catch(e) {} }
   function setStatusPanel(open) {
@@ -1364,6 +1367,7 @@
     const vignette=c.createRadialGradient(w*.52,h*.48,Math.min(w,h)*.16,w*.52,h*.48,Math.max(w,h)*.76);vignette.addColorStop(0,'rgba(6,12,8,0)');vignette.addColorStop(1,'rgba(5,11,8,.34)');c.fillStyle=vignette;c.fillRect(0,0,w,h);
   }
   const titleScene=$('titleScene');if(titleScene){createTitleTrees();configureTitleCanvas();titleScene.addEventListener('pointermove',event=>{const rect=titleScene.getBoundingClientRect();titlePointer.targetX=(event.clientX-rect.left)/Math.max(1,rect.width)*2-1;titlePointer.targetY=(event.clientY-rect.top)/Math.max(1,rect.height)*2-1;});titleScene.addEventListener('pointerleave',()=>{titlePointer.targetX=titlePointer.targetY=0;});}
+  window.addEventListener('orientationchange',()=>{lastFrame=0;configureCanvas();configureTitleCanvas();},{passive:true});
   window.addEventListener('resize',configureCanvas,{passive:true});window.addEventListener('resize',configureTitleCanvas,{passive:true});configureCanvas();
 
   function beep(kind='gather',options={}) { return audioManager.play(kind,options); }
@@ -1499,8 +1503,25 @@
     skipTutorialOnStart=!skipTutorialOnStart;try{localStorage.setItem('hirkani-skip-tutorial',skipTutorialOnStart?'on':'off');}catch(e){}updateTutorialPreferenceButton();
   }
   function loadSaved() {
-    const data=savedGame(); if(!data||!data.player||!data.resources) return false;
-    resetNotifications();game=freshGame();Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');if(!audioManager.hasStoredPreferences)audioManager.setMuted(!!data.muted);else muted=audioManager.muted;game.muted=muted;
+    try { return loadSavedSafe(); } catch(error) {
+      console.error('[Hirkani save recovery]',error);game=null;world=null;active=false;paused=false;
+      try{localStorage.removeItem(SAVE_KEY);}catch(e){}setScreen('menu');refreshMenuSaveSummary();return false;
+    }
+  }
+  function loadSavedSafe() {
+    const data=savedGame(),record=value=>value&&typeof value==='object'&&!Array.isArray(value);
+    if(!record(data)||!record(data.player)||!record(data.resources)) return false;
+    const defaults=freshGame();
+    for(const key of ['player','stats','resources','inventory','onboarding','bunkers','dug','rooms','digging','supports','integrity','ladders','lamps','finds','tutorial','telemetry'])data[key]={...defaults[key],...(record(data[key])?data[key]:{})};
+    data.day=clamp(Math.floor(Number(data.day)||1),1,10000);data.phase=data.phase==='night'?'night':'day';data.phaseTime=clamp(Number(data.phaseTime)||0,0,data.phase==='night'?NIGHT_LENGTH:DAY_LENGTH);data.mode=data.mode==='bunker'?'bunker':'forest';
+    data.ownedBunkers=Array.isArray(data.ownedBunkers)?data.ownedBunkers.filter(id=>BUNKERS.some(b=>b.id===id)):['hut'];if(!data.ownedBunkers.includes('hut'))data.ownedBunkers.unshift('hut');
+    if(!BUNKERS.some(b=>b.id===data.bunkerId))data.bunkerId='hut';
+    for(const key of Object.keys(defaults.stats))data.stats[key]=clamp(Number.isFinite(Number(data.stats[key]))?Number(data.stats[key]):defaults.stats[key],0,100);
+    for(const key of Object.keys(defaults.resources))data.resources[key]=clamp(Math.floor(Number(data.resources[key])||0),0,999);
+    for(const key of ['x','y'])if(!Number.isFinite(Number(data.player[key])))data.player[key]=defaults.player[key];
+    if(!record(data.player.target)||!Number.isFinite(Number(data.player.target.x))||!Number.isFinite(Number(data.player.target.y)))data.player.target=null;
+    for(const [key,room] of Object.entries(data.rooms))if(!record(room)||!ROOMS[room.type])delete data.rooms[key];
+    resetNotifications();game=defaults;Object.assign(game,data);mapOpen=false;$('mapOverlay').classList.remove('show');if(!audioManager.hasStoredPreferences)audioManager.setMuted(!!data.muted);else muted=audioManager.muted;game.muted=muted;
     game.dug=game.dug&&typeof game.dug==='object'?game.dug:{};game.dug['5,1']=true;game.digging=data.digging&&typeof data.digging==='object'?data.digging:{};game.supports=data.supports&&typeof data.supports==='object'?data.supports:{};game.integrity=data.integrity&&typeof data.integrity==='object'?data.integrity:{};game.ladders=data.ladders&&typeof data.ladders==='object'?data.ladders:{};if(game.ladders['5,1']===undefined)game.ladders['5,1']=true;if(game.ladders['5,2']===undefined)game.ladders['5,2']=true;game.lamps=data.lamps&&typeof data.lamps==='object'?data.lamps:{'5,3':true};game.bunkerEffects=[];game.finds=data.finds&&typeof data.finds==='object'?data.finds:{};game.bunkerMode=['dig','build','repair','support','lamp'].includes(data.bunkerMode)?data.bunkerMode:'dig';
     const savedBX=Number(data.player.bX??data.player.bCol??5),savedBY=Number(data.player.bY??data.player.bRow??3);game.player.bX=clamp(Number.isFinite(savedBX)?savedBX:5,0,GRID.cols-1);game.player.bY=clamp(Number.isFinite(savedBY)?savedBY:3,0,GRID.rows-1);game.player.bCol=Math.round(game.player.bX);game.player.bRow=Math.round(game.player.bY);game.bunkerDripTimer=clamp(Number(data.bunkerDripTimer)||12,1,40);game.structureWarning=null;
     game.stats.stamina=clamp(game.stats.stamina??100,0,100);game.stats.sanity=clamp(game.stats.sanity??100,0,100);game.noiseTrail=clamp(Number(game.noiseTrail)||0,0,1);game.mapDiscovery=Array.isArray(data.mapDiscovery)?[...new Set(data.mapDiscovery.map(String).filter(key=>{const match=/^(\d+),(\d+)$/.exec(key);return match&&Number(match[1])<CHUNK_COLS&&Number(match[2])<CHUNK_ROWS;}))]:[];mapDiscovered=new Set(game.mapDiscovery);game.mapMarkers=Array.isArray(data.mapMarkers)?data.mapMarkers.filter(marker=>marker&&Number.isFinite(Number(marker.x))&&Number.isFinite(Number(marker.y))).slice(-12).map((marker,index)=>({id:String(marker.id||`marker-${index}`),x:clamp(Number(marker.x),WORLD_EDGE,MAP.w-WORLD_EDGE),y:clamp(Number(marker.y),WORLD_EDGE,MAP.h-WORLD_EDGE),label:String(marker.label||'نشان').slice(0,14)})):[];mapDirty=true;minimapDirty=true;game.inventory={knife:1,hatchets:0,torches:0,snares:0,fireKits:0,...(data.inventory||{})};for(const key of ['hatchets','torches','snares','fireKits'])game.inventory[key]=Math.max(0,Math.floor(Number(game.inventory[key])||0));game.player.torchLit=!!game.player.torchLit;game.player.exhausted=!!game.player.exhausted;game.player.breathTimer=game.player.breathTimer||0;game.player.motionBlend=clamp(Number(game.player.motionBlend)||0,0,1);game.player.runBlend=clamp(Number(game.player.runBlend)||0,0,1);game.player.hurtTimer=clamp(Number(game.player.hurtTimer)||0,0,.55);game.player.deathTimer=0;game.player.hallucinationTimer=game.player.hallucinationTimer||0;game.player.bleedTimer=game.player.bleedTimer||0;game.player.hitGrace=game.player.hitGrace||0;
@@ -3405,12 +3426,15 @@
     return 'calmDay';
   }
   function frame(t) {
-    const dt=Math.min(.05,Math.max(0,(t-lastFrame)/1000||0));lastFrame=t;
-    if(characterSheetMode){gameTime+=dt;drawCharacterContactSheet();requestAnimationFrame(frame);return;}
-    if(active&&!paused){for(let i=0;i<(fastMode?4:1);i++)update(dt);}else if(!active)gameTime+=dt;
-    draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);if(introActive)drawIntro(dt);
-    audioManager.setMood(currentMusicMood());audioManager.update(dt);updateNotificationLane(dt);
-    requestAnimationFrame(frame);
+    try {
+      if(document.hidden){lastFrame=0;return;}
+      const dt=lastFrame?Math.min(.05,Math.max(0,(t-lastFrame)/1000)):0;lastFrame=t;
+      if(characterSheetMode){gameTime+=dt;drawCharacterContactSheet();return;}
+      if(active&&!paused){for(let i=0;i<(fastMode?4:1);i++)update(dt);}else if(!active)gameTime+=dt;
+      draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);if(introActive)drawIntro(dt);
+      audioManager.setMood(currentMusicMood());audioManager.update(dt);updateNotificationLane(dt);
+    } catch(error) { console.error('[Hirkani frame]',error); }
+    finally { requestAnimationFrame(frame); }
   }
   requestAnimationFrame(frame);
 })();

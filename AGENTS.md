@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 1: added global error reporting and frame recovery, visibility/orientation handling and guarded save migration.
+
 Round 12 QA: personally inspected tutorial, craft, inventory, bunker-exit, details, map and pause captures at 1600×720 and 1280×600, plus 760×400; inspected 30%/60% walk and 95% sprint screenshots. Automated checks covered sprint hysteresis and exhaustion recovery; all bunker modes, blocked routes, raid confirmation/cancel, safe-night and ladder/entrance interactions; paused workshop; and untruncated card descriptions across tabs. Physical-device verification is still needed.
 
 Round 12 item 5: workshop and inventory descriptions wrap instead of ellipsizing; short recipe summaries retain full details in the selection pane. Removed the obsolete day-only exit card and corrected tutorial references to the current craft menu.
