@@ -173,7 +173,7 @@
     .recipe-card.locked .recipe-card-top, .recipe-card.locked .recipe-card-top .item-icon { color:#a8b2a3; }
     .recipe-card-top { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; }
     .recipe-card-top .item-icon { width:35px; height:35px; color:#eac67f; flex:none; }
-    .recipe-effect { color:#bfcbbb; font-size:11px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .recipe-effect { color:#dce5d6; font-size:11px; line-height:1.4; white-space:normal; overflow:visible; overflow-wrap:anywhere; }
     .recipe-costs { display:flex; flex-wrap:wrap; gap:4px; margin-top:auto; }
     .cost-chip { display:inline-flex; align-items:center; gap:3px; border-radius:7px; padding:2px 5px; color:#bce2aa; background:#52774b3b; font-size:11px; }
     .cost-chip.missing { color:#f4b2a4; background:#a0403844; }
@@ -528,6 +528,38 @@
       .status-panel-head { top:-14px; }
       #statusPanelTitle { font-size:15px; }
     }
+
+    /* A fixed 90% radius guide; the thumb remains contained in the base. */
+    #bunkerExit { position:absolute; right:0; bottom:calc(100% + 8px); width:72px; min-height:48px; display:none; align-items:center; justify-content:center; gap:5px; border-radius:14px; border:1px solid rgba(236,213,164,.45); background:rgba(30,48,35,.88); color:#f6dfae; font-weight:800; font-size:12px; }
+    #bunkerExit .ui-icon { width:19px; height:19px; }
+    @media(max-width:760px) { #bunkerExit { width:68px; } }
+    #joystick::before { content:''; position:absolute; inset:5%; border:1px solid rgba(242,199,118,.55); border-radius:50%; pointer-events:none; }
+    #joystick.running::before { border-color:#f0c77c; box-shadow:0 0 6px rgba(240,199,124,.4); }
+    /* Round 12: the single notification lane stays in the clear top strip. */
+    #notificationLane, #notificationLane.is-tutorial, #notificationLane.is-dusk, #notificationLane.is-raid {
+      top:calc(16px + var(--safe-top)); left:calc(50% + 75px); width:min(540px,calc(100vw - 740px)); max-height:88px;
+      padding:4px 8px; gap:6px; font-size:10px; line-height:1.35; background:rgba(21,31,24,.64);
+      backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); text-shadow:0 1px 2px #000;
+    }
+    #notificationText { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+    #notificationMeta { display:none; }
+    #skipTutorial { min-width:66px; min-height:44px; font-size:9px; }
+    @media(max-width:1100px) { #notificationLane, #notificationLane.is-tutorial, #notificationLane.is-dusk, #notificationLane.is-raid { left:170px; right:12px; top:calc(61px + var(--safe-top)); width:auto; max-height:49px; padding:1px 8px; transform:translateY(-8px); } #notificationLane.show { transform:translateY(0); } }
+    #workshopOverlay, #modal, #statusBackdrop, .pause-screen { background:rgba(5,11,8,.16); }
+    #workshopSheet, .modal-card, .status-panel, #pauseScreen .menu-card { background:rgba(19,32,24,.61); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); text-shadow:0 1px 2px rgba(0,0,0,.85); }
+    #workshopSheet { height:60%; min-height:0; max-height:60%; }
+    .modal-card, .status-panel, #pauseScreen .menu-card { max-height:60vh; }
+    #statusBackdrop, .pause-screen { backdrop-filter:none; -webkit-backdrop-filter:none; }
+    .status-panel-head { background:rgba(21,34,25,.7); }
+    .recipe-card, #workshopDetails { background:rgba(12,24,16,.67); }
+    .recipe-card.selected { background:rgba(69,56,31,.72); }
+    #mapOverlay { z-index:20; background:rgba(8,14,11,.15); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+    #mapCanvas { opacity:.62; }
+    #pauseScreen .menu-card { padding:14px 20px; }
+    #pauseScreen .pause-mark, #pauseScreen .menu-eyebrow, #pauseScreen .menu-foot { display:none; }
+    #pauseScreen h2 { margin:0; font-size:20px; }
+    #pauseScreen .subtitle { margin:3px 0 8px; }
+    #mapHeader, #mapFooter { background:rgba(17,27,22,.67); text-shadow:0 1px 2px #000; }
   </style>
 </head>
 <body>
@@ -583,9 +615,10 @@
     <div class="controls" id="controls" style="display:none">
       <div id="joystick" aria-label="دستهٔ حرکت"><div id="joyKnob"></div></div>
       <div class="right-controls" id="forestControls">
+        <button id="bunkerExit" type="button" aria-label="خروج از پناهگاه"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg><span>خروج</span></button>
         <button class="action-button" id="actionButton" aria-label="عمل"><span class="action-glyph" id="actionGlyph" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3v18M5 10l7-7 7 7M6 18h12"/></svg></span><span id="actionLabel">عمل</span></button>
         <button class="more-button" id="buildOpen" aria-label="بازکردن ساخت و ساز"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 4 6 6M11 7l6 6-8 8-6-6 8-8Z"/><path d="m14 7 3-3 4 4-3 3"/></svg><span>ساخت</span></button>
-        <button class="more-button" id="inventoryOpen" aria-label="بازکردن کوله‌پشتی"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7V5a4 4 0 0 1 8 0v2M6 10a6 6 0 0 1 12 0v10H6V10Z"/><path d="M8 14h8v4H8zM12 9v2"/></svg></button>
+        <button class="more-button" id="inventoryOpen" aria-label="بازکردن کوله‌پشتی"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5V4a3 3 0 0 1 6 0v1M5 11H3v7h2m14-7h2v7h-2"/><path d="M5 10c0-3 2-5 5-5h4c3 0 5 2 5 5v9c0 1.5-1 2-2 2H7c-1.5 0-2-.5-2-2v-9Z"/><path d="M8 10h8M8 17c0-1.7 1-2.5 2.5-2.5h3c1.5 0 2.5.8 2.5 2.5v2H8v-2Zm4-7v1"/></svg></button>
       </div>
     </div>
     <div id="mapOverlay" role="dialog" aria-modal="true" aria-label="نقشهٔ جنگل هیرکانی">
@@ -798,6 +831,7 @@
   let notificationQueue=[],activeNotification=null,tutorialNoticeStep=-1,lastDuskNoticeState='',lastRaidNoticeId=null,raidNoticeSequence=0,lastNotificationAtByText=new Map();
   let vitalSeverity={health:'normal',warmth:'normal',hunger:'normal',stamina:'normal',sanity:'normal'};
   let joystick={x:0,y:0,targetX:0,targetY:0,pointer:null},keys={},actionPointer=null,audioManager=null,muted=false,modalType='',craftCategory='tools',workshopOpen=false,workshopView='craft',workshopSelected='',workshopHistoryPending=false,workshopReturnFocus=null,statusPanelOpen=false,currentActionGlyph='',modalReturnFocus=null,hapticsEnabled=true,lastActionFeedbackAt=0,actionFeedbackTimer=0,resourceFlashTimer=0;
+  let bunkerExitRoute=null;
   let skipTutorialOnStart=false,firstLaunchSplashOpen=false,pauseHistoryPending=false,historySessionToken=0,pauseReturnFocus=null,titleW=0,titleH=0,titleDpr=1,titlePointer={x:0,y:0,targetX:0,targetY:0},titleTrees=[];
   try { hapticsEnabled=localStorage.getItem('hirkani-haptics')!=='off';skipTutorialOnStart=localStorage.getItem('hirkani-skip-tutorial')==='on'; } catch(e) {}
   let gameTime=0,mapDiscovered=new Set(),mapOpen=false,mapDirty=true,minimapDirty=true,mapViewport=null,mapMarkerSequence=0,lastMinimapX=null,lastMinimapY=null;
@@ -1588,7 +1622,8 @@
   const ITEM_ICON_ALIASES={axe:'hatchet',snareBundle:'snare',fireKit:'campfire',snares:'snare',fireKits:'campfire',torches:'torch',hatchets:'hatchet',trap:'spike',lamps:'lantern'};
   function itemIcon(id) {const body=ITEM_ICONS[ITEM_ICON_ALIASES[id]||id]||ITEM_ICONS.workshop;return `<svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;}
   function workshopItems() {
-    const recipes=CRAFTING_RECIPES.map(r=>({id:r.id,category:r.category,name:r.name,description:r.description,cost:r.cost,kind:'recipe',icon:r.id,unique:r.unique}));
+    const summaries={hatchet:'برداشت چوب بیشتر.',torch:'نور شب و آرامش.',poultice:'سلامت بیشتر؛ قطع خون‌ریزی.',ration:'رفع گرسنگی و کمی سرما.',snareBundle:'دو تله برای شکارچیان.',fireKit:'یک آتش بدون مصرف چوب خام.'};
+    const recipes=CRAFTING_RECIPES.map(r=>({id:r.id,category:r.category,name:r.name,description:r.description,summary:summaries[r.id],cost:r.cost,kind:'recipe',icon:r.id,unique:r.unique}));
     const common=[
       {id:'campfire',category:'survival',name:'آتش اردو',description:'شعله‌ای موقت شکارچیان را دور می‌کند.',cost:(game.inventory.fireKits||0)>0?{}:BALANCE.secondaryCosts.fire,kind:'action',icon:'campfire',act:'fire'},
       {id:'snare-place',category:'defense',name:'تلهٔ گیاهی',description:'تله‌ای در جنگل کار بگذار.',cost:(game.inventory.snares||0)>0?{}:BALANCE.secondaryCosts.snare,kind:'action',icon:'snare',act:'snare'}
@@ -1598,8 +1633,7 @@
       {id:'repair-mode',category:'bunker',name:'تعمیر',description:'اتاق یا پوستهٔ آسیب‌دیده را تعمیر کن.',cost:BALANCE.secondaryCosts.repairRoom,kind:'mode',icon:'workshop',act:'repair'},
       {id:'support-mode',category:'bunker',name:'تیرک پشتیبان',description:'با عمل، خانهٔ باز را تقویت کن.',cost:BALANCE.secondaryCosts.support,kind:'mode',icon:'support',act:'support'},
       {id:'lamp-mode',category:'bunker',name:'چراغ روغنی',description:'خانهٔ باز را روشن کن.',cost:BALANCE.secondaryCosts.lamp,kind:'mode',icon:'lantern',act:'lamp'},
-      {id:'barricade',category:'defense',name:'مانع ورودی',description:'دفاع پناهگاه را تقویت می‌کند.',cost:game.barricade?{}:BALANCE.barricade.cost,kind:'action',icon:'barricade',act:'barricade',active:game.barricade},
-      {id:'exit-bunker',category:'bunker',name:'خروج از بانکر',description:'در روشنایی به جنگل برگرد.',cost:{},kind:'action',icon:'bunker-hut',act:'exit'}
+      {id:'barricade',category:'defense',name:'مانع ورودی',description:'دفاع پناهگاه را تقویت می‌کند.',cost:game.barricade?{}:BALANCE.barricade.cost,kind:'action',icon:'barricade',act:'barricade',active:game.barricade}
     );
     if(game.mode==='bunker')for(const [id,r] of Object.entries(ROOMS))common.push({id:'room-'+id,category:'bunker',name:r.name,description:r.desc,cost:r.cost,kind:'room',icon:id,act:id});
     const bases=BUNKERS.map(b=>{const owned=game.ownedBunkers.includes(b.id),locked=!owned&&!game.blueprints.includes(b.id),night=b.id==='fortress'?8:DIARY.findIndex(page=>page.unlock===b.id)+1,weakness={hut:'دفاع و گنجایش کم',cave:'گرمای اندک؛ نیاز زیاد به سنگ',root:'دفاع کمتر از دژ',fortress:'بدون گرمای اضافه؛ سنگ فراوان', 'trap-house':'تولید روزانه ندارد',watchtower:'بدون گرمای اضافه',swamp:'کاهش گرما',trade:'دفاع متوسط',farm:'دفاع متوسط',forge:'پنهان‌کاری کم؛ هزینهٔ زیاد',infirmary:'هزینهٔ گیاه زیاد',hidden:'هزینهٔ ساخت بسیار زیاد'}[b.id];return {id:'base-'+b.id,category:'bunker',name:b.nameFa,description:`${b.effect.label} · دفاع ${fa(b.defense)} · ${fa(b.size[0]*b.size[1])} خانه`,strength:`${b.effect.label}؛ دفاع ${fa(b.defense)} و گنجایش ${fa(b.size[0]*b.size[1])} خانه`,weakness,cost:owned?{}:b.cost,kind:'base',icon:'bunker-'+b.id,act:b.id,locked,owned,active:game.bunkerId===b.id,unlockHint:night?`صفحهٔ دفتر پس از شب ${fa(night)} یا ویرانه‌های جنگل را جست‌وجو کن.`:'طرح را در ویرانه‌های جنگل پیدا کن.'};});
@@ -1652,11 +1686,11 @@
   function renderWorkshop() {
     if(!workshopOpen)return;if(workshopView==='inventory'){renderInventory();return;}const tabs=$('workshopTabs');tabs.style.display='flex';tabs.innerHTML='';for(const cat of WORKSHOP_CATEGORIES){const b=document.createElement('button');b.className='craft-tab'+(cat.id===craftCategory?' active':'');b.setAttribute('role','tab');b.setAttribute('aria-selected',String(cat.id===craftCategory));b.textContent=cat.name;b.onclick=()=>{craftCategory=cat.id;workshopSelected='';renderWorkshop();};tabs.appendChild(b);}
     const items=workshopItems().filter(item=>item.category===craftCategory),grid=$('workshopGrid');grid.innerHTML='';if(!items.some(i=>i.id===workshopSelected))workshopSelected=items[0]?.id||'';
-    for(const item of items){const locked=!!item.locked,btn=document.createElement('button');btn.className='recipe-card'+(item.id===workshopSelected?' selected':'')+(locked?' locked':'');btn.setAttribute('aria-pressed',String(item.id===workshopSelected));btn.innerHTML=`<span class="recipe-card-top">${itemIcon(item.icon)}<span>${item.name}${locked?itemIcon('lock').replace('class="item-icon"','class="lock-icon"'):''}</span></span><span class="recipe-effect">${item.description}</span><span class="recipe-costs">${workshopCost(item.cost)}</span>`;btn.onclick=()=>{workshopSelected=item.id;renderWorkshop();};grid.appendChild(btn);}
+    for(const item of items){const locked=!!item.locked,btn=document.createElement('button');btn.className='recipe-card'+(item.id===workshopSelected?' selected':'')+(locked?' locked':'');btn.setAttribute('aria-pressed',String(item.id===workshopSelected));btn.innerHTML=`<span class="recipe-card-top">${itemIcon(item.icon)}<span>${item.name}${locked?itemIcon('lock').replace('class="item-icon"','class="lock-icon"'):''}</span></span><span class="recipe-effect">${item.summary||item.description}</span><span class="recipe-costs">${workshopCost(item.cost)}</span>`;btn.onclick=()=>{workshopSelected=item.id;renderWorkshop();};grid.appendChild(btn);}
     const item=items.find(i=>i.id===workshopSelected),details=$('workshopDetails');if(!item){details.innerHTML='<p>موردی در این دسته نیست.</p>';return;}
-    const ownedTool=item.unique&&(game.inventory[item.unique]||0)>0,wrongPlace=(item.kind==='action'&&['fire','snare'].includes(item.act)&&game.mode!=='forest')||(item.kind==='base'&&game.mode!=='bunker'),nightExit=item.act==='exit'&&game.phase==='night';
-    const unavailable=item.locked||ownedTool||wrongPlace||nightExit||item.active,ready=canPay(item.cost||{}),buttonText=item.active&&item.kind!=='base'?'ساخته‌شده':item.kind==='base'?(item.active?'پناهگاه فعال':item.owned?'انتخاب پناهگاه':'ساخت پناهگاه'):item.kind==='room'||item.kind==='mode'?'انتخاب برای ساخت':item.kind==='action'?'استفاده':ownedTool?'ساخته‌شده':'بساز';
-    const hint=item.locked?item.unlockHint:item.active?'پناهگاه یا سازهٔ فعال توست.':wrongPlace?(item.kind==='base'?'برای ساخت یا انتخاب، وارد بانکر شو.':'این ابزار در جنگل استفاده می‌شود.'):nightExit?'خروج شبانه امن نیست.':ownedTool?'این ابزار همراه توست.':!ready?'منابع کافی نیست.':'';
+    const ownedTool=item.unique&&(game.inventory[item.unique]||0)>0,wrongPlace=(item.kind==='action'&&['fire','snare'].includes(item.act)&&game.mode!=='forest')||(item.kind==='base'&&game.mode!=='bunker');
+    const unavailable=item.locked||ownedTool||wrongPlace||item.active,ready=canPay(item.cost||{}),buttonText=item.active&&item.kind!=='base'?'ساخته‌شده':item.kind==='base'?(item.active?'پناهگاه فعال':item.owned?'انتخاب پناهگاه':'ساخت پناهگاه'):item.kind==='room'||item.kind==='mode'?'انتخاب برای ساخت':item.kind==='action'?'استفاده':ownedTool?'ساخته‌شده':'بساز';
+    const hint=item.locked?item.unlockHint:item.active?'پناهگاه یا سازهٔ فعال توست.':wrongPlace?(item.kind==='base'?'برای ساخت یا انتخاب، وارد بانکر شو.':'این ابزار در جنگل استفاده می‌شود.'):ownedTool?'این ابزار همراه توست.':!ready?'منابع کافی نیست.':'';
     details.innerHTML=`<div class="detail-title">${itemIcon(item.icon)}<span>${item.name}</span></div>${item.kind==='base'?`<p><b>قوت:</b> ${item.strength}</p><p><b>ضعف:</b> ${item.weakness}</p>`:`<p>${item.description}</p>`}<div class="recipe-costs">${workshopCost(item.cost)}</div>${hint?`<p class="hint">${hint}</p>`:''}<button class="workshop-primary" ${unavailable||!ready?'disabled':''}>${buttonText}</button>`;
     details.querySelector('button').onclick=()=>executeWorkshop(item);
   }
@@ -1665,7 +1699,7 @@
     if(item.kind==='base'){buyOrSelectBunker(item.act);closeWorkshop();return;}
     if(item.kind==='room'){game.selectedRoom=item.act;game.bunkerMode='build';closeWorkshop();updateControlsUI();return;}
     if(item.kind==='mode'){game.bunkerMode=item.act;game.selectedRoom=null;closeWorkshop();updateControlsUI();return;}
-    closeWorkshop();if(item.act==='fire')lightFire();else if(item.act==='snare')placeSnare();else if(item.act==='exit')exitBunker();else if(item.act==='barricade')buildBarricade();updateUI(true);
+    closeWorkshop();if(item.act==='fire')lightFire();else if(item.act==='snare')placeSnare();else if(item.act==='barricade')buildBarricade();updateUI(true);
   }
   $('workshopClose').addEventListener('click',closeWorkshop);$('workshopOverlay').addEventListener('pointerdown',e=>{if(e.target===$('workshopOverlay'))closeWorkshop();});
   function renderCraftingTabs() {
@@ -1765,13 +1799,17 @@
       ];
       for(const [name,author,license,url] of entries){const card=document.createElement('div');card.className='story-page audio-credit';const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=name;link.dir='ltr';const detail=document.createElement('small');detail.textContent=`${author} · ${license}`;detail.dir='ltr';card.append(link,detail);cards.appendChild(card);}
       const back=document.createElement('button');back.type='button';back.className='secondary-menu';back.textContent='بازگشت به درباره';back.onclick=()=>showModal('about');cards.appendChild(back);
+    } else if(type==='exitDanger') {
+      title.textContent='بیرون خطرناکه، مطمئنی؟';note.textContent='شکارچیان نزدیک ورودی‌اند. می‌خواهی از پناهگاه بیرون بروی؟';cards.classList.add('modal-actions');
+      const confirm=document.createElement('button');confirm.type='button';confirm.className='primary-menu';confirm.textContent='بله، خروج';confirm.onclick=()=>{closeModal();beginBunkerExit(true);};
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary-menu';cancel.textContent='نه، بمان';cancel.onclick=closeModal;cards.append(confirm,cancel);
     } else if(type==='overwrite') {
       const data=savedGame(),day=Math.max(1,Number(data?.day)||1);title.textContent='سفر تازه‌ای آغاز شود؟';note.textContent=`ذخیرهٔ روز ${fa(day)} با شروع سفر تازه جایگزین می‌شود. این کار برگشت‌پذیر نیست.`;cards.classList.add('modal-actions');
       const confirm=document.createElement('button');confirm.type='button';confirm.className='primary-menu';confirm.textContent='جایگزینی و آغاز';confirm.addEventListener('click',()=>{closeModal();startNew();});
       const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary-menu';cancel.textContent='بازگشت';cancel.addEventListener('click',closeModal);cards.append(confirm,cancel);
     } else if(type==='help') {
       title.textContent='راهنمای هیرکانی';
-      note.innerHTML='دستهٔ ثابتِ پایینِ چپ را لمس کن؛ تا ۶۵٪ آرام بکش تا راه بروی و نزدیک لبهٔ دسته بدو؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن وضعیت و منابع، نوارهای کوچکِ زیر نقشه را لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
+      note.innerHTML='دستهٔ ثابتِ پایینِ چپ را لمس کن؛ تا حدود ۸۵٪ آرام بکش تا راه بروی؛ بیرون حلقه برای دویدن نگه دار؛ Shift روی رایانه هم می‌تواند بدواند. برای دیدن وضعیت و منابع، نوارهای کوچکِ زیر نقشه را لمس کن. نوار توان در پنل وضعیت می‌ماند: دویدن آن را خالی می‌کند و راه‌رفتن یا استراحت آن را برمی‌گرداند؛ بار سنگین سرعتت را کم می‌کند. گوزن و خرگوش خوراک می‌دهند. دویدن صدای بیشتری می‌سازد و شکارچیان را خبر می‌کند. گاز می‌تواند خون‌ریزی بدهد؛ با آتش یا تله آن‌ها را عقب بران و به بانکر پناه ببر. شب‌ها گرگ‌ها دسته‌جمعی شکار می‌کنند و پلنگ‌ها از پوشش کمین می‌زنند. آرامش در تاریکی و کنار شکارچیان کم می‌شود و کنار آتش یا در بانکر برمی‌گردد؛ آرامش پایین سایه‌های خیالی می‌سازد؛ از کارگاه «ساخت» ابزار، خوراک و تجهیزات دفاعی بساز. در زیرزمین خانهٔ خالی را لمس کن، حفر کن و اتاق بساز؛ پناهگاه و اتاق‌های آسیب‌دیده را تعمیر کن. <br><br><b>حرکت روی رایانه:</b> کلیدهای WASD یا جهت‌ها · <b>دویدن:</b> Shift · <b>عمل:</b> فاصله یا E.';
       const btn=document.createElement('button'); btn.type='button'; btn.className='data-card'; btn.innerHTML='<span class="data-title">۶۰ ثانیهٔ نخست</span><span class="data-desc">حرکت، برداشت، ساخت اتاق و آماده‌شدن برای شب را قدم‌به‌قدم یاد بگیر.</span><span class="data-meta"><span>آموزش در شروع بازی</span><span>✓</span></span>'; cards.appendChild(btn);
     }
     modalReturnFocus=document.activeElement;$('modal').classList.add('show');$('modal').setAttribute('aria-hidden','false');syncNotificationLane();syncTouchAction();
@@ -2551,28 +2589,32 @@
     if(game.mode==='forest') {
       let dx=0,dy=0,moving=false,clickMoving=false,moveMagnitude=0;
       const keyboardMoving=isDown('ArrowLeft')||isDown('ArrowRight')||isDown('ArrowUp')||isDown('ArrowDown')||isDown('a')||isDown('A')||isDown('d')||isDown('D')||isDown('w')||isDown('W')||isDown('s')||isDown('S'),keyboardSprint=keyboardMoving&&isDown('Shift');
-      if(inputMoving){dx=v.x/magnitude;dy=v.y/magnitude;p.target=null;moving=true;const stickMagnitude=Math.hypot(joystick.x,joystick.y);moveMagnitude=keyboardSprint?1:stickMagnitude>.035?clamp(stickMagnitude,0,1):keyboardMoving ? .60 : magnitude;}
-      else if(p.target){const tx=p.target.x-p.x,ty=p.target.y-p.y,d=Math.hypot(tx,ty);if(d<8)p.target=null;else{dx=tx/d;dy=ty/d;moving=true;clickMoving=true;moveMagnitude=.64;}}
+      if(inputMoving){dx=v.x/magnitude;dy=v.y/magnitude;p.target=null;moving=true;const stickMagnitude=Math.hypot(joystick.x,joystick.y);moveMagnitude=keyboardSprint?1:stickMagnitude>.035?clamp(stickMagnitude,0,1):keyboardMoving ? .85 : magnitude;}
+      else if(p.target){const tx=p.target.x-p.x,ty=p.target.y-p.y,d=Math.hypot(tx,ty);if(d<8)p.target=null;else{dx=tx/d;dy=ty/d;moving=true;clickMoving=true;moveMagnitude=.85;}}
       p.moving=moving;
       let stamina=clamp(game.stats.stamina??100,0,100);
-      const wantsRun=moving&&!clickMoving&&(keyboardSprint||(p.running?moveMagnitude>=.60:moveMagnitude>=.65));
+      const stickPull=Math.hypot(joystick.targetX,joystick.targetY),runInput=keyboardSprint?1:keyboardMoving?0:stickPull;
       if(stamina<=0)p.exhausted=true;
       if(p.exhausted&&stamina>20)p.exhausted=false;
-      if(wantsRun&&!p.exhausted&&stamina>0){
-        stamina=Math.max(0,stamina-dt*(23+carryWeight()*.07+(p.bleedTimer>0?3:0)));p.running=stamina>0;if(!p.running)p.exhausted=true;
+      if(!moving||clickMoving||p.exhausted||runInput<=.1){p.running=false;p.runEnterTimer=0;p.runExitTimer=0;}
+      else if(!p.running){p.runExitTimer=0;p.runEnterTimer=runInput>=.90?(p.runEnterTimer||0)+dt:0;if(p.runEnterTimer>=.12){p.running=true;p.runEnterTimer=0;}}
+      else {p.runEnterTimer=0;p.runExitTimer=runInput<.80?(p.runExitTimer||0)+dt:0;if(p.runExitTimer>=.12){p.running=false;p.runExitTimer=0;}}
+      if(p.running&&!p.exhausted&&stamina>0){
+        stamina=Math.max(0,stamina-dt*(16+carryWeight()*.05+(p.bleedTimer>0?3:0)));if(stamina<=0){p.running=false;p.exhausted=true;}
       }else{p.running=false;stamina=Math.min(100,stamina+dt*(moving?9:16));}
       game.stats.stamina=stamina;
       if(moving){
         p.faceX=dx;p.faceY=dy;p.facing=facing4(dx,dy,p.facing);
-        const walkBlend=clamp(moveMagnitude/.65,0,1),runProgress=clamp((moveMagnitude-.65)/.35,0,1);motionTarget=walkBlend;runBlendTarget=p.running?runProgress:0;p.animTime=(p.animTime||0)+dt*(p.running?9+6*runProgress:9*walkBlend);
-        const walkSpeed=148,runSpeed=236,speedFactor=carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1)*(game.stats.health<30?.72:1),speed=(p.running&&moveMagnitude>=.65?walkSpeed+(runSpeed-walkSpeed)*runProgress:walkSpeed*walkBlend)*speedFactor,nx=clamp(p.x+dx*speed*dt,WORLD_EDGE,MAP.w-WORLD_EDGE),ny=clamp(p.y+dy*speed*dt,WORLD_EDGE,MAP.h-WORLD_EDGE);
+        const walkBlend=clamp((moveMagnitude-.10)/.75,0,1),runProgress=clamp((moveMagnitude-.80)/.20,0,1);motionTarget=walkBlend;runBlendTarget=p.running?runProgress:0;p.animTime=(p.animTime||0)+dt*(p.running?9+6*runProgress:9*walkBlend);
+        const walkSpeed=148,runSpeed=236,speedFactor=carrySpeedFactor()*(p.bleedTimer>0 ? .78 : 1)*(game.stats.health<30?.72:1),speed=(p.running?walkSpeed+(runSpeed-walkSpeed)*runProgress:walkSpeed*walkBlend)*speedFactor,nx=clamp(p.x+dx*speed*dt,WORLD_EDGE,MAP.w-WORLD_EDGE),ny=clamp(p.y+dy*speed*dt,WORLD_EDGE,MAP.h-WORLD_EDGE);
         const blocked=(x,y)=>(Math.hypot(x-ANCIENT_TREE.x,y-ANCIENT_TREE.y)<78)||(Math.abs(x-ANCIENT_RIDGE.x)<65&&(y<ANCIENT_RIDGE.gapTop||y>ANCIENT_RIDGE.gapBottom))||nodesNear(x,y,58).some(n=>n.remaining>0&&n.type!=='bush'&&Math.hypot(n.x-x,n.y-y)<(n.radius+(n.type==='tree'?17:10)));
         if(!blocked(nx,p.y))p.x=nx;if(!blocked(p.x,ny))p.y=ny;
         if(p.running){p.puffTimer=(p.puffTimer||0)-dt;if(p.puffTimer<=0){spawnRunPuff(p.x,p.y);p.puffTimer=.17;}}else p.puffTimer=.08;
       }else{p.running=false;p.puffTimer=0;}
     } else {
-      p.running=false;p.exhausted=false;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*22);
+      p.running=false;p.runEnterTimer=0;p.runExitTimer=0;game.stats.stamina=Math.min(100,(game.stats.stamina??100)+dt*22);
       p.bX=clamp(Number.isFinite(Number(p.bX))?Number(p.bX):Number(p.bCol??5),0,GRID.cols-1);p.bY=clamp(Number.isFinite(Number(p.bY))?Number(p.bY):Number(p.bRow??3),0,GRID.rows-1);
+      if(bunkerExitRoute){updateBunkerExitWalk(dt);return;}
       const moveThreshold=.12,walking=magnitude>moveThreshold,horizontal=walking&&Math.abs(v.x)>=Math.abs(v.y),speed=2.35,oldX=p.bX,oldY=p.bY;
       if(walking){
         if(horizontal){const step=Math.sign(v.x)*speed*clamp(Math.abs(v.x),0,1)*dt,currentCol=Math.round(p.bX),row=Math.round(p.bY),nextX=clamp(p.bX+step,0,GRID.cols-1),nextCol=Math.round(nextX);p.faceX=Math.sign(v.x);p.faceY=0;p.facing=p.faceX<0?'left':'right';if(nextCol===currentCol||bunkerCellOpen(nextCol,row))p.bX=nextX;else p.bX=clamp(p.bX,currentCol-.43,currentCol+.43);}
@@ -2845,7 +2887,7 @@
   }
   function updateControlsUI() {
     if(!game||!active)return;
-    $('forestControls').style.display='flex';
+    $('forestControls').style.display='flex';$('bunkerExit').style.display=game.mode==='bunker'?'flex':'none';
     if(game.mode==='forest') {
       const n=nearestNode(86),a=nearestAnimal(58),drop=nearestFoodDrop(game.player,58),itemDrop=nearestItemDrop(58);let label='عمل',icon='action';
       const ruin=RUIN_DATA.find(item=>!game.ruinsFound?.includes(item.id)&&Math.hypot(game.player.x-item.x,game.player.y-item.y)<64);
@@ -2859,6 +2901,7 @@
       setActionPrompt(label,icon);
     } else {
       const target=currentTarget(),k=keyOf(target.c,target.r),room=game.rooms[k],mode=game.bunkerMode||'dig';
+      if(game.player.bRow<=1&&target.c===5&&target.r<=1){setActionPrompt('خروج','entry');return;}
       const labels={dig:room||game.dug[k]?'باز است':'کندن',build:room?'ارتقا':game.selectedRoom&&game.dug[k]?'ساخت':game.selectedRoom?'جای‌گذاری':'اتاق',repair:'تعمیر',support:'تیرک',lamp:'چراغ'},icons={dig:'stone',build:room?'upgrade':'build',repair:'build',support:'build',lamp:'action'};setActionPrompt(labels[mode]||'عمل',icons[mode]||'action');
     }
   }
@@ -2924,13 +2967,43 @@
     for(const drop of world.foodDrops||[])drop.timer-=dt;world.foodDrops=(world.foodDrops||[]).filter(drop=>drop.timer>0&&drop.amount>0);
     if(world.raidWarning)world.raidWarning.timer-=dt;for(const track of world.raidTracks||[])track.life-=dt;world.raidTracks=(world.raidTracks||[]).filter(track=>track.life>0);
   }
-  function enterBunker() { beep('door',{priority:4});game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.bX=5;game.player.bY=3;game.player.stepTimer=0;game.selectedCell=null;game.bunkerMode=game.bunkerMode||'dig';actionFeedback('داخل پناهگاه راه برو؛ خانهٔ خاکی را لمس کن، بعد با عمل کلنگ بزن.',2400);haptic(12);updateControlsUI(); }
+  function enterBunker() { bunkerExitRoute=null;beep('door',{priority:4});game.mode='bunker';game.player.bCol=5;game.player.bRow=3;game.player.bX=5;game.player.bY=3;game.player.stepTimer=0;game.selectedCell=null;game.bunkerMode=game.bunkerMode||'dig';actionFeedback('داخل پناهگاه راه برو؛ خانهٔ خاکی را لمس کن، بعد با عمل کلنگ بزن.',2400);haptic(12);updateControlsUI(); }
+  function exitDangerNearEntrance() {
+    return game.phase==='night'&&((world?.raidWarning?.timer||0)>0||allThreatAnimals().some(a=>Math.hypot(a.x-BUNKER_ENTRANCE.x,a.y-BUNKER_ENTRANCE.y)<420));
+  }
   function exitBunker() {
-    if(game.phase==='night'){actionFeedback('بیرون رفتن در شب امن نیست.',1700);return;}
-    beep('door',{priority:4});game.mode='forest';game.player.x=MAP.cx+80;game.player.y=MAP.cy+5;game.player.target=null;game.selectedCell=null;haptic(10);actionFeedback('به جنگل برگشتی؛ غروب نزدیک است.',1700);
+    if(!active||!game||game.mode!=='bunker'||paused||game.gameOver||workshopOpen||mapOpen||statusPanelOpen||$('modal').classList.contains('show'))return;
+    if(exitDangerNearEntrance()){bunkerExitRoute=null;showModal('exitDanger');return;}beginBunkerExit(false);
+  }
+  function finishBunkerExit() {
+    bunkerExitRoute=null;beep('door',{priority:4});game.mode='forest';game.player.x=MAP.cx+80;game.player.y=MAP.cy+5;game.player.target=null;game.player.moving=false;game.selectedCell=null;clearGameplayInput();haptic(10);updateControlsUI();updateUI(true);saveGame();
+  }
+  // Prefer traversable open tiles and ladders. If a collapse isolated the player,
+  // the same walking route clears only its obstructing debris and reconnects ladders.
+  function bunkerExitPath(allowDebris=false) {
+    const p=game.player,start={c:clamp(Math.round(p.bX),0,GRID.cols-1),r:clamp(Math.round(p.bY),0,GRID.rows-1)},queue=[start],seen=new Set([keyOf(start.c,start.r)]),parents=new Map();
+    while(queue.length){const cur=queue.shift(),key=keyOf(cur.c,cur.r);if(cur.c===5&&cur.r===1){const path=[];let k=key;while(k){const [c,r]=k.split(',').map(Number);path.push({c,r});k=parents.get(k);}return path.reverse();}
+      for(const [dx,dy] of [[0,-1],[-1,0],[1,0],[0,1]]){const c=cur.c+dx,r=cur.r+dy,k=keyOf(c,r);if(c<0||c>=GRID.cols||r<0||r>=GRID.rows||seen.has(k))continue;if(!allowDebris&&(!bunkerCellOpen(c,r)||(dy&&!bunkerHasLadder(c,Math.min(r,cur.r)))))continue;seen.add(k);parents.set(k,key);queue.push({c,r});}
+    }return null;
+  }
+  function beginBunkerExit(approved) {
+    if(!game||game.mode!=='bunker')return;clearGameplayInput();game.selectedCell=null;game.player.actionTimer=0;game.player.actionKind='';
+    const p=game.player;if(Math.abs(p.bX-5)<.25&&Math.abs(p.bY-1)<.25){finishBunkerExit();return;}
+    const path=bunkerExitPath(false)||bunkerExitPath(true);bunkerExitRoute={path,approved};
+  }
+  function updateBunkerExitWalk(dt) {
+    const route=bunkerExitRoute,p=game.player;if(!route||!route.path?.length)return;
+    const target=route.path[0],c=Math.round(p.bX),r=Math.round(p.bY),key=keyOf(target.c,target.r);
+    if(!bunkerCellOpen(c,r))game.dug[keyOf(c,r)]=true;
+    if(!bunkerCellOpen(target.c,target.r)){game.dug[key]=true;delete game.digging[key];}
+    if(target.r!==r&&target.c===c)game.ladders[keyOf(c,Math.min(r,target.r))]=true;
+    const dx=target.c-p.bX,dy=target.r-p.bY,d=Math.hypot(dx,dy),step=Math.min(d,2.35*dt);
+    if(d>0){p.bX+=dx/d*step;p.bY+=dy/d*step;p.faceX=Math.abs(dx)>Math.abs(dy)?Math.sign(dx):0;p.faceY=p.faceX?0:Math.sign(dy);p.facing=p.faceX?(p.faceX<0?'left':'right'):(p.faceY<0?'back':'front');p.animTime=(p.animTime||0)+dt*8;}
+    p.bCol=Math.round(p.bX);p.bRow=Math.round(p.bY);p.moving=d>.01;p.motionBlend=p.moving?1:0;
+    if(d<=step+.001){p.bX=target.c;p.bY=target.r;p.bCol=target.c;p.bRow=target.r;route.path.shift();if(!route.path.length){bunkerExitRoute=null;if(!route.approved&&exitDangerNearEntrance())showModal('exitDanger');else finishBunkerExit();}}
   }
   function doAction() {
-    if(!active||!game||game.gameOver||paused||introActive||mapOpen||statusPanelOpen||workshopOpen||$('modal').classList.contains('show'))return;
+    if(!active||!game||game.gameOver||paused||introActive||mapOpen||statusPanelOpen||workshopOpen||bunkerExitRoute||$('modal').classList.contains('show'))return;
     if(game.mode==='forest')gather();else bunkerAction();updateUI(true);
   }
   function currentTarget() {
@@ -2944,6 +3017,7 @@
   }
   function bunkerAction() {
     const t=currentTarget(),k=keyOf(t.c,t.r),room=game.rooms[k],mode=game.bunkerMode||'dig',p=game.player;
+    if(p.bRow<=1&&t.c===5&&t.r<=1){exitBunker();return;}
     if(mode==='repair'){repair();return;}
     if(mode==='support'){
       if(!bunkerCellOpen(t.c,t.r)){actionFeedback('تیرک را روی فضای کنده‌شده بگذار.',1500);return;}
@@ -3147,8 +3221,8 @@
     [BALANCE.onboarding.move,'برای حرکت، دسته را آرام بکش.'],
     [BALANCE.onboarding.harvest,'چوب و میوهٔ درخشان نزدیک پناهگاه را بردار.'],
     [BALANCE.onboarding.build,'به ورودی برگرد و زیر زمین را حفر کن.'],
-    [BALANCE.onboarding.bedStorage,'از «بیشتر» اتاق خواب و انبار را انتخاب و جای‌گذاری کن.'],
-    [BALANCE.onboarding.prepare,'چوب ذخیره کن؛ از «بیشتر» در پناهگاه، مانع ورودی بساز.'],
+    [BALANCE.onboarding.bedStorage,'از «ساخت»، اتاق خواب و انبار را انتخاب کن.'],
+    [BALANCE.onboarding.prepare,'چوب ذخیره کن؛ از «ساخت» مانع ورودی بساز.'],
     [BALANCE.onboarding.dusk,'غروب نزدیک است؛ آرام بمان و به پناهگاه برگرد.']
   ];
   function updateVitalsStack(stats,stamina=stats.stamina??100,sanity=stats.sanity??100) {
@@ -3194,10 +3268,9 @@
   // Input: a fixed bottom-left joystick with an eased radial response and one contextual primary action.
   const pad=$('joystick'),knob=$('joyKnob');
   function setJoy(e) {
-    const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,knobSize=knob.offsetWidth||50,limit=Math.max(12,Math.min(r.width-knobSize,r.height-knobSize)*.5-2);
-    let dx=e.clientX-cx,dy=e.clientY-cy,m=Math.hypot(dx,dy);if(m>limit){dx=dx/m*limit;dy=dy/m*limit;m=limit;}
-    const raw=clamp(m/limit,0,1),deadzone=.09,linear=raw<=deadzone?0:(raw-deadzone)/(1-deadzone),response=linear*linear*(3-2*linear);
-    joystick.targetX=m?dx/m*response:0;joystick.targetY=m?dy/m*response:0;knob.style.transform=`translate(${dx}px,${dy}px)`;
+    const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,radius=Math.min(r.width,r.height)*.5,knobSize=knob.offsetWidth||50,travel=Math.max(0,radius-knobSize*.5-2);
+    const dx=e.clientX-cx,dy=e.clientY-cy,m=Math.hypot(dx,dy),raw=clamp(m/radius,0,1),ux=m?dx/m:0,uy=m?dy/m:0,response=raw<=.10?0:raw;
+    joystick.targetX=ux*response;joystick.targetY=uy*response;knob.style.transform=`translate(${ux*raw*travel}px,${uy*raw*travel}px)`;
   }
   function beginJoy(e) {
     if(joystick.pointer!==null){e.preventDefault();return;}e.preventDefault();joystick.pointer=e.pointerId;pad.classList.add('active');if(pad.setPointerCapture)pad.setPointerCapture(e.pointerId);setJoy(e);
@@ -3212,6 +3285,7 @@
   function endActionPress(e){if(actionPointer!==e.pointerId)return;actionPointer=null;actionButton.classList.remove('pressed');if(e.type==='pointerup'){haptic(12);doAction();}}
   actionButton.addEventListener('pointerdown',beginActionPress);actionButton.addEventListener('pointerup',endActionPress);actionButton.addEventListener('pointercancel',endActionPress);actionButton.addEventListener('lostpointercapture',endActionPress);
   actionButton.addEventListener('click',e=>{if(e.detail===0){haptic(12);doAction();}});
+  $('bunkerExit').addEventListener('click',()=>{haptic(8);exitBunker();});
   $('buildOpen').addEventListener('click',()=>{haptic(8);openWorkshop();});$('inventoryOpen').addEventListener('click',()=>{haptic(8);openInventory();});
   $('vitalsStack').addEventListener('click',()=>{haptic(8);setStatusPanel(!statusPanelOpen);});$('statusClose').addEventListener('click',()=>setStatusPanel(false));$('statusBackdrop').addEventListener('click',()=>setStatusPanel(false));
   $('soundButton').addEventListener('click',()=>{haptic(8);audioManager.setMuted(!audioManager.muted);updateUI(true);if(!muted)beep('ui');});

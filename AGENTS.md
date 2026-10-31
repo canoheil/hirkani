@@ -1,5 +1,17 @@
 ## Status
 
+Round 12 QA: personally inspected tutorial, craft, inventory, bunker-exit, details, map and pause captures at 1600×720 and 1280×600, plus 760×400; inspected 30%/60% walk and 95% sprint screenshots. Automated checks covered sprint hysteresis and exhaustion recovery; all bunker modes, blocked routes, raid confirmation/cancel, safe-night and ladder/entrance interactions; paused workshop; and untruncated card descriptions across tabs. Physical-device verification is still needed.
+
+Round 12 item 5: workshop and inventory descriptions wrap instead of ellipsizing; short recipe summaries retain full details in the selection pane. Removed the obsolete day-only exit card and corrected tutorial references to the current craft menu.
+
+Round 12 item 4: redrew the inventory control as a backpack with shoulder straps, handle and front pocket.
+
+Round 12 item 3: restored a dedicated bunker exit with a walk-to-ladder route, night predator confirmation and debris/ladder recovery if collapse blocks the way; entrance interaction remains available.
+
+Round 12 item 2: joystick uses the base radius and a 10% deadzone, with 90%/80% sprint hysteresis held for 120 ms, a visible run ring and lower sprint drain; exhaustion recovers above 20%.
+
+Round 12 item 1: placed the single notification lane in the top strip and made paused overlays translucent with blur and 60% height limits.
+
 Round 11C item 5: no manual downloads needed. Browser checks passed for gesture-only loading and decoding all six assets, per-slot music fallback, persisted sliders, day/night/raid/bunker mix, river proximity, background suspension and pause/resume; crafting/inventory and first-night regressions also passed. Settings and credits screenshots at 1600×720 and 1280×600 were inspected; settings were compacted to avoid clipping. Physical Android audio and subjective loop-seam listening remain untested.
 
 Round 11C item 4: independent music, nature and SFX controls persist across sessions; music and ambience crossfade with day, dusk, night and raids, river proximity and bunker muffling, with individual procedural fallbacks and background/pause suspension.
