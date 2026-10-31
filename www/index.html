@@ -830,7 +830,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
   const keyOf = (c,r) => `${c},${r}`;
   let W=innerWidth, H=innerHeight, dpr=1, cam={x:0,y:0};
   let game = null, world = null, active=false, paused=false, lastFrame=0, saveTimer=0, uiTimer=0, toastTimer=0;
-  let reducedQuality=false, slowFrameTime=0, fastFrameTime=0;
+  let reducedQuality=false, slowFrameTime=0, fastFrameTime=0, lastFrameErrorLog=0;
   let introActive=false,introTime=0,introLastFrame=0,introReplay=false,introStormPlayed=false;
   let notificationQueue=[],activeNotification=null,tutorialNoticeStep=-1,lastDuskNoticeState='',lastRaidNoticeId=null,raidNoticeSequence=0,lastNotificationAtByText=new Map();
   let vitalSeverity={health:'normal',warmth:'normal',hunger:'normal',stamina:'normal',sanity:'normal'};
@@ -1488,7 +1488,14 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
     } catch(e) { /* storage can be disabled */ }
   }
   function savedGame() {
-    try { const raw=localStorage.getItem(SAVE_KEY); return raw?JSON.parse(raw):null; } catch(e) { return null; }
+    try {
+      const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
+      const data=JSON.parse(raw),record=value=>value&&typeof value==='object'&&!Array.isArray(value);
+      if(!record(data)||!record(data.player)||!record(data.resources))throw new Error('Invalid save structure');
+      return data;
+    } catch(e) {
+      console.warn('[Hirkani save reset]',e);try{localStorage.removeItem(SAVE_KEY);}catch(storageError){}return null;
+    }
   }
   function refreshMenuSaveSummary() {
     const data=savedGame(),valid=!!(data&&data.player&&data.resources&&!data.gameOver),summary=$('saveSummary'),button=$('continueButton');
@@ -3441,7 +3448,7 @@ window.addEventListener('unhandledrejection',event=>console.error('[Hirkani reje
       if(active&&!paused){for(let i=0;i<(fastMode?4:1);i++)update(dt);}else if(!active)gameTime+=dt;
       draw();if($('menuScreen').classList.contains('show'))drawTitleScene(t);if(introActive)drawIntro(dt);
       audioManager.setMood(currentMusicMood());audioManager.update(dt);updateNotificationLane(dt);
-    } catch(error) { console.error('[Hirkani frame]',error); }
+    } catch(error) { if(!lastFrameErrorLog||t-lastFrameErrorLog>5000){lastFrameErrorLog=t||1;console.error('[Hirkani frame]',error);} }
     finally { requestAnimationFrame(frame); }
   }
   requestAnimationFrame(frame);

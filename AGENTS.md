@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 1 follow-up: smoke-tested normal save/continue, a partially old save, malformed JSON reset, and a deliberately throwing frame that still scheduled its successor. Rate-limited repeated frame-error logs.
+
 Final release item 7: added bilingual READMEs, generated forest/bunker screenshots, MIT code license and documented separately licensed sound and font. In-game audio credits match CREDITS.md.
 
 Final release item 6: generated the Capacitor project locally and applied the committed patch twice, then synced successfully. Debug CI and tag-triggered, debug-signed release APK workflow use the same patch. Gradle assembly, actual launch/splash, launcher icons and release publication remain unverified; no tag created.
