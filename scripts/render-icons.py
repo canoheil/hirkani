@@ -24,8 +24,13 @@ def icon(size):
 
 save(icon(512), 'docs/icon-512.png')
 for density, legacy, adaptive in [('mdpi',48,108),('hdpi',72,162),('xhdpi',96,216),('xxhdpi',144,324),('xxxhdpi',192,432)]:
-    for name in ('ic_launcher','ic_launcher_round'):
-        save(icon(legacy), f'android-res/mipmap-{density}/{name}.png')
+    legacy_icon = icon(legacy)
+    save(legacy_icon, f'android-res/mipmap-{density}/ic_launcher.png')
+    # Supersample the mask so pre-adaptive round launcher edges stay smooth.
+    mask = Image.new('L', (legacy*4, legacy*4), 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, legacy*4-1, legacy*4-1), fill=255)
+    legacy_icon.putalpha(mask.resize((legacy, legacy), Image.Resampling.LANCZOS))
+    save(legacy_icon, f'android-res/mipmap-{density}/ic_launcher_round.png')
     save(svg('icon-foreground.svg', adaptive), f'android-res/mipmap-{density}/ic_launcher_foreground.png')
     save(svg('icon-monochrome.svg', adaptive), f'android-res/mipmap-{density}/ic_launcher_monochrome.png')
     save(svg('icon-background.svg', adaptive), f'android-res/mipmap-{density}/ic_launcher_background.png')

@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 5 follow-up: rendered genuinely transparent, antialiased round legacy launcher PNGs rather than duplicating square icons.
+
 Final release item 1 follow-up: smoke-tested normal save/continue, a partially old save, malformed JSON reset, and a deliberately throwing frame that still scheduled its successor. Rate-limited repeated frame-error logs.
 
 Final release item 7: added bilingual READMEs, generated forest/bunker screenshots, MIT code license and documented separately licensed sound and font. In-game audio credits match CREDITS.md.
