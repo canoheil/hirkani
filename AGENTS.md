@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 4: normalized the workshop shelter label in Persian and smoke-tested starter tree/bush gathering and first room construction at 1280×600. Intro timing, all tutorial layouts, dusk and linguistic review remain to be checked manually.
+
 Final release item 3: scripted isolated prepared-bunker nights 1–10 reached dawn and awarded diary pages; night 10 reached the Ancient Tree ending, and confirmed night exit reached the forest. This is not a continuous resource/balance playthrough or an exhaustive softlock audit.
 
 Final release item 2: adaptive lower-resolution/decal fallback after sustained slow frames, in-place particle cleanup and bounded transient traps. Existing viewport culling and audio voice caps retained; phone performance requires measurement.
