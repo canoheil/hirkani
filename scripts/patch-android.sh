@@ -6,6 +6,7 @@ res=android/app/src/main/res
 [[ -f android/app/build.gradle && -d "$res" ]] || { echo 'Generate Android first: npx cap add android' >&2; exit 1; }
 node scripts/configure-android.cjs
 # Remove all Capacitor-branded vectors and density/orientation splash alternatives.
+rm -f "$res/drawable/splash.png"
 rm -f "$res/drawable-v24/ic_launcher_foreground.xml" "$res/drawable/ic_launcher_background.xml" "$res/values/ic_launcher_background.xml"
 rm -f "$res"/drawable-land-*/splash.png "$res"/drawable-port-*/splash.png
 cp -R android-res/. "$res/"

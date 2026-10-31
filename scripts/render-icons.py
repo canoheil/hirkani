@@ -38,7 +38,7 @@ for density, legacy, adaptive in [('mdpi',48,108),('hdpi',72,162),('xhdpi',96,21
 splash = Image.new('RGBA', (1920,1080), '#12261c')
 emblem = svg('icon-foreground.svg', 500)
 splash.alpha_composite(emblem, ((1920-500)//2,(1080-500)//2))
-save(splash, 'android-res/drawable/splash.png')
+save(splash, 'android-res/drawable-nodpi/splash.png')
 # Contact sheet for design review only, not shipped.
 preview = Image.new('RGB', (800, 800), '#20251f')
 draw = ImageDraw.Draw(preview)

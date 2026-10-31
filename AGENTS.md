@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 6 follow-up: placed the full-screen splash in drawable-nodpi and remove the generated default splash to avoid density-based bitmap enlargement and duplicate resources.
+
 Final release item 5 follow-up: rendered genuinely transparent, antialiased round legacy launcher PNGs rather than duplicating square icons.
 
 Final release item 1 follow-up: smoke-tested normal save/continue, a partially old save, malformed JSON reset, and a deliberately throwing frame that still scheduled its successor. Rate-limited repeated frame-error logs.
