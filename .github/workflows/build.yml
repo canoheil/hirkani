@@ -41,8 +41,8 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
-      - name: Lock landscape and immersive fullscreen
-        run: node scripts/configure-android.cjs
+      - name: Apply Hirkani Android configuration and resources
+        run: bash scripts/patch-android.sh
 
       - name: Sync web app
         run: npx cap sync android

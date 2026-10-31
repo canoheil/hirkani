@@ -1,5 +1,7 @@
 ## Status
 
+Final release item 6: generated the Capacitor project locally and applied the committed patch twice, then synced successfully. Debug CI and tag-triggered, debug-signed release APK workflow use the same patch. Gradle assembly, actual launch/splash, launcher icons and release publication remain unverified; no tag created.
+
 Final release item 5: added a tree/shelter emblem, adaptive and monochrome SVG sources, pre-rendered density PNGs, dark landscape splash, menu mark and 512px documentation icon. Inspected 48/72/96/192 circle and rounded-square previews on light and dark backgrounds; launcher/device appearance remains unverified.
 
 Final release item 4: normalized the workshop shelter label in Persian and smoke-tested starter tree/bush gathering and first room construction at 1280×600. Intro timing, all tutorial layouts, dusk and linguistic review remain to be checked manually.
